@@ -147,20 +147,84 @@ async function mantenerEncendida() {
 }
 document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && mantenerEncendida());
 
+const esIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const esMovil = esIOS || /Android|Mobi/i.test(navigator.userAgent);
+
+/** En el inicio, si se abre en el navegador del móvil: un botón para instalar la app. */
 function consejoInstalar() {
-  if (enApp || carcasa) return null;
-  const esIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-  const caja = h("div.instalar.tarjeta");
-  if (esIOS) caja.append("📲 Para tenerla como app: pulsa ", h("b", "Compartir"), " y luego ", h("b", "«Añadir a pantalla de inicio»"), ".");
-  else if (instalador) caja.append(h("button.boton.suave.grande", { onclick: () => (instalador.prompt(), (instalador = null), caja.remove()) }, "📲 Instalar NYP como app"));
-  else return null;
-  return caja;
+  if (enApp || !esMovil) return null;
+  return h("button.boton.suave.grande.instalar", { type: "button", onclick: pantallaInstalar }, "📲 Descargar la app NYP");
 }
 
-window.addEventListener("beforeinstallprompt", (ev) => {
-  ev.preventDefault();
-  instalador = ev;
-});
+/**
+ * Pantalla de descarga (a la que lleva el QR "Descarga la app"): en Android, el botón de instalar;
+ * en iPhone, los pasos de Safari. Al abrir la app instalada, lo primero es crear el perfil.
+ */
+function pantallaInstalar() {
+  const pasos = h("div.instalar-pasos");
+  const pintar = () => {
+    if (enApp) {
+      pasos.replaceChildren(h("p", "✔ Ya estás en la app."), h("button.boton.acento.grande", { type: "button", onclick: arrancar }, "Empezar"));
+    } else if (esIOS) {
+      pasos.replaceChildren(
+        h("ol.instalar-lista",
+          h("li", "Abre esta página en ", h("b", "Safari"), "."),
+          h("li", "Pulsa ", h("b", "Compartir"), " ", h("span.icono-compartir", "⬆︎"), " (abajo)."),
+          h("li", "Elige ", h("b", "«Añadir a pantalla de inicio»"), "."),
+          h("li", "Abre ", h("b", "NYP"), " desde la pantalla de inicio y crea tu perfil.")
+        )
+      );
+    } else if (instalador) {
+      pasos.replaceChildren(
+        h("button.boton.acento.grande", {
+          type: "button",
+          onclick: async () => {
+            const ev = instalador;
+            instalador = null;
+            ev.prompt();
+            const r = await ev.userChoice.catch(() => null);
+            if (r?.outcome === "accepted") pasos.replaceChildren(h("p", "✔ ¡Instalada! Ábrela desde tu pantalla de inicio y crea tu perfil."));
+            else pintar();
+          },
+        }, "📲 Instalar NYP"),
+        h("p.suave", "Ocupa muy poco y funciona sin internet.")
+      );
+    } else {
+      pasos.replaceChildren(
+        h("ol.instalar-lista",
+          h("li", "Abre el menú del navegador ", h("b", "⋮"), " (arriba a la derecha)."),
+          h("li", "Pulsa ", h("b", "«Instalar aplicación»"), " o ", h("b", "«Añadir a pantalla de inicio»"), "."),
+          h("li", "Abre ", h("b", "NYP"), " desde la pantalla de inicio y crea tu perfil.")
+        ),
+        h("p.suave", "Si ya la tienes instalada, ábrela desde la pantalla de inicio.")
+      );
+    }
+  };
+  alInstalable = pintar;
+  pintar();
+  mostrar(
+    h(
+      "section.inicio.instalar-pantalla",
+      h("div.marca-movil", ["N", "Y", "P"].map((l) => h("span.ficha", l))),
+      h("h1.instalar-titulo", "Descarga la app"),
+      h("p.suave.instalar-sub", "Juegos de palabras y números para jugar en familia, en grupo o tú solo."),
+      pasos,
+      h("button.boton.suave", { type: "button", onclick: () => ((alInstalable = () => {}), arrancar()) }, "Seguir en el navegador")
+    )
+  );
+}
+
+let alInstalable = () => {};
+instalador = window.NYP_INSTALADOR ?? null;
+const recibirInstalador = (ev) => {
+  if (ev) {
+    ev.preventDefault?.();
+    instalador = ev;
+  } else instalador = window.NYP_INSTALADOR ?? instalador;
+  alInstalable();
+};
+window.addEventListener("beforeinstallprompt", recibirInstalador);
+window.addEventListener("nyp-instalable", () => recibirInstalador());
 const mismoSitio = new URL(import.meta.url).origin === location.origin;
 if (mismoSitio && !carcasa && "serviceWorker" in navigator && window.isSecureContext) {
   navigator.serviceWorker.register(new URL("../sw.js", import.meta.url), { scope: "/" }).catch(() => {});
@@ -170,8 +234,16 @@ if (mismoSitio && !carcasa && "serviceWorker" in navigator && window.isSecureCon
 // El QR de la TV lleva #party: quien lo escanea entra directo a la partida.
 const sala = carcasa?.salaInicial ?? null;
 const directo = location.hash.includes("party") || sala;
+const paraInstalar = /instalar/.test(location.hash + location.search);
 if (location.hash) history.replaceState(null, "", location.pathname);
-if (directo) conPerfil(() => irPartyDirecto(sala));
-else inicio();
+
+function arrancar() {
+  if (directo) conPerfil(() => irPartyDirecto(sala));
+  // La primera vez, lo primero es crear tu perfil.
+  else if (!perfil) editarPerfil(inicio);
+  else inicio();
+}
+if (paraInstalar && !enApp) pantallaInstalar();
+else arrancar();
 // Aunque no entremos a una partida, si estamos en el ordenador de PARTY, guardamos el diccionario.
 if (baseLocal) actualizarPaquete(baseLocal, cambioPaquete).catch(() => {});

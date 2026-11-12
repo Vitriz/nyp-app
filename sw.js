@@ -2,9 +2,10 @@
 // El juego (local/) vive en "nyp-juego-local": viene con la app y PARTY lo actualiza al jugar en grupo.
 // La build (herramientas/preparar-carcasa.js) pone aquí una huella de los archivos: si cambia algo,
 // el móvil instala la versión nueva.
-const VERSION = "b3a07b48f6";
+const VERSION = "fd99fb44c9";
 const CACHE = "nyp-carcasa-v3-" + VERSION;
-const CACHE_LOCAL = "nyp-juego-local";
+// Cada versión guarda el juego aparte: así nunca se mezclan archivos de dos versiones.
+const CACHE_LOCAL = "nyp-juego-local-" + VERSION;
 const BASICOS = ["./", "index.html", "cargador.js", "manifest.webmanifest", "iconos/icono.svg", "iconos/icono-192.png", "iconos/icono-512.png"];
 
 async function guardarJuego() {
@@ -24,7 +25,9 @@ self.addEventListener("install", (ev) =>
 );
 self.addEventListener("activate", (ev) =>
   ev.waitUntil(
-    caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith("nyp-carcasa") && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())
+    caches.keys().then((ks) =>
+      Promise.all(ks.filter((k) => (k.startsWith("nyp-carcasa") && k !== CACHE) || (k.startsWith("nyp-juego-local") && k !== CACHE_LOCAL)).map((k) => caches.delete(k)))
+    ).then(() => self.clients.claim())
   )
 );
 self.addEventListener("fetch", (ev) => {

@@ -518,3 +518,15 @@ html, body { height: 100dvh; }
   .sel-desc { font-size: 1.1rem; -webkit-line-clamp: 6; }
   .sel-jugar { min-height: 4rem; font-size: 1.55rem; }
 }
+
+/* ---------- descargar la app ---------- */
+.instalar { margin-top: 0.4rem; }
+.instalar-pantalla { text-align: center; align-items: stretch; }
+.instalar-titulo { margin: 0; font-size: 2rem; }
+.instalar-sub { margin: 0; }
+.instalar-pasos { display: flex; flex-direction: column; gap: 0.7rem; align-items: stretch; }
+.instalar-pasos p { margin: 0; font-weight: 700; }
+.instalar-lista { text-align: left; margin: 0; padding: 0.9rem 1rem 0.9rem 2.4rem; display: flex; flex-direction: column; gap: 0.6rem;
+  font-size: 1.1rem; line-height: 1.35; background: #17346f; border: 2px solid rgba(160, 190, 255, 0.22); border-radius: var(--radio); }
+.instalar-lista b { color: var(--oro); }
+.icono-compartir { display: inline-grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 0.3em; background: rgba(255, 255, 255, 0.15); font-weight: 900; }
