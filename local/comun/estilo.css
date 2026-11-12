@@ -1,0 +1,270 @@
+/* NYP · estilo común (TV y móvil)
+   Azul de concurso, poco contraste general; las fichas con letras y números
+   sí tienen mucho contraste para que se lean bien desde lejos. */
+
+:root {
+  --fondo-1: #0b1d4f;
+  --fondo-2: #14306f;
+  --fondo-3: #1d3f86;
+  --superficie: rgba(120, 160, 255, 0.10);
+  --superficie-2: rgba(120, 160, 255, 0.16);
+  --borde-suave: rgba(160, 190, 255, 0.28);
+  --texto: #e8eeff;
+  --texto-suave: #a9bbe6;
+  --ficha: #f3f6ff;
+  --ficha-2: #dde6fb;
+  --ficha-texto: #0d2560;
+  --ficha-borde: #0a1b4a;
+  --acento: #5fb7d0;
+  --acento-texto: #06283a;
+  --bien: #6cc49a;
+  --mal: #e46a62;
+  --oro: #e9c75a;
+  --plata: #c9d3e6;
+  --bronce: #d79a64;
+  --radio: 0.7em;
+  --radio-ficha: 0.28em;
+  --sombra: 0 0.35em 0 rgba(4, 12, 40, 0.45);
+  --fuente: "Segoe UI", "SF Pro Rounded", "Nunito", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fuente-ficha: "Segoe UI Black", "Arial Black", "SF Pro Display", system-ui, Roboto, sans-serif;
+  --curva: cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 0%, var(--fondo-3) 0%, var(--fondo-2) 45%, var(--fondo-1) 100%) fixed;
+  background-color: var(--fondo-1);
+  color: var(--texto);
+  font-family: var(--fuente);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+#fondo {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#app { position: relative; z-index: 1; height: 100%; }
+
+/* ---------- pantallas y transiciones ---------- */
+.pantalla {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  will-change: transform, opacity;
+}
+.pantalla.entra { animation: entrar 520ms var(--curva) both; }
+.pantalla.sale { animation: salir 320ms ease-in both; pointer-events: none; }
+@keyframes entrar { from { opacity: 0; transform: translateY(2.5%) scale(0.985); } }
+@keyframes salir { to { opacity: 0; transform: translateY(-2%) scale(0.99); } }
+
+/* ---------- fichas (letras / números) ---------- */
+.ficha {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.45em;
+  height: 1.45em;
+  padding: 0 0.2em;
+  border-radius: var(--radio-ficha);
+  background: linear-gradient(180deg, #ffffff 0%, var(--ficha) 55%, var(--ficha-2) 100%);
+  color: var(--ficha-texto);
+  border: 0.07em solid var(--ficha-borde);
+  box-shadow: inset 0 -0.08em 0 rgba(13, 37, 96, 0.18), 0 0.08em 0 rgba(4, 12, 40, 0.55);
+  font-family: var(--fuente-ficha);
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.ficha.oscura {
+  background: linear-gradient(180deg, #1e4196, #12306f);
+  color: #fff;
+  border-color: #6f92e6;
+}
+
+/* ---------- tarjetas y botones ---------- */
+.tarjeta {
+  background: var(--superficie);
+  border: 2px solid var(--borde-suave);
+  border-radius: var(--radio);
+  backdrop-filter: blur(2px);
+}
+
+.boton {
+  appearance: none;
+  font: inherit;
+  font-weight: 800;
+  color: var(--ficha-texto);
+  background: linear-gradient(180deg, #ffffff, var(--ficha-2));
+  border: 3px solid var(--ficha-borde);
+  border-radius: var(--radio);
+  padding: 0.55em 1.1em;
+  min-height: 3.2rem;
+  box-shadow: var(--sombra);
+  cursor: pointer;
+  transition: transform 120ms var(--curva), box-shadow 120ms var(--curva), filter 160ms;
+  touch-action: manipulation;
+  position: relative;
+  overflow: hidden;
+}
+.boton:active, .boton.pulsado { transform: translateY(0.2em); box-shadow: 0 0.12em 0 rgba(4, 12, 40, 0.45); }
+.boton:disabled { opacity: 0.45; cursor: default; }
+.boton.acento { background: linear-gradient(180deg, #8ed3e6, var(--acento)); color: var(--acento-texto); }
+.boton.suave {
+  background: var(--superficie-2);
+  color: var(--texto);
+  border-color: var(--borde-suave);
+  box-shadow: none;
+}
+.boton.suave:active { transform: scale(0.97); }
+.boton:focus-visible { outline: 3px solid var(--oro); outline-offset: 3px; }
+
+/* botón de mantener pulsado: se rellena mientras se mantiene */
+.boton.mantener { touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.boton.mantener::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(228, 106, 98, 0.35);
+  transform-origin: left;
+  transform: scaleX(var(--progreso, 0));
+}
+
+/* ---------- avatares ---------- */
+.avatar {
+  --c: var(--acento);
+  display: inline-grid;
+  place-items: center;
+  width: 2.4em;
+  height: 2.4em;
+  border-radius: 50%;
+  background: var(--c);
+  color: #0a1b4a;
+  font-weight: 900;
+  border: 0.12em solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0.12em 0 rgba(4, 12, 40, 0.5);
+  flex: none;
+}
+.avatar.desconectado { filter: grayscale(0.9) brightness(0.7); }
+
+/* ---------- reloj circular ---------- */
+.reloj {
+  position: relative;
+  width: 6em;
+  height: 6em;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.reloj svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.reloj .pista { stroke: rgba(160, 190, 255, 0.22); }
+.reloj .arco { stroke: var(--texto); transition: stroke 400ms; }
+.reloj.ultimos .arco { stroke: var(--oro); }
+.reloj .cifra { position: relative; font-size: 1.7em; }
+.reloj.ultimos .cifra { animation: latir 1s ease-in-out infinite; }
+@keyframes latir { 50% { transform: scale(1.12); } }
+
+/* ---------- utilidades ---------- */
+.suave { color: var(--texto-suave); }
+.oculto { display: none !important; }
+.fila { display: flex; align-items: center; gap: 0.8em; }
+.columna { display: flex; flex-direction: column; gap: 0.8em; }
+.centro { display: grid; place-items: center; text-align: center; }
+.rebote { animation: rebote 420ms var(--curva); }
+@keyframes rebote { 30% { transform: scale(1.25); } }
+.sacudir { animation: sacudir 380ms ease; }
+@keyframes sacudir { 20%, 60% { transform: translateX(-0.25em); } 40%, 80% { transform: translateX(0.25em); } }
+.aparece { animation: aparece 520ms var(--curva) both; }
+@keyframes aparece { from { opacity: 0; transform: translateY(0.6em) scale(0.96); } }
+
+.medalla-1 { --c: var(--oro); }
+.medalla-2 { --c: var(--plata); }
+.medalla-3 { --c: var(--bronce); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pantalla.entra, .pantalla.sale, .aparece { animation-duration: 1ms; }
+  .reloj.ultimos .cifra { animation: none; }
+}
+
+/* ---------- sopa de letras (TV y móvil) ---------- */
+.sopa {
+  position: relative; aspect-ratio: 1; width: 100%;
+  background: linear-gradient(180deg, #ffffff, var(--ficha));
+  border: 0.22em solid var(--ficha-borde); border-radius: 0.6em; box-shadow: var(--sombra);
+  touch-action: none; container-type: inline-size;
+}
+.sopa-letras { position: absolute; inset: 2%; display: grid; }
+.sopa-letras span {
+  display: grid; place-items: center; color: var(--ficha-texto);
+  font-family: var(--fuente-ficha); font-weight: 900; font-size: 5.6cqw; line-height: 1;
+}
+.sopa-trazos { position: absolute; inset: 2%; width: 96%; height: 96%; pointer-events: none; }
+.sopa-trazos line { stroke-linecap: round; stroke-width: 0.74; }
+.sopa-marca { opacity: 0.55; }
+.sopa-temporal { opacity: 0.6; stroke: #5fb7d0 !important; }
+
+/* ---------- panal (paraulógico) ---------- */
+.panal { position: relative; width: 100%; aspect-ratio: 1; container-type: inline-size; }
+.hex {
+  position: absolute; aspect-ratio: 0.866 / 1; padding: 0; border: 0; appearance: none; font: inherit;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: linear-gradient(180deg, #8fd3e0, #5fb7d0); color: var(--ficha-texto);
+  display: grid; place-items: center; cursor: pointer; touch-action: manipulation;
+  transition: transform 140ms var(--curva), filter 140ms;
+}
+.hex span { font-family: var(--fuente-ficha); font-weight: 900; font-size: 11cqw; line-height: 1; }
+.hex.centro { background: linear-gradient(180deg, #f08a83, #e46a62); color: #fff; }
+.hex:active, .hex.toque { animation: toque 260ms var(--curva); }
+@keyframes toque { 40% { transform: scale(0.9); filter: brightness(1.12); } }
+.hex.girar span { animation: girar 420ms var(--curva); }
+@keyframes girar { from { opacity: 0; transform: rotate(-90deg) scale(0.6); } }
+
+/* ---------- laberinto de cálculos (TV y móvil) ---------- */
+.lab { display: grid; gap: 0.12em; aspect-ratio: var(--cols) / var(--filas, var(--cols)); width: 100%; height: auto; }
+.lab > * { display: grid; place-items: center; min-width: 0; min-height: 0; aspect-ratio: 1; font-weight: 900; font-variant-numeric: tabular-nums; }
+.lab-num { width: 100%; height: 100%; min-width: 0; padding: 0; font-size: 1em; border-width: 0.06em; }
+.lab-num.era-hueco { background: linear-gradient(180deg, #e3f6fb, #b9e5f1); }
+.lab-op { color: var(--texto-suave); font-size: 1.1em; border-radius: 0.3em; }
+.lab-hueco {
+  appearance: none; font: inherit; font-weight: 900; font-size: 1em; color: var(--ficha-texto);
+  width: 100%; height: 100%; border-radius: var(--radio-ficha);
+  background: rgba(255, 255, 255, 0.10); border: 0.08em dashed var(--borde-suave); cursor: pointer;
+}
+.lab-hueco.lleno { background: linear-gradient(180deg, #fff, var(--ficha-2)); border: 0.07em solid var(--ficha-borde); }
+.lab .bien.lab-hueco.lleno, .lab .bien.lab-num { background: linear-gradient(180deg, #d6f5e4, #9be0bd); }
+.lab .bien.lab-op { color: var(--bien); }
+.lab .mal.lab-hueco.lleno { background: linear-gradient(180deg, #ffe1de, #f3aaa4); }
+.lab .mal.lab-op { color: #ff9b94; }
+
+/* ---------- avatar con foto y banner del jugador ---------- */
+.avatar.con-foto { overflow: hidden; padding: 0; }
+.avatar.con-foto img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+.banner {
+  display: inline-flex; align-items: center; gap: 0.6em; padding: 0.35em 1.1em 0.35em 0.35em;
+  border-radius: 3em; background: var(--fondo); color: var(--texto);
+  border: 0.12em solid rgba(255, 255, 255, 0.85); box-shadow: 0 0.15em 0 rgba(4, 12, 40, 0.45);
+  font-weight: 900; max-width: 100%;
+}
+.banner .avatar { border-color: rgba(255, 255, 255, 0.9); }
+.banner-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0.08em 0.1em; }
+/* Contorno opcional de las letras (por si se confunden con el fondo del banner). */
+.con-contorno .banner-nombre, .avatar.con-contorno, .jugador.con-contorno .nombre {
+  text-shadow: 0.07em 0 var(--contorno), -0.07em 0 var(--contorno), 0 0.07em var(--contorno), 0 -0.07em var(--contorno),
+    0.05em 0.05em var(--contorno), -0.05em 0.05em var(--contorno), 0.05em -0.05em var(--contorno), -0.05em -0.05em var(--contorno);
+}

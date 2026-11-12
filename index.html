@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1d4f">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="NYP">
+  <title>NYP</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="iconos/icono.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="iconos/icono-180.png">
+  <style>
+    /* Estilo mínimo mientras se abre el juego. */
+    html, body { margin: 0; height: 100%; background: radial-gradient(120% 90% at 50% 0%, #1d3f86, #14306f 45%, #0b1d4f) fixed; color: #e8eeff;
+      font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden; }
+    #carcasa { position: fixed; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.2rem;
+      padding: calc(env(safe-area-inset-top) + 1rem) 1.2rem calc(env(safe-area-inset-bottom) + 1rem); text-align: center; box-sizing: border-box; }
+    .marca { display: flex; gap: 0.3rem; font-size: 3rem; }
+    .ficha { display: inline-grid; place-items: center; width: 1.45em; height: 1.45em; border-radius: 0.28em; background: linear-gradient(180deg, #fff, #f3f6ff 55%, #dde6fb);
+      color: #0d2560; border: 0.07em solid #0a1b4a; font-family: "Segoe UI Black", "Arial Black", system-ui, sans-serif; font-weight: 900; }
+    .boton { font: inherit; font-weight: 800; font-size: 1.2rem; color: #06283a; background: linear-gradient(180deg, #8ed3e6, #5fb7d0); border: 3px solid #0a1b4a;
+      border-radius: 0.7em; padding: 0.7em 1.2em; width: min(100%, 22rem); box-shadow: 0 0.3em 0 rgba(4, 12, 40, 0.45); }
+    .boton.suave { background: rgba(120, 160, 255, 0.16); color: #e8eeff; border-color: rgba(160, 190, 255, 0.35); box-shadow: none; }
+    .campo { font: inherit; font-size: 1.2rem; font-weight: 800; color: #0d2560; background: #f3f6ff; border: 3px solid #0a1b4a; border-radius: 0.7em;
+      padding: 0.6em 0.8em; width: min(100%, 22rem); box-sizing: border-box; text-align: center; }
+    .suave { color: #a9bbe6; }
+    .aviso { color: #ff9b94; font-weight: 700; min-height: 1.3em; }
+    .campo.vacio { color: #8a9bc4; }
+    .teclado { display: flex; flex-direction: column; gap: 0.3rem; width: min(100%, 24rem); }
+    .fila-t { display: flex; gap: 0.25rem; justify-content: center; }
+    .tecla { flex: 1; height: 2.8rem; padding: 0; font: inherit; font-weight: 900; font-size: 1.1rem; color: #0d2560;
+      background: linear-gradient(180deg, #fff, #dde6fb); border: 2px solid #0a1b4a; border-radius: 0.45rem; }
+    .tecla.ancha { flex: 1.6; }
+    #carcasa { overflow-y: auto; justify-content: flex-start; }
+    video { width: min(100%, 22rem); aspect-ratio: 1; object-fit: cover; border-radius: 1rem; border: 4px solid #fff; background: #000; }
+    .oculto { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="carcasa">
+    <div class="marca"><span class="ficha">N</span><span class="ficha">Y</span><span class="ficha">P</span></div>
+    <p id="estado" class="suave">Cargando…</p>
+  </div>
+  <!-- El juego del ordenador se monta aquí -->
+  <canvas id="fondo"></canvas>
+  <main id="app"></main>
+  <div id="sin-conexion" class="oculto">Reconectando…</div>
+  <script type="module" src="cargador.js"></script>
+</body>
+</html>
