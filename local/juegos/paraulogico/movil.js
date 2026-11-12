@@ -1,4 +1,4 @@
-// Paraulógico · móvil: panal, palabra escrita, borrar, mezclar y comprobar.
+// Tutifruti (antes Paraulógico) · móvil: panal, palabra escrita, borrar, mezclar y comprobar.
 import { h } from "../../comun/ui.js";
 import { reiniciarAnim, clave } from "../comun/util.js";
 import { teclasFisicas, sinTilde, ES_LETRA } from "../../comun/teclas.js";
@@ -18,23 +18,26 @@ export function montar(cuerpo, e, ctx) {
     if (texto.length < 16) texto += l;
     pintar();
   });
-  const borrar = h("button.boton.suave", { type: "button", onclick: () => { texto = texto.slice(0, -1); pintar(); } }, "⌫ Borrar");
-  const mezclar = h("button.boton.suave", { type: "button", onclick: () => {
+  const borrar = h("button.boton.suave.pg-borrar", { type: "button", onclick: () => { texto = texto.slice(0, -1); pintar(); } }, "⌫ Borrar");
+  const mezclar = h("button.boton.suave.pg-mezclar", { type: "button", onclick: () => {
     letras = letras.map((x) => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
     panal.mezclar(letras);
   } }, "🔀 Mezclar");
   const comprobar = h("button.boton.acento.pl-comprobar", { type: "button", onclick: probar }, "Comprobar ✓");
   const lista = h("div.pg-lista");
 
+  // Móvil: todo en columna. Ordenador: panal y botones a la izquierda, tus palabras a la derecha.
   cuerpo.append(
     h(
       "div.pg",
-      h("div.mf-cont", "Puntos", puntos, cuantas),
-      h("div.pl-caja.tarjeta", escrito, aviso),
-      h("div.pg-panal", panal.el),
-      h("div.pg-botones", borrar, mezclar),
-      comprobar,
-      lista
+      h(
+        "div.pg-izq",
+        h("div.mf-cont", "Puntos", puntos, cuantas),
+        h("div.pl-caja.tarjeta", escrito, aviso),
+        h("div.pg-panal", panal.el),
+        h("div.pg-botones", borrar, mezclar, comprobar)
+      ),
+      h("div.pg-der", h("div.pg-lista-titulo", "Tus palabras"), lista)
     )
   );
 
@@ -61,7 +64,11 @@ export function montar(cuerpo, e, ctx) {
     puntos.textContent = d.puntos;
     const n = d.encontradas.length;
     cuantas.textContent = `· ${n} ${n === 1 ? "palabra" : "palabras"}`;
-    lista.replaceChildren(...d.encontradas.map((w) => h(`span.pg-chip${w.tuti ? ".tuti" : ""}`, w.forma.toUpperCase())));
+    lista.replaceChildren(
+      ...(d.encontradas.length
+        ? d.encontradas.map((w) => h(`span.pg-chip${w.tuti ? ".tuti" : ""}`, h("b", w.forma.toUpperCase()), h("small", `+${w.pts}`)))
+        : [h("span.suave.pg-vacia", "Aún ninguna")])
+    );
   }
 
   function probar() {

@@ -165,7 +165,8 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
   }
 
   function tituloEnFichas(texto) {
-    return h("div.titulo-fichas", texto.toUpperCase().split(" ").map((p) => h("div.palabra", [...p].map((l) => h("span.ficha", l)))));
+    const largo = Math.max(...texto.split(" ").map((p) => p.length));
+    return h("div.titulo-fichas", { style: { "--n": largo } }, texto.toUpperCase().split(" ").map((p) => h("div.palabra", [...p].map((l) => h("span.ficha", l)))));
   }
 
   const PANTALLAS = {

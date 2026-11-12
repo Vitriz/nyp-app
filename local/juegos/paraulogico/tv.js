@@ -1,4 +1,4 @@
-// Paraulógico · TV: el panal en grande y la puntuación de cada jugador.
+// Tutifruti (antes Paraulógico) · TV: el panal en grande y la puntuación de cada jugador.
 import { h } from "../../comun/ui.js";
 import { tarjetasJugadores } from "../comun/util.js";
 import { crearPanal } from "./panal.js";

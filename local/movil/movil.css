@@ -49,7 +49,8 @@ html, body { height: 100dvh; }
 .espera h1 { margin: 0; font-size: 2rem; }
 .espera p { margin: 0; font-size: 1.2rem; }
 .instalar { font-size: 0.95rem; padding: 0.8rem 1rem; text-align: left; line-height: 1.4; }
-.titulo-fichas { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.3rem 1rem; font-size: 2.1rem; }
+/* El tamaño se ajusta a la palabra más larga (--n letras): nunca se corta. */
+.titulo-fichas { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.3rem 1rem; font-size: min(2.1rem, calc((var(--ancho) - 2.4rem) / var(--n, 6) / 1.75)); max-width: 100%; }
 .titulo-fichas .palabra { display: flex; gap: 0.25rem; }
 .cuenta-num { font-size: 9rem; }
 .puesto-grande { font-size: 4.5rem; font-weight: 900; line-height: 1; }
@@ -461,3 +462,38 @@ html, body { height: 100dvh; }
   font-size: 1.1rem; line-height: 1.35; background: #17346f; border: 2px solid rgba(160, 190, 255, 0.22); border-radius: var(--radio); }
 .instalar-lista b { color: var(--oro); }
 .icono-compartir { display: inline-grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 0.3em; background: rgba(255, 255, 255, 0.15); font-weight: 900; }
+
+/* ---------- tutifruti (antes paraulógico) ---------- */
+.cuerpo-juego:has(.pg) { container-type: inline-size; }
+.pg { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.pg-izq { display: flex; flex-direction: column; gap: 0.6rem; min-height: 0; }
+.pg-der { flex: 1; min-height: 3rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.pg-lista-titulo { display: none; font-size: 0.8rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: var(--texto-suave); }
+.pg-der .pg-lista { flex: 1; max-height: none; min-height: 2.2rem; }
+.pg-chip { display: inline-flex; align-items: baseline; gap: 0.35rem; }
+.pg-chip small { font-size: 0.75em; font-weight: 900; color: var(--bien); }
+.pg-chip.tuti small { color: var(--oro); }
+.pg-vacia { font-size: 0.9rem; }
+/* Los tres botones en una fila, cada uno con su color */
+.pg-botones { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 0.5rem; }
+.pg-botones .boton { min-height: 3.3rem; padding: 0.3rem; font-size: 1.05rem; }
+.pg-botones .pl-comprobar { font-size: 1.15rem; min-height: 3.3rem; }
+.pg-botones .boton.pg-borrar { border-color: rgba(255, 155, 148, 0.55); color: #ffc4bf; background: rgba(228, 106, 98, 0.14); }
+.pg-botones .boton.pg-mezclar { border-color: rgba(233, 199, 90, 0.5); color: #f3dc94; background: rgba(233, 199, 90, 0.1); }
+
+/* Ordenador: la columna de la app se ensancha y el panal queda a la izquierda, tus palabras a la derecha. */
+@media (min-width: 900px) and (min-aspect-ratio: 1/1) {
+  .pantalla:has(.pg) { --ancho: min(100vw, 62rem); }
+}
+@container (min-width: 40rem) {
+  .pg { flex-direction: row; gap: 1.6rem; }
+  .pg-izq { flex: 1.2 1 0; }
+  .pg-der { flex: 1 1 0; background: #17346f; border: 2px solid rgba(160, 190, 255, 0.22); border-radius: var(--radio); padding: 0.8rem; }
+  .pg-lista-titulo { display: block; }
+  .pg-der .pg-lista { flex-direction: column; flex-wrap: nowrap; gap: 0.35rem; overflow-y: auto; }
+  .pg-der .pg-chip { justify-content: space-between; font-size: 1.05rem; padding: 0.35rem 0.7rem; }
+  .pg-izq .pg-panal { width: min(100%, 26rem, 50dvh); }
+}
+.pg-botones .boton { white-space: nowrap; font-size: 0.95rem; padding: 0.3rem 0.2rem; }
+.pg-botones .pl-comprobar { font-size: 1.05rem; }
+@container (min-width: 40rem) { .pg-botones .boton { font-size: 1.05rem; } .pg-botones .pl-comprobar { font-size: 1.2rem; } }

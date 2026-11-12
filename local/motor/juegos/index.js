@@ -31,7 +31,7 @@ const catalogo = [
   { id: "definicion", nombre: "Definición", categoria: "palabras", duracion: 60 },
   { id: "sopa", nombre: "Sopa de letras", categoria: "palabras", duracion: 90 },
   { id: "revuelto", nombre: "Revuelto", categoria: "palabras", duracion: 60 },
-  { id: "paraulogico", nombre: "Paraulógico", categoria: "palabras", duracion: 120 },
+  { id: "paraulogico", nombre: "Tutifruti", categoria: "palabras", duracion: 120 },
   { id: "calculo-mental", nombre: "Cálculo mental", categoria: "numeros", duracion: 30 },
   { id: "llegar-resultado", nombre: "Llegar al resultado", categoria: "numeros", duracion: 60 },
   { id: "mates-fugaces", nombre: "Mates fugaces", categoria: "numeros", duracion: 60 },
