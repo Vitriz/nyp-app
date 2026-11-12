@@ -1,5 +1,6 @@
 // Mates fugaces · móvil: operación grande, teclado numérico y botón de pasar.
 import { h } from "../../comun/ui.js";
+import { tecladoNumerico } from "../comun/util.js";
 
 export function montar(cuerpo, e, ctx) {
   const ops = e.datos.ops;
@@ -12,11 +13,7 @@ export function montar(cuerpo, e, ctx) {
   const resp = h("div.ficha.mf-resp");
   const pasar = h("button.boton.suave.mf-pasar", { type: "button" }, "Pasar ➜");
 
-  const teclas = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "OK"];
-  const teclado = h(
-    "div.teclado",
-    teclas.map((t) => h(`button.boton${t === "OK" ? ".ok" : ""}`, { type: "button", "data-t": t }, t))
-  );
+  const teclado = tecladoNumerico(pulsar);
 
   const raiz = h("div.mf", h("div.mf-cont", "Aciertos", contador), h("div.mf-op", texto), resp, pasar, teclado);
   cuerpo.append(raiz);
@@ -82,20 +79,6 @@ export function montar(cuerpo, e, ctx) {
     mostrarOp();
   });
 
-  // pointerdown en vez de click: respuesta inmediata al dedo
-  teclado.addEventListener("pointerdown", (ev) => {
-    const b = ev.target.closest("button");
-    if (!b) return;
-    ev.preventDefault();
-    pulsar(b.dataset.t);
-  });
-  const teclaFisica = (ev) => {
-    if (/^\d$/.test(ev.key)) pulsar(ev.key);
-    else if (ev.key === "Backspace") pulsar("⌫");
-    else if (ev.key === "Enter") pulsar("OK");
-  };
-  window.addEventListener("keydown", teclaFisica);
-
   mostrarOp(false);
 
   return {
@@ -107,9 +90,6 @@ export function montar(cuerpo, e, ctx) {
         contador.textContent = aciertos;
         mostrarOp();
       }
-    },
-    desmontar() {
-      window.removeEventListener("keydown", teclaFisica);
     },
   };
 }

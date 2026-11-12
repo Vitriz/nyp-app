@@ -1,5 +1,7 @@
 // Palabra más larga · móvil: fichas de un solo uso, deshacer, borrar todo y comprobar.
 import { h, botonMantener } from "../../comun/ui.js";
+import { teclasFisicas, sinTilde, ES_LETRA } from "../../comun/teclas.js";
+import { clave, reiniciarAnim } from "../comun/util.js";
 
 export function montar(cuerpo, e, ctx) {
   const letras = e.datos.letras;
@@ -51,6 +53,18 @@ export function montar(cuerpo, e, ctx) {
     const b = ev.target.closest(".ficha");
     if (!b || listo) return;
     quitar(Number(b.dataset.pos));
+  });
+
+  // Teclado del ordenador: cada letra coge la primera ficha libre con esa letra.
+  teclasFisicas(raiz, (t) => {
+    if (listo) return false;
+    if (t === "⌫") return quitar(elegidas.length - 1);
+    if (t === "OK") return probar();
+    if (!ES_LETRA.test(t)) return false;
+    const i = letras.findIndex((l, k) => clave(l) === sinTilde(t) && !elegidas.includes(k));
+    if (i < 0) return reiniciarAnim(respuesta, "sacudir");
+    elegidas.push(i);
+    pintar(i);
   });
 
   function quitar(pos) {

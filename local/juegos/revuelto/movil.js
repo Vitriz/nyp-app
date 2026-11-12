@@ -2,6 +2,7 @@
 // Tocas una definición para elegirla y las letras van directo a sus casillas; al llenarlas se comprueba.
 import { h, botonMantener } from "../../comun/ui.js";
 import { huella, reiniciarAnim, clave } from "../comun/util.js";
+import { teclasFisicas, sinTilde, ES_LETRA } from "../../comun/teclas.js";
 
 const COLORES = ["#5fb7d0", "#e7a05c"];
 
@@ -50,6 +51,29 @@ export function montar(cuerpo, e, ctx) {
     if (!a || resueltas[activa] || enUso().has(i) || puestas[activa].length >= a.palabras[activa].largo) return;
     puestas[activa].push(i);
     navigator.vibrate?.(8);
+    pintar();
+    if (puestas[activa].length === a.palabras[activa].largo) comprobar(activa);
+  });
+
+  // Teclado del ordenador: letras a las casillas; ↑ ↓ o Tab cambian de definición.
+  teclasFisicas(tablero, (t) => {
+    const a = d.actual;
+    if (!a) return false;
+    if (t === "ArrowUp" || t === "ArrowDown" || t === "Tab") {
+      const otra = 1 - activa;
+      if (!resueltas[otra]) activa = otra;
+      return pintar();
+    }
+    if (t === "⌫") return (puestas[activa].pop(), pintar());
+    if (!ES_LETRA.test(t) || resueltas[activa] || puestas[activa].length >= a.palabras[activa].largo) return false;
+    const uso = enUso();
+    const i = a.letras.findIndex((l, k) => l === sinTilde(t) && !uso.has(k));
+    if (i < 0) {
+      const c = tarjetas.querySelector(`[data-k="${activa}"] .rv-casillas`);
+      if (c) reiniciarAnim(c, "sacudir");
+      return;
+    }
+    puestas[activa].push(i);
     pintar();
     if (puestas[activa].length === a.palabras[activa].largo) comprobar(activa);
   });

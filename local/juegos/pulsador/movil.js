@@ -1,6 +1,7 @@
 // Pulsador · móvil: la pregunta y un botón enorme para pulsar el primero.
 import { h } from "../../comun/ui.js";
 import { pintarPregunta } from "./tv.js";
+import { teclasFisicas } from "../../comun/teclas.js";
 
 export function montar(cuerpo, e, ctx) {
   const pregunta = h("div.pul-m-pregunta");
@@ -18,6 +19,12 @@ export function montar(cuerpo, e, ctx) {
     navigator.vibrate?.(30);
     boton.classList.add("pulsado");
     ctx.enviar({ a: "pulsar" });
+  });
+
+  // En el ordenador: espacio o Enter para pulsar.
+  teclasFisicas(boton, (t, ev) => {
+    if ((t !== " " && t !== "OK") || ev.repeat) return false;
+    boton.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true }));
   });
 
   function actualizar(e) {

@@ -1,5 +1,6 @@
 // Campo de texto con teclado propio de la app: nunca se abre el teclado del móvil.
 import { h } from "./ui.js";
+import { teclasFisicas, marcarTecla, ES_LETRA } from "./teclas.js";
 
 const ACENTOS = { a: "á", e: "é", i: "í", o: "ó", u: "ú", á: "a", é: "e", í: "i", ó: "o", ú: "u" };
 
@@ -53,6 +54,14 @@ export function campoTexto({ valor = "", max = 14, modo = "nombre", alCambiar, a
     ev.preventDefault();
     navigator.vibrate?.(6);
     pulsar(b.dataset.t);
+  });
+
+  // En el ordenador, con el teclado de verdad (las tildes se escriben tal cual).
+  teclasFisicas(teclado, (t) => {
+    const vale = t === "⌫" || (t === "OK" && alAceptar) || (modo === "nombre" ? ES_LETRA.test(t) || t === " " : /^[a-zñ0-9-]$/.test(t));
+    if (!vale) return false;
+    marcarTecla(teclado, t);
+    pulsar(t);
   });
 
   pintar();

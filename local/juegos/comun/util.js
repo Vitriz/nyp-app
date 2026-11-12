@@ -1,5 +1,6 @@
 // Piezas compartidas por los juegos (móvil y TV).
 import { h, avatar } from "../../comun/ui.js";
+import { teclasFisicas, marcarTecla, sinTilde, ES_LETRA } from "../../comun/teclas.js";
 
 /** Misma huella que el servidor (FNV-1a), para comprobar respuestas al instante. */
 export function huella(texto) {
@@ -33,8 +34,19 @@ export function tecladoLetras(alPulsar) {
     navigator.vibrate?.(6);
     alPulsar(b.dataset.t);
   });
+  // En el ordenador también se escribe con el teclado.
+  teclasFisicas(el, (t) => {
+    if (el.classList.contains("oculto")) return false;
+    if (t !== "⌫" && !ES_LETRA.test(t)) return false;
+    const l = t === "⌫" ? t : sinTilde(t);
+    marcarTecla(el, l);
+    alPulsar(l);
+  });
   return el;
 }
+
+/** Orden de calculadora: 7 8 9 arriba, 0 abajo. */
+export const TECLAS_NUMEROS = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "⌫", "0", "OK"];
 
 /**
  * Tarjetas de jugadores para la TV con un número que rebota al cambiar.
@@ -77,11 +89,11 @@ export function clave(texto) {
   return out;
 }
 
-/** Teclado numérico grande (1-9, borrar, 0, OK). */
+/** Teclado numérico grande (orden de calculadora, borrar, 0, OK); también con el teclado del ordenador. */
 export function tecladoNumerico(alPulsar) {
   const el = h(
     "div.teclado",
-    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "OK"].map((t) =>
+    TECLAS_NUMEROS.map((t) =>
       h(`button.boton${t === "OK" ? ".ok" : ""}`, { type: "button", "data-t": t }, t)
     )
   );
@@ -91,6 +103,12 @@ export function tecladoNumerico(alPulsar) {
     ev.preventDefault();
     navigator.vibrate?.(6);
     alPulsar(b.dataset.t);
+  });
+  teclasFisicas(el, (t) => {
+    if (el.closest(".oculto")) return false;
+    if (!/^\d$|^⌫$|^OK$/.test(t)) return false;
+    marcarTecla(el, t);
+    alPulsar(t);
   });
   return el;
 }

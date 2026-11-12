@@ -1,6 +1,7 @@
 // Paraulógico · móvil: panal, palabra escrita, borrar, mezclar y comprobar.
 import { h } from "../../comun/ui.js";
-import { reiniciarAnim } from "../comun/util.js";
+import { reiniciarAnim, clave } from "../comun/util.js";
+import { teclasFisicas, sinTilde, ES_LETRA } from "../../comun/teclas.js";
 import { crearPanal } from "./panal.js";
 
 export function montar(cuerpo, e, ctx) {
@@ -36,6 +37,17 @@ export function montar(cuerpo, e, ctx) {
       lista
     )
   );
+
+  // Teclado del ordenador: solo valen las letras del panal.
+  teclasFisicas(escrito, (t) => {
+    if (t === "⌫") return ((texto = texto.slice(0, -1)), pintar());
+    if (t === "OK") return probar();
+    if (!ES_LETRA.test(t)) return false;
+    const l = [d.centro, ...letras].find((x) => clave(x) === sinTilde(t));
+    if (!l) return reiniciarAnim(escrito, "sacudir");
+    if (texto.length < 16) texto += l;
+    pintar();
+  });
 
   function pintar() {
     escrito.replaceChildren(

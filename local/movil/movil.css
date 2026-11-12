@@ -1,8 +1,12 @@
 /* Móvil: letra grande, botones grandes, una mano. */
-html { font-size: clamp(15px, 4.3vw, 22px); }
+/* La letra crece con el ancho del móvil, pero sin pasarse si la pantalla es baja (ordenador). */
+html { font-size: clamp(14px, min(4.3vw, 2.4dvh), 22px); }
 html, body { height: 100dvh; }
+/* Ancho de la app: todo el móvil; en el ordenador, una columna centrada con forma de móvil. */
+:root { --ancho: min(100vw, max(20rem, min(34rem, 64dvh))); }
 
 .pantalla {
+  width: var(--ancho); margin-inline: auto;
   padding: calc(env(safe-area-inset-top) + 0.9rem) 1rem calc(env(safe-area-inset-bottom) + 1rem);
   gap: 1rem;
   overflow: hidden;
@@ -84,7 +88,7 @@ html, body { height: 100dvh; }
 .pl-respuesta {
   --n: 7;
   display: flex; justify-content: center; gap: 0.15em; min-height: 1.5em; width: 100%;
-  font-size: min(2.2rem, calc((100vw - 3.5rem) / var(--n) / 1.62));
+  font-size: min(2.2rem, calc((var(--ancho) - 3.5rem) / var(--n) / 1.62));
 }
 .pl-respuesta .ficha { min-width: 1.4em; width: 1.4em; padding: 0; }
 .pl-hueco { font-size: 1rem; align-self: center; }
@@ -127,7 +131,7 @@ html, body { height: 100dvh; }
 .df-casillas {
   --n: 6;
   display: flex; justify-content: center; gap: 0.15em;
-  font-size: min(2rem, calc((100vw - 3.5rem) / var(--n) / 1.62));
+  font-size: min(2rem, calc((var(--ancho) - 3.5rem) / var(--n) / 1.62));
 }
 .df-casillas .ficha { width: 1.4em; min-width: 1.4em; padding: 0; }
 .df-casillas .ficha.vacia { background: rgba(255, 255, 255, 0.12); border-color: var(--borde-suave); box-shadow: none; }
@@ -167,7 +171,7 @@ html, body { height: 100dvh; }
 }
 .pg-escrito .central { color: #ff8f87; }
 .pg-escrito .cursor { width: 0.08em; height: 1em; background: var(--texto-suave); margin-left: 0.05em; animation: latir 1s steps(2) infinite; }
-.pg-panal { width: min(78vw, 36dvh); align-self: center; }
+.pg-panal { width: min(calc(var(--ancho) * 0.78), 36dvh); align-self: center; }
 .pg-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
 .pg-lista { display: flex; flex-wrap: wrap; gap: 0.3rem 0.4rem; overflow-y: auto; min-height: 2.2rem; max-height: 14dvh; align-content: flex-start; }
 .pg-chip { font-weight: 800; font-size: 0.85rem; padding: 0.1rem 0.45rem; border-radius: 0.4rem; background: var(--superficie); border: 1px solid var(--borde-suave); }
@@ -228,7 +232,7 @@ html, body { height: 100dvh; }
 .pul-m-pregunta .etiqueta { font-size: 0.85rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--texto-suave); }
 .pul-m-centro { flex: 1; display: grid; place-items: center; min-height: 0; }
 .pul-boton {
-  appearance: none; width: min(68vw, 34dvh); aspect-ratio: 1; border-radius: 50%; border: 0.5rem solid #fff;
+  appearance: none; width: min(calc(var(--ancho) * 0.68), 34dvh); aspect-ratio: 1; border-radius: 50%; border: 0.5rem solid #fff;
   background: radial-gradient(circle at 35% 30%, #ff9c95, var(--mal) 60%, #b5403a);
   box-shadow: 0 0.7rem 0 #7d2622, 0 1rem 2rem rgba(0, 0, 0, 0.35);
   color: #fff; font: inherit; font-family: var(--fuente-ficha); font-size: 2.2rem; font-weight: 900;
@@ -286,11 +290,11 @@ html, body { height: 100dvh; }
 .paleta .color-rueda { background: radial-gradient(circle, var(--c) 0 38%, transparent 40%), conic-gradient(red, yellow, lime, cyan, blue, magenta, red); }
 .selector-color { display: flex; flex-direction: column; gap: 0.7rem; }
 .rueda-panel { display: flex; flex-direction: column; align-items: center; gap: 0.8rem; padding: 0.8rem; border-radius: 1rem; background: rgba(8, 20, 60, 0.45); border: 2px solid var(--borde-suave); }
-.rueda-caja { position: relative; width: min(52vw, 12rem); aspect-ratio: 1; touch-action: none; }
+.rueda-caja { position: relative; width: min(calc(var(--ancho) * 0.52), 12rem); aspect-ratio: 1; touch-action: none; }
 .rueda { width: 100%; height: 100%; display: block; border-radius: 50%; }
 .rueda-marca { position: absolute; width: 1.6rem; height: 1.6rem; border-radius: 50%; border: 0.22rem solid #fff; box-shadow: 0 0 0 0.12rem #0a1b4a; transform: translate(-50%, -50%); pointer-events: none; }
 /* Barra de brillo: de negro al color vivo. */
-.rueda-brillo { -webkit-appearance: none; appearance: none; width: min(70vw, 16rem); height: 1.6rem; border-radius: 1rem; border: 2px solid #fff;
+.rueda-brillo { -webkit-appearance: none; appearance: none; width: min(calc(var(--ancho) * 0.7), 16rem); height: 1.6rem; border-radius: 1rem; border: 2px solid #fff;
   background: linear-gradient(90deg, #000, var(--vivo, #fff)); touch-action: none; margin: 0; }
 .rueda-brillo::-webkit-slider-thumb { -webkit-appearance: none; width: 1.9rem; height: 1.9rem; border-radius: 50%; background: #fff; border: 0.2rem solid #0a1b4a; }
 .rueda-brillo::-moz-range-thumb { width: 1.6rem; height: 1.6rem; border-radius: 50%; background: #fff; border: 0.2rem solid #0a1b4a; }
@@ -324,7 +328,7 @@ html, body { height: 100dvh; }
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
 }
 .rv-tarjeta.resuelta .rv-def { color: var(--bien); font-size: 1.3rem; font-weight: 900; }
-.rv-casillas { --n: 6; display: flex; gap: 0.18em; font-size: min(1.6rem, calc((100vw - 4rem) / var(--n) / 1.3)); }
+.rv-casillas { --n: 6; display: flex; gap: 0.18em; font-size: min(1.6rem, calc((var(--ancho) - 4rem) / var(--n) / 1.3)); }
 .rv-casilla {
   width: 1.15em; height: 1.3em; display: grid; place-items: center; border-radius: 0.2em;
   border: 0.07em dashed var(--borde-suave); font-family: var(--fuente-ficha); font-weight: 900; color: var(--ficha-texto);
@@ -372,7 +376,7 @@ html, body { height: 100dvh; }
 .pl .pl-caja { margin-top: auto; }
 /* Con la pantalla despejada, las definiciones se leen más grandes. */
 .cuerpo-juego .rv-def { font-size: 1.22rem; }
-.cuerpo-juego .rv-casillas { font-size: min(1.9rem, calc((100vw - 4rem) / var(--n) / 1.3)); }
+.cuerpo-juego .rv-casillas { font-size: min(1.9rem, calc((var(--ancho) - 4rem) / var(--n) / 1.3)); }
 .cuerpo-juego .df-texto { font-size: 1.3rem; }
 
 .solo-juego.bloqueado { opacity: 0.6; }
@@ -411,3 +415,8 @@ html, body { height: 100dvh; }
 .cam-disparo { width: 4.6rem; height: 4.6rem; border-radius: 50%; background: #fff; border: 0.35rem solid var(--acento, #5fb7d0); box-shadow: 0 0 0 0.25rem #fff; }
 .cam-disparo:active { transform: scale(0.94); }
 .cam-lateral { width: 3rem; height: 3rem; font-size: 1.3rem; }
+
+/* Tecla pulsada con el teclado del ordenador */
+.tecla-l.pulsada, .teclado .boton.pulsada { transform: translateY(0.12rem); box-shadow: none; filter: brightness(0.9); }
+/* Si aun así algo no cabe (ventana muy baja), se puede deslizar en vez de cortarse. */
+.cuerpo-juego { overflow-y: auto; overflow-x: hidden; }

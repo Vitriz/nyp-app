@@ -1,6 +1,7 @@
 // "Jugar en grupo": entrar a la sala de PARTY con su código (o escaneando el QR de la TV).
 import { h } from "../comun/ui.js";
-import { cifrasDe, formatearCodigo, buscarSala } from "../comun/codigo-sala.js";
+import { cifrasDe, buscarSala } from "../comun/codigo-sala.js";
+import { teclasFisicas, marcarTecla } from "../comun/teclas.js";
 
 /** Del texto (código, enlace con #s=…, enlace del túnel o de la wifi) saca la dirección de PARTY. */
 export function baseDe(texto) {
@@ -77,23 +78,30 @@ export function pantallaGrupo({ baseLocal, aviso: avisoInicial = "", alEntrar, a
         h(`span.codigo-cifra${i === cifras.length ? ".actual" : ""}`, cifras[i] ?? ""),
       ])
     );
-  const teclas = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "OK"];
+  const teclas = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "⌫", "0", "OK"]; // como una calculadora
   const teclado = h(
     "div.teclado-codigo",
     teclas.map((t) => h(`button.tecla-l${t === "⌫" ? ".borrar" : t === "OK" ? ".aceptar" : ""}`, { type: "button", "data-t": t }, t))
   );
-  teclado.addEventListener("pointerdown", (ev) => {
-    const b = ev.target.closest("button");
-    if (!b) return;
-    ev.preventDefault();
-    navigator.vibrate?.(6);
-    const t = b.dataset.t;
+  function pulsar(t) {
     if (t === "OK") return entrar(cifras);
     if (t === "⌫") cifras = cifras.slice(0, -1);
     else if (cifras.length < 6) cifras += t;
     aviso.textContent = "";
     pintarCodigo();
     if (cifras.length === 6) entrar(cifras); // con la última cifra ya entra
+  }
+  teclado.addEventListener("pointerdown", (ev) => {
+    const b = ev.target.closest("button");
+    if (!b) return;
+    ev.preventDefault();
+    navigator.vibrate?.(6);
+    pulsar(b.dataset.t);
+  });
+  teclasFisicas(teclado, (t) => {
+    if (!/^\d$|^⌫$|^OK$/.test(t)) return false;
+    marcarTecla(teclado, t);
+    pulsar(t);
   });
   pintarCodigo();
 
