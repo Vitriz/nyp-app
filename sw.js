@@ -2,7 +2,7 @@
 // El juego (local/) vive en "nyp-juego-local": viene con la app y PARTY lo actualiza al jugar en grupo.
 // La build (herramientas/preparar-carcasa.js) pone aquí una huella de los archivos: si cambia algo,
 // el móvil instala la versión nueva.
-const VERSION = "fc858a74cc";
+const VERSION = "fcdde92a4c";
 const CACHE = "nyp-carcasa-v3-" + VERSION;
 // Cada versión guarda el juego aparte: así nunca se mezclan archivos de dos versiones.
 const CACHE_LOCAL = "nyp-juego-local-" + VERSION;

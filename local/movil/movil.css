@@ -506,3 +506,8 @@ html, body { height: 100dvh; }
 }
 .cm-igual { color: var(--oro); white-space: nowrap; }
 .cm-punto.actual { outline: 0.15rem solid var(--oro); outline-offset: 0.12rem; }
+
+/* Icono del banner más grande */
+.barra-sup .banner .avatar { width: 3.1em; height: 3.1em; margin: -0.4em 0 -0.4em -0.35em; }
+.banner-grande .avatar { width: 3.3em; height: 3.3em; }
+.barra-sup { min-height: 3.4rem; }

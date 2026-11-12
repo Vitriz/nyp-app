@@ -37,12 +37,29 @@ function leerRecords() {
   }
 }
 
-/** Guarda el resultado si es récord. Devuelve el récord anterior (o null). */
-function apuntar(id, r) {
+// Los récords van con su tiempo: no es lo mismo 30 s que 2 minutos ("juego@segundos").
+// Los antiguos (solo "juego") cuentan como récord del tiempo normal de ese juego.
+const TIEMPOS = [30, 45, 60, 90, 120, 180];
+
+function recordDe(records, meta, seg) {
+  return records[`${meta.id}@${seg}`] ?? (seg === meta.duracionBase ? records[meta.id] ?? null : null);
+}
+
+/** Tiempo elegido para cada juego (se recuerda en el móvil). */
+function leerTiempos() {
+  try {
+    return JSON.parse(almacen.leer("nyp-tiempos") ?? "{}");
+  } catch {
+    return {};
+  }
+}
+
+/** Guarda el resultado si es récord para ese tiempo. Devuelve el récord anterior (o null). */
+function apuntar(meta, r) {
   const records = leerRecords();
-  const anterior = records[id] ?? null;
+  const anterior = recordDe(records, meta, meta.duracion);
   if (r.valor != null && (!anterior || r.valor > anterior.valor)) {
-    records[id] = { valor: r.valor, texto: r.texto, fecha: new Date().toISOString().slice(0, 10) };
+    records[`${meta.id}@${meta.duracion}`] = { valor: r.valor, texto: r.texto, fecha: new Date().toISOString().slice(0, 10) };
     almacen.guardar("nyp-records", JSON.stringify(records));
   }
   return anterior;
@@ -71,15 +88,24 @@ export function entrarSolo({ app, perfil, alSalir }) {
     if (!m.diccionario) await actualizarIncluido().catch(() => {});
     const conDiccionario = await cargarDiccionario();
     const records = leerRecords();
+    const tiempos = leerTiempos();
     const juegos = m.juegos.listaJuegos().filter((j) => j.disponible && !SIN_SOLO.has(j.id));
     mostrar({
       el: h(
         "section.solo.solo-sel",
         barra(h("button.icono-btn", { type: "button", onclick: alSalir, "aria-label": "Volver al inicio" }, "✕")),
         selectorJuegos({
-          juegos: juegos.map((j) => ({ ...j, bloqueado: j.categoria === "palabras" && !conDiccionario })),
-          records,
-          alJugar: preparar,
+          juegos: juegos.map((j) => ({ ...j, duracionBase: j.duracion, bloqueado: j.categoria === "palabras" && !conDiccionario })),
+          recordDe: (j, seg) => recordDe(records, j, seg),
+          tiempo: {
+            lista: (j) => [...new Set([...TIEMPOS, j.duracion])].sort((a, b) => a - b),
+            de: (j) => tiempos[j.id] ?? j.duracion,
+            fijar: (j, s) => {
+              tiempos[j.id] = s;
+              almacen.guardar("nyp-tiempos", JSON.stringify(tiempos));
+            },
+          },
+          alJugar: (j) => preparar({ ...j, duracion: tiempos[j.id] ?? j.duracion }),
           alDesbloquear: sinDiccionario,
         })
       ),
@@ -260,7 +286,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
   }
 
   function resultado(meta, r, resumen = null) {
-    const anterior = apuntar(meta.id, r);
+    const anterior = apuntar(meta, r);
     const record = r.valor != null && (!anterior || r.valor > anterior.valor);
     if (record) navigator.vibrate?.([60, 60, 120]);
     mostrar({
@@ -269,7 +295,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
         barra(),
         h(
           "div.espera",
-          h("span.suave", meta.nombre),
+          h("span.suave", `${meta.nombre} · ${meta.duracion} s`),
           h("div.puesto-grande.aparece", record ? "🏆" : r.valor != null ? "👏" : "🙂"),
           h("h1", record ? (anterior ? "¡Nuevo récord!" : "¡Primer récord!") : r.valor != null ? "¡Bien jugado!" : "Esta vez no ha salido"),
           h("p", r.texto),

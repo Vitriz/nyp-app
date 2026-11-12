@@ -283,3 +283,6 @@ html, body {
   box-shadow: 0 0.4em 1em rgba(4, 12, 40, 0.55); opacity: 0.95;
 }
 .lab, .lab-banco { touch-action: none; }
+
+/* Banners: el icono (foto o iniciales) más grande, asomando un poco del banner */
+.banner .avatar { width: 2.9em; height: 2.9em; margin: -0.35em 0 -0.35em -0.3em; box-shadow: 0 0.12em 0.35em rgba(4, 12, 40, 0.5); }

@@ -12,13 +12,16 @@ let ultimoId = null; // al volver, la rueda sigue en el último juego
 
 /**
  * juegos: [{ id, nombre, categoria, descripcion, duracion, bloqueado }]
- * records: { id: { texto } } (o null: sin récords, p. ej. en la TV de PARTY)
+ * recordDe(juego, segundos) -> { texto } | null   (sin él no hay récords, p. ej. en la TV de PARTY)
+ * tiempo: { lista: [s…], de(juego) -> s, fijar(juego, s) }   (para elegir la duración; ← → también)
  * textoJugar: texto del botón grande
  * alJugar(juego) / alDesbloquear(juego)
  */
-export function selectorJuegos({ juegos, records = null, textoJugar = "¡Jugar! ▶", alJugar, alDesbloquear }) {
-  records ??= {};
-  const conRecords = arguments[0].records != null;
+export function selectorJuegos({ juegos, recordDe = null, tiempo = null, textoJugar = "¡Jugar! ▶", alJugar, alDesbloquear }) {
+  const conRecords = recordDe != null;
+  const segundosDe = (j) => tiempo?.de(j) ?? j.duracion;
+  const listaDe = (j) => (typeof tiempo?.lista === "function" ? tiempo.lista(j) : tiempo?.lista ?? [j.duracion]);
+  const conCopa = (j) => conRecords && listaDe(j).some((s) => recordDe(j, s));
   const n = juegos.length;
   let sel = Math.max(0, juegos.findIndex((j) => j.id === ultimoId));
   const antes = new Array(n).fill(null);
@@ -30,7 +33,7 @@ export function selectorJuegos({ juegos, records = null, textoJugar = "¡Jugar! 
       { type: "button", "data-i": i, tabindex: -1 },
       h("span.sel-item-icono", j.bloqueado ? "🔒" : ICONOS[j.id] ?? "🎲"),
       h("span.sel-item-nombre", j.nombre),
-      records[j.id] ? h("span.sel-item-copa", "🏆") : null
+      conCopa(j) ? h("span.sel-item-copa", "🏆") : null
     )
   );
   const rueda = h("div.sel-rueda", { role: "listbox", "aria-label": "Juegos" }, h("div.sel-guia"), items);
@@ -41,7 +44,8 @@ export function selectorJuegos({ juegos, records = null, textoJugar = "¡Jugar! 
 
   function pintarFicha() {
     const j = juegos[sel];
-    const r = records[j.id];
+    const seg = segundosDe(j);
+    const r = conRecords ? recordDe(j, seg) : null;
     const jugar = h(
       `button.boton.acento.grande.sel-jugar${j.bloqueado ? ".bloqueado" : ""}`,
       { type: "button", onclick: () => elegir() },
@@ -56,8 +60,19 @@ export function selectorJuegos({ juegos, records = null, textoJugar = "¡Jugar! 
       h("p.sel-desc", j.descripcion),
       h(
         "div.sel-datos",
-        h("div.sel-dato", h("small", "Tiempo"), h("b", `${j.duracion} s`)),
-        conRecords ? h("div.sel-dato.record", h("small", "Tu récord"), h("b", r ? `🏆 ${r.texto}` : "—")) : h("div.sel-dato", h("small", "Tipo"), h("b", j.categoria === "palabras" ? "Palabras" : j.categoria === "pulsador" ? "Pulsador" : "Números"))
+        tiempo
+          ? h(
+              "div.sel-dato.sel-tiempos",
+              h("small", "Tiempo"),
+              h(
+                "div.sel-tiempo-botones",
+                listaDe(j).map((s) =>
+                  h(`button.sel-tiempo${s === seg ? ".elegido" : ""}`, { type: "button", onclick: () => cambiarTiempo(s) }, s < 60 || s % 60 ? `${s} s` : `${s / 60} min`)
+                )
+              )
+            )
+          : h("div.sel-dato", h("small", "Tiempo"), h("b", `${seg} s`)),
+        conRecords ? h("div.sel-dato.record", h("small", `Tu récord en ${seg < 60 || seg % 60 ? `${seg} s` : `${seg / 60} min`}`), h("b", r ? `🏆 ${r.texto}` : "—")) : h("div.sel-dato", h("small", "Tipo"), h("b", j.categoria === "palabras" ? "Palabras" : j.categoria === "pulsador" ? "Pulsador" : "Números"))
       ),
       jugar
     );
@@ -65,6 +80,20 @@ export function selectorJuegos({ juegos, records = null, textoJugar = "¡Jugar! 
     void ficha.offsetWidth;
     ficha.classList.add("cambia");
     contador.textContent = `${sel + 1} / ${n}`;
+  }
+
+  function cambiarTiempo(s) {
+    const j = juegos[sel];
+    if (!tiempo || j.bloqueado || s == null) return;
+    tiempo.fijar(j, s);
+    navigator.vibrate?.(5);
+    pintarFicha();
+  }
+  function pasoTiempo(paso) {
+    if (!tiempo) return false;
+    const l = listaDe(juegos[sel]);
+    const i = l.indexOf(segundosDe(juegos[sel]));
+    cambiarTiempo(l[Math.max(0, Math.min(l.length - 1, (i < 0 ? 0 : i) + paso))]);
   }
 
   function colocar() {
@@ -148,8 +177,10 @@ export function selectorJuegos({ juegos, records = null, textoJugar = "¡Jugar! 
 
   // ---- teclado del ordenador
   teclasFisicas(rueda, (t) => {
-    if (t === "ArrowUp" || t === "ArrowLeft") return mover(-1);
-    if (t === "ArrowDown" || t === "ArrowRight") return mover(1);
+    if (t === "ArrowUp") return mover(-1);
+    if (t === "ArrowDown") return mover(1);
+    if (t === "ArrowLeft") return tiempo ? pasoTiempo(-1) : mover(-1);
+    if (t === "ArrowRight") return tiempo ? pasoTiempo(1) : mover(1);
     if (t === "PageUp") return mover(-3);
     if (t === "PageDown") return mover(3);
     if (t === "OK" || t === " ") return elegir();
@@ -168,7 +199,7 @@ export function selectorJuegos({ juegos, records = null, textoJugar = "¡Jugar! 
       "div.sel-lista",
       h("div.sel-titulo", h("span", "Elige juego"), contador),
       rueda,
-      h("p.sel-ayuda", "↑ ↓ para elegir · Enter para jugar")
+      h("p.sel-ayuda", tiempo ? "↑ ↓ juego · ← → tiempo · Enter para jugar" : "↑ ↓ para elegir · Enter para jugar")
     )
     )
   );

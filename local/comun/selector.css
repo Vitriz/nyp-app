@@ -16,7 +16,7 @@
 }
 .sel-cat { display: inline-block; font-size: 0.75rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.1rem 0.5rem; border-radius: 1rem; background: rgba(95, 183, 208, 0.2); color: #8ed3e6; }
 .sel-nombre { margin: 0.15rem 0 0; font-size: 1.7rem; line-height: 1.05; }
-.sel-desc { margin: 0; font-size: 1rem; line-height: 1.35; color: var(--texto-suave); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.sel-desc { margin: 0; font-size: 1rem; line-height: 1.35; color: var(--texto-suave); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .sel-datos { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem; }
 .sel-dato { display: flex; flex-direction: column; gap: 0.1rem; padding: 0.4rem 0.7rem; border-radius: 0.7rem; background: rgba(8, 20, 60, 0.45); border: 1px solid var(--borde-suave); min-width: 0; }
 .sel-dato small { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--texto-suave); }
@@ -68,3 +68,12 @@
   .sel-desc { font-size: 1.1rem; -webkit-line-clamp: 6; }
   .sel-jugar { min-height: 4rem; font-size: 1.55rem; }
 }
+
+/* Tiempo de la partida (modo solo): botones pequeños */
+.sel-datos:has(.sel-tiempos) { grid-template-columns: 1fr; }
+.sel-tiempo-botones { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.2rem; }
+.sel-tiempo {
+  appearance: none; font: inherit; font-weight: 900; font-size: 0.95rem; padding: 0.3rem 0.65rem; border-radius: 0.6rem; cursor: pointer;
+  color: var(--texto); background: rgba(120, 160, 255, 0.14); border: 2px solid var(--borde-suave);
+}
+.sel-tiempo.elegido { background: linear-gradient(180deg, #fff, var(--ficha-2)); color: var(--ficha-texto); border-color: var(--oro); }
