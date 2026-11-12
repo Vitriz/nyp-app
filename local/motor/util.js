@@ -1,6 +1,11 @@
 // Utilidades compartidas del servidor.
 
 /** Generador pseudoaleatorio reproducible (mulberry32). */
+/** Dificultad de la partida: -1 fácil, 0 normal, 1 difícil. */
+export function nivelDificultad(config) {
+  return { facil: -1, normal: 0, dificil: 1 }[config?.dificultad] ?? 0;
+}
+
 export function crearAzar(semilla = Date.now()) {
   let a = semilla >>> 0;
   const r = () => {

@@ -26,7 +26,7 @@ async function guardarCopiaLocal(base) {
 
 async function cargarApp(raiz) {
   await Promise.all(
-    ["comun/estilo.css", "movil/movil.css"].map(
+    ["comun/estilo.css", "movil/movil.css", "comun/selector.css"].map(
       (css) =>
         new Promise((ok) => {
           const l = Object.assign(document.createElement("link"), { rel: "stylesheet", href: raiz + css });

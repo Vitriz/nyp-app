@@ -1,6 +1,7 @@
 // CÁLCULO MENTAL · cadenas de operaciones que aparecen una a una, a la vez para todos.
 // Al terminar cada cadena hay unos segundos para dar el resultado (un solo intento).
 // Gana quien acierte más cadenas; si empatan, quien respondió más rápido en total.
+import { nivelDificultad } from "../util.js";
 
 const PASOS = 6;
 const VENTANA = 9000; // ms para responder
@@ -33,13 +34,14 @@ export default {
   tic: 400, // la sala nos refresca a menudo: el reloj de las cadenas es nuestro
   descripcion: "Van apareciendo operaciones una a una: hazlas de cabeza. Al final escribe el resultado. Solo tienes un intento por cadena.",
 
-  crear({ azar, duracion = 75000, inicio = Date.now() }) {
+  crear({ azar, config, duracion = 75000, inicio = Date.now() }) {
+    const d = nivelDificultad(config);
     const n = Math.max(1, Math.min(6, Math.round(duracion / 25000)));
     const tramo = duracion / n;
-    const intervalo = Math.max(1600, Math.min(3200, (tramo - VENTANA - PREVIA - 600) / PASOS));
+    const intervalo = Math.max(1600 - d * 300, Math.min(3200, (tramo - VENTANA - PREVIA - 600) / PASOS) * (1 - d * 0.15));
     const cadenas = [];
     for (let k = 0; k < n; k++) {
-      const c = cadena(azar, Math.min(3, k));
+      const c = cadena(azar, Math.max(0, Math.min(3, k + d)));
       const t0 = inicio + k * tramo + PREVIA;
       const finPasos = t0 + PASOS * intervalo;
       cadenas.push({ ...c, t0, intervalo, finPasos, fin: Math.min(finPasos + VENTANA, inicio + (k + 1) * tramo - 300) });

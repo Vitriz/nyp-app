@@ -1,7 +1,7 @@
 // REVUELTO · dos definiciones y las letras de las dos palabras mezcladas.
 // Todos reciben la misma serie de revueltos. Cada palabra encontrada cuenta 1.
 import { clave, elegirDefiniciones } from "../lexico.js";
-import { huella } from "../util.js";
+import { huella, nivelDificultad } from "../util.js";
 
 export default {
   id: "revuelto",
@@ -10,8 +10,9 @@ export default {
   duracion: 90,
   descripcion: "Las letras de dos palabras están mezcladas. Lee las dos definiciones y encuentra las palabras. Cada letra se usa una vez.",
 
-  crear({ azar }) {
-    const defs = elegirDefiniciones(azar, 40, { largoMin: 4, largoMax: 7, nivelMax: 1 });
+  crear({ azar, config }) {
+    const d = nivelDificultad(config);
+    const defs = elegirDefiniciones(azar, 40, [{ largoMin: 4, largoMax: 5, nivelMax: 1 }, { largoMin: 4, largoMax: 7, nivelMax: 1 }, { largoMin: 5, largoMax: 8, nivelMax: 2 }][d + 1]);
     const revueltos = [];
     for (let k = 0; k + 1 < defs.length; k += 2) {
       const [a, b] = [defs[k], defs[k + 1]];

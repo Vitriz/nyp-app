@@ -1,5 +1,6 @@
 // MATES FUGACES · operaciones rápidas con resultado entero entre 0 y 999.
 // Todos reciben la misma serie, en el mismo orden. Gana quien acierte más.
+import { nivelDificultad } from "../util.js";
 
 const SIMBOLO = { "+": "+", "-": "−", "*": "×", "/": "÷" };
 
@@ -47,9 +48,12 @@ export default {
   duracion: 60,
   descripcion: "Van apareciendo operaciones. Escribe el resultado y pulsa OK. Si una se te atraganta, pásala. Gana quien acierte más.",
 
-  crear({ azar }) {
+  crear({ azar, config }) {
+    // Fácil: sumas y restas más tiempo y techo más bajo; difícil: empieza más arriba y sube antes.
+    const d = nivelDificultad(config);
+    const [base, cada, techo] = [[0, 10, 2], [0, 6, 3], [1, 4, 3]][d + 1];
     const ops = [];
-    for (let i = 0; i < 200; i++) ops.push(operacion(azar, Math.min(3, Math.floor(i / 6))));
+    for (let i = 0; i < 200; i++) ops.push(operacion(azar, Math.min(techo, base + Math.floor(i / cada))));
     return { ops, jugadores: {} };
   },
 

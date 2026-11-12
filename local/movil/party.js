@@ -95,11 +95,13 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
 
   function pintar(e) {
     if (!e.yo) return;
-    let clave = e.fase;
-    if (e.fase === "jugando" || e.fase === "cuenta") clave += `-${e.rondaN}`;
-    if (e.fase === "presentacion") clave += `-${e.juego?.id}`;
-    if (e.fase === "clasificacion" || e.fase === "lobby") clave = "espera";
-    const p = mostrar(clave, () => PANTALLAS[e.fase === "clasificacion" ? "lobby" : e.fase](e));
+    let fase = e.fase === "clasificacion" || e.fase === "nueva" ? "lobby" : e.fase;
+    // Torneo: quien está eliminado mira la partida en la TV.
+    if (e.yo.eliminado && ["presentacion", "cuenta", "jugando"].includes(e.fase)) fase = "eliminado";
+    let clave = fase === "lobby" ? "espera" : fase;
+    if (fase === "jugando" || fase === "cuenta") clave += `-${e.rondaN}`;
+    if (fase === "presentacion") clave += `-${e.juego?.id}`;
+    const p = mostrar(clave, () => PANTALLAS[fase](e));
     p.actualizar?.(e);
   }
 
@@ -173,7 +175,8 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
       const lista = h("div.lista-mini");
       const equipos = h("div.elegir-equipo");
       const grande = bannerVivo(".banner-grande");
-      const el = h("section", barra.el, h("div.espera", grande.el, h("p.suave", "Esperando al presentador…"), equipos, puesto, lista));
+      const mensaje = h("p.suave", "Esperando al presentador…");
+      const el = h("section", barra.el, h("div.espera", grande.el, mensaje, equipos, puesto, lista));
       return {
         el,
         actualizar(e) {
@@ -181,6 +184,13 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
           grande.actualizar(e.yo);
           const yo = e.jugadores.find((j) => j.id === e.yo.id);
           puesto.textContent = e.yo.puntos ? `Vas ${textoPuesto(yo?.puesto)} con ${e.yo.puntos} puntos` : "";
+          const t = e.sala ?? {};
+          mensaje.textContent =
+            e.fase === "nueva" ? "Preparando la sala…"
+            : t.campeon ? (t.campeon === e.yo.id ? "🏆 ¡Has ganado el torneo!" : `🏆 Campeón: ${e.jugadores.find((j) => j.id === t.campeon)?.nombre ?? ""}`)
+            : e.yo.eliminado ? (t.eliminadoRonda === e.yo.id ? "❌ Te ha tocado: quedas eliminado" : "Estás eliminado del torneo")
+            : t.modo === "torneo" ? "Torneo: el peor de cada prueba queda eliminado"
+            : "Esperando al presentador…";
           equipos.replaceChildren(
             ...(e.equipos && e.fase !== "clasificacion"
               ? [
@@ -211,6 +221,16 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
           );
         },
       };
+    },
+
+    eliminado(e) {
+      const barra = barraSuperior(e);
+      const el = h(
+        "section",
+        barra.el,
+        h("div.espera", h("div.puesto-grande", "👀"), h("h1", "Estás eliminado"), h("p.suave", "Sigue el torneo en la TV. ¡A la próxima!"))
+      );
+      return { el, actualizar: (e) => barra.actualizar(e) };
     },
 
     presentacion(e) {

@@ -1,6 +1,7 @@
 // LABERINTO DE CÁLCULOS · ecuaciones cruzadas (A op B = C) en horizontal y vertical.
 // Algunos números vienen puestos; los huecos se rellenan con los números del banco.
 // Gana quien complete más ecuaciones correctas.
+import { nivelDificultad } from "../util.js";
 
 const TAM = 9; // rejilla máxima 9×9 para que se lea bien en el móvil
 const MAXV = 99;
@@ -129,15 +130,15 @@ function asignarValores(azar, celdas, ecs) {
   }
 }
 
-function generar(azar) {
+function generar(azar, d = 0) {
   for (let intento = 0; intento < 80; intento++) {
-    const { celdas, ecs } = colocarEcuaciones(azar, 7);
-    if (ecs.length < 5) continue;
+    const { celdas, ecs } = colocarEcuaciones(azar, [5, 7, 9][d + 1]);
+    if (ecs.length < [4, 5, 6][d + 1]) continue;
     const valores = asignarValores(azar, celdas, ecs);
     if (!valores) continue;
     // Huecos: aproximadamente la mitad de los números, al menos uno por ecuación.
     const nums = [...valores.keys()];
-    const huecos = new Set(azar.barajar(nums).slice(0, Math.round(nums.length * 0.5)));
+    const huecos = new Set(azar.barajar(nums).slice(0, Math.round(nums.length * [0.35, 0.5, 0.65][d + 1])));
     for (const ec of ecs) {
       const propios = [ec.celdas[0], ec.celdas[2], ec.celdas[4]];
       if (!propios.some((k) => huecos.has(k))) huecos.add(azar.elegir(propios));
@@ -154,8 +155,8 @@ export default {
   duracion: 120,
   descripcion: "Completa las operaciones cruzadas con los números del banco. Cada operación se lee de izquierda a derecha o de arriba abajo.",
 
-  crear({ azar }) {
-    const g = generar(azar);
+  crear({ azar, config }) {
+    const g = generar(azar, nivelDificultad(config));
     const lista = [...g.celdas.values()];
     const r0 = Math.min(...lista.map((x) => x.r)), c0 = Math.min(...lista.map((x) => x.c));
     const filas = Math.max(...lista.map((x) => x.r)) - r0 + 1;

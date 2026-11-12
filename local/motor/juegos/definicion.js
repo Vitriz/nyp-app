@@ -1,7 +1,7 @@
 // DEFINICIÓN · todos reciben la misma lista de definiciones, en el mismo orden.
 // Cada palabra acertada vale 3; cada pista (desvela una letra) resta 1, sin bajar de 1.
 import { clave, elegirDefiniciones } from "../lexico.js";
-import { huella } from "../util.js";
+import { huella, nivelDificultad } from "../util.js";
 
 const VALOR = 3;
 
@@ -12,8 +12,9 @@ export default {
   duracion: 60,
   descripcion: "Lee la definición y escribe la palabra. Cada pista desvela una letra pero resta. Gana quien sume más.",
 
-  crear({ azar }) {
-    const palabras = elegirDefiniciones(azar, 40, { largoMin: 4, largoMax: 10, nivelMax: 1 }).map((d) => ({
+  crear({ azar, config }) {
+    const d = nivelDificultad(config);
+    const palabras = elegirDefiniciones(azar, 40, [{ largoMin: 4, largoMax: 7, nivelMax: 1 }, { largoMin: 4, largoMax: 10, nivelMax: 1 }, { largoMin: 6, largoMax: 12, nivelMax: 2 }][d + 1]).map((d) => ({
       ...d,
       orden: azar.barajar([...d.clave].map((_, i) => i)), // orden en que se desvelan las letras
     }));

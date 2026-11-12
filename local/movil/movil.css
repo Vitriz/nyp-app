@@ -448,76 +448,7 @@ html, body { height: 100dvh; }
 .solo-chips .pg-chip { font-size: 1rem; padding: 0.15rem 0.55rem; }
 .solo-chips .pg-chip.rara { border-color: var(--oro); color: var(--oro); }
 
-/* ======================================================================
-   Selector de juegos (modo solo): rueda + ficha, como en las recreativas.
-   ====================================================================== */
-.pantalla.solo-sel { --ancho: min(100vw, 68rem); overflow: hidden; gap: 0.8rem; container-type: inline-size; }
-.sel { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.8rem; }
-.sel-lado { flex: none; }
-.sel-lista { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.3rem; }
-
-.sel-ficha { padding: 0.9rem 1rem 1rem; display: flex; flex-direction: column; gap: 0.7rem; background: #17346f; border-color: rgba(160, 190, 255, 0.28); }
-.sel-ficha.cambia { animation: sel-entra 260ms var(--curva); }
-@keyframes sel-entra { from { opacity: 0.3; transform: translateX(-0.6rem); } }
-.sel-cabeza { display: flex; align-items: center; gap: 0.8rem; }
-.sel-icono {
-  flex: none; display: grid; place-items: center; width: 3.6rem; height: 3.6rem; font-size: 2rem; border-radius: 0.9rem;
-  background: linear-gradient(180deg, #fff, var(--ficha-2)); border: 0.15rem solid var(--ficha-borde); box-shadow: 0 0.2rem 0 rgba(4, 12, 40, 0.5);
-}
-.sel-cat { display: inline-block; font-size: 0.75rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.1rem 0.5rem; border-radius: 1rem; background: rgba(95, 183, 208, 0.2); color: #8ed3e6; }
-.sel-nombre { margin: 0.15rem 0 0; font-size: 1.7rem; line-height: 1.05; }
-.sel-desc { margin: 0; font-size: 1rem; line-height: 1.35; color: var(--texto-suave); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.sel-datos { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem; }
-.sel-dato { display: flex; flex-direction: column; gap: 0.1rem; padding: 0.4rem 0.7rem; border-radius: 0.7rem; background: rgba(8, 20, 60, 0.45); border: 1px solid var(--borde-suave); min-width: 0; }
-.sel-dato small { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--texto-suave); }
-.sel-dato b { font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sel-dato.record b { color: var(--oro); }
-.sel-jugar { min-height: 3.4rem; font-size: 1.35rem; }
-.sel-jugar.bloqueado { background: var(--superficie-2); color: var(--texto); }
-
-.sel-titulo { display: flex; justify-content: space-between; align-items: baseline; font-weight: 900; padding: 0 0.3rem; }
-.sel-titulo span:first-child { font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--texto-suave); }
-.sel-contador { font-family: var(--fuente-ficha); color: var(--oro); font-size: 1.1rem; }
-.sel-rueda { position: relative; flex: 1; min-height: 12rem; overflow: hidden; touch-action: none; cursor: grab;
-  mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent); -webkit-mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent); }
-.sel-rueda:active { cursor: grabbing; }
-/* Brillo detrás del juego elegido, fijo en el centro */
-.sel-guia { position: absolute; left: -0.2rem; right: 0.6rem; top: 50%; height: 3.9rem; transform: translateY(-50%); border-radius: 1.2rem;
-  background: radial-gradient(60% 120% at 20% 50%, rgba(233, 199, 90, 0.18), transparent); pointer-events: none; }
-.sel-item {
-  position: absolute; left: 0.3rem; right: 0.8rem; top: 50%; height: 3.3rem; transform-origin: left center;
-  display: flex; align-items: center; gap: 0.7rem; padding: 0 0.9rem 0 0.5rem; text-align: left;
-  font: inherit; font-weight: 900; font-size: 1.1rem; color: var(--texto); cursor: pointer;
-  background: linear-gradient(90deg, rgba(36, 72, 150, 0.95), rgba(23, 52, 111, 0.92));
-  border: 2px solid rgba(160, 190, 255, 0.25); border-left: 0.45rem solid var(--cat, var(--acento)); border-radius: 0.9rem;
-  box-shadow: 0 0.2rem 0 rgba(4, 12, 40, 0.45);
-  transition: transform 300ms var(--curva), opacity 300ms, background 200ms, color 200ms;
-}
-.sel-item.palabras { --cat: #5fb7d0; }
-.sel-item.numeros { --cat: #e7a05c; }
-.sel-item.bloqueado { color: var(--texto-suave); }
-.sel-item-icono { flex: none; display: grid; place-items: center; width: 2.3rem; height: 2.3rem; font-size: 1.3rem; border-radius: 0.6rem; background: rgba(8, 20, 60, 0.45); }
-.sel-item-nombre { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sel-item-copa { flex: none; font-size: 1rem; }
-.sel-item.elegido {
-  background: linear-gradient(180deg, #fff, var(--ficha-2)); color: var(--ficha-texto); border-color: var(--oro); border-left-color: var(--cat);
-  box-shadow: 0 0 0 0.18rem rgba(233, 199, 90, 0.45), 0 0.3rem 0 rgba(4, 12, 40, 0.5), 0 0.6rem 1.6rem rgba(4, 12, 40, 0.45);
-}
-.sel-item.elegido .sel-item-icono { background: rgba(10, 27, 74, 0.08); }
-.sel-ayuda { display: none; margin: 0; text-align: center; font-size: 0.8rem; font-weight: 700; color: var(--texto-suave); }
-@media (hover: hover) and (pointer: fine) { .sel-ayuda { display: block; } }
-
-/* Pantalla ancha (ordenador, tablet): ficha a la izquierda y rueda a la derecha, a toda altura. */
-@container (min-width: 44rem) {
-  .sel { flex-direction: row; align-items: stretch; gap: 1.6rem; }
-  .sel-lado { flex: 1 1 0; display: flex; flex-direction: column; justify-content: center; }
-  .sel-lista { flex: 1 1 0; }
-  .sel-ficha { padding: 1.4rem 1.5rem 1.5rem; gap: 1rem; }
-  .sel-icono { width: 5rem; height: 5rem; font-size: 2.8rem; }
-  .sel-nombre { font-size: 2.3rem; }
-  .sel-desc { font-size: 1.1rem; -webkit-line-clamp: 6; }
-  .sel-jugar { min-height: 4rem; font-size: 1.55rem; }
-}
+.pantalla.solo-sel { --ancho: min(100vw, 68rem); overflow: hidden; gap: 0.8rem; }
 
 /* ---------- descargar la app ---------- */
 .instalar { margin-top: 0.4rem; }

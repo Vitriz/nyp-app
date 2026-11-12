@@ -1,4 +1,5 @@
 // SOPA DE LETRAS · el mismo tablero para todos; gana quien encuentre más palabras.
+import { nivelDificultad } from "../util.js";
 import { elegirDefiniciones } from "../lexico.js";
 
 const DIRECCIONES = [
@@ -41,14 +42,16 @@ export default {
   duracion: 120,
   descripcion: "Busca las palabras escondidas en el tablero. Pueden ir en cualquier dirección. Arrastra el dedo de la primera letra a la última.",
 
-  crear({ azar }) {
-    const tam = 10;
-    const candidatas = elegirDefiniciones(azar, 14, { largoMin: 4, largoMax: 8, nivelMax: 1, categorias: ["Sustantivo", "Adjetivo"] })
+  crear({ azar, config }) {
+    const d = nivelDificultad(config);
+    const tam = [9, 10, 12][d + 1];
+    const cuantas = [6, 8, 10][d + 1];
+    const candidatas = elegirDefiniciones(azar, cuantas + 8, { largoMin: 4, largoMax: Math.min(tam - 1, 8 + d), nivelMax: d > 0 ? 2 : 1, categorias: ["Sustantivo", "Adjetivo"] })
       .sort((a, b) => b.clave.length - a.clave.length);
     // Evitamos palabras contenidas en otras (p. ej. MAR y MARCO).
     const elegidas = [];
     for (const w of candidatas) {
-      if (elegidas.length >= 8) break;
+      if (elegidas.length >= cuantas) break;
       if (elegidas.some((o) => o.clave.includes(w.clave) || w.clave.includes(o.clave))) continue;
       elegidas.push(w);
     }

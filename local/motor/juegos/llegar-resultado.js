@@ -1,6 +1,7 @@
 // LLEGAR AL RESULTADO · con 6 números y + − × ÷, acércate todo lo posible al objetivo.
 // Cada número se usa una vez; los resultados intermedios deben ser enteros positivos.
 // Gana quien quede más cerca (los exactos empatan).
+import { nivelDificultad } from "../util.js";
 
 const SIMBOLO = { "+": "+", "-": "−", "*": "×", "/": "÷" };
 
@@ -54,7 +55,7 @@ export function resolver(numeros, objetivo) {
   return mejor;
 }
 
-function generar(azar) {
+function generar(azar, d = 0) {
   let mejor = null;
   for (let intento = 0; intento < 30; intento++) {
     const grandes = azar.barajar([25, 50, 75, 100]).slice(0, azar.entero(1, 2));
@@ -64,7 +65,7 @@ function generar(azar) {
       if (peques.filter((x) => x === n).length < 2) peques.push(n);
     }
     const numeros = azar.barajar([...peques, ...grandes]);
-    const objetivo = azar.entero(101, 999);
+    const objetivo = azar.entero(...[[50, 300], [101, 999], [300, 999]][d + 1]);
     const sol = resolver(numeros, objetivo);
     if (!mejor || sol.dist < mejor.sol.dist) mejor = { numeros, objetivo, sol };
     if (sol.dist === 0) break;
@@ -79,8 +80,8 @@ export default {
   duracion: 60,
   descripcion: "Combina los números con + − × ÷ para llegar al número objetivo. Cada número se usa una vez. Si nadie llega, gana quien se acerque más.",
 
-  crear({ azar }) {
-    const g = generar(azar);
+  crear({ azar, config }) {
+    const g = generar(azar, nivelDificultad(config));
     return { numeros: g.numeros, objetivo: g.objetivo, solucion: g.sol, jugadores: {} };
   },
 

@@ -5,17 +5,20 @@ import { teclasFisicas } from "../comun/teclas.js";
 
 const ICONOS = {
   "palabra-larga": "🔠", definicion: "📖", sopa: "🔍", revuelto: "🔀", paraulogico: "🐝",
-  "calculo-mental": "🧠", "llegar-resultado": "🎯", "mates-fugaces": "⚡", laberinto: "🧩",
+  "calculo-mental": "🧠", "llegar-resultado": "🎯", "mates-fugaces": "⚡", laberinto: "🧩", pulsador: "🔔",
 };
 const PASO = 3.9; // rem entre elementos de la rueda
 let ultimoId = null; // al volver, la rueda sigue en el último juego
 
 /**
  * juegos: [{ id, nombre, categoria, descripcion, duracion, bloqueado }]
- * records: { id: { texto } }
+ * records: { id: { texto } } (o null: sin récords, p. ej. en la TV de PARTY)
+ * textoJugar: texto del botón grande
  * alJugar(juego) / alDesbloquear(juego)
  */
-export function selectorJuegos({ juegos, records, alJugar, alDesbloquear }) {
+export function selectorJuegos({ juegos, records = null, textoJugar = "¡Jugar! ▶", alJugar, alDesbloquear }) {
+  records ??= {};
+  const conRecords = arguments[0].records != null;
   const n = juegos.length;
   let sel = Math.max(0, juegos.findIndex((j) => j.id === ultimoId));
   const antes = new Array(n).fill(null);
@@ -42,19 +45,19 @@ export function selectorJuegos({ juegos, records, alJugar, alDesbloquear }) {
     const jugar = h(
       `button.boton.acento.grande.sel-jugar${j.bloqueado ? ".bloqueado" : ""}`,
       { type: "button", onclick: () => elegir() },
-      j.bloqueado ? "🔒 Desbloquear" : "¡Jugar! ▶"
+      j.bloqueado ? "🔒 Desbloquear" : textoJugar
     );
     ficha.replaceChildren(
       h(
         "div.sel-cabeza",
         h("span.sel-icono", ICONOS[j.id] ?? "🎲"),
-        h("div", h("span.sel-cat", j.categoria === "palabras" ? "Palabras" : "Números"), h("h2.sel-nombre", j.nombre))
+        h("div", h("span.sel-cat", { palabras: "Palabras", numeros: "Números", pulsador: "Pulsador" }[j.categoria] ?? ""), h("h2.sel-nombre", j.nombre))
       ),
       h("p.sel-desc", j.descripcion),
       h(
         "div.sel-datos",
         h("div.sel-dato", h("small", "Tiempo"), h("b", `${j.duracion} s`)),
-        h("div.sel-dato.record", h("small", "Tu récord"), h("b", r ? `🏆 ${r.texto}` : "—"))
+        conRecords ? h("div.sel-dato.record", h("small", "Tu récord"), h("b", r ? `🏆 ${r.texto}` : "—")) : h("div.sel-dato", h("small", "Tipo"), h("b", j.categoria === "palabras" ? "Palabras" : j.categoria === "pulsador" ? "Pulsador" : "Números"))
       ),
       jugar
     );
@@ -157,6 +160,8 @@ export function selectorJuegos({ juegos, records, alJugar, alDesbloquear }) {
   pintarFicha();
 
   const el = h(
+    "div.sel-caja",
+    h(
     "div.sel",
     h("div.sel-lado", ficha),
     h(
@@ -164,6 +169,7 @@ export function selectorJuegos({ juegos, records, alJugar, alDesbloquear }) {
       h("div.sel-titulo", h("span", "Elige juego"), contador),
       rueda,
       h("p.sel-ayuda", "↑ ↓ para elegir · Enter para jugar")
+    )
     )
   );
   return el;

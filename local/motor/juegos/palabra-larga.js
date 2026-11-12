@@ -1,5 +1,6 @@
 // PALABRA MÁS LARGA · con las letras que salen, forma la palabra más larga que puedas.
 // Cada ficha se usa una vez. Vale cualquier forma: plurales, femeninos, verbos conjugados…
+import { nivelDificultad } from "../util.js";
 import { clave, esValida, formaVisible, palabrasPosibles } from "../lexico.js";
 
 const VOCALES = { a: 12.5, e: 13.7, i: 6.3, o: 8.7, u: 3.9 };
@@ -49,7 +50,7 @@ export default {
   descripcion: "Forma la palabra más larga que puedas con las letras. Cada letra se usa una vez. Valen plurales, femeninos y verbos conjugados.",
 
   crear({ azar, config }) {
-    const n = config?.letrasPalabraLarga ?? 10;
+    const n = config?.letrasPalabraLarga ?? [11, 10, 9][nivelDificultad(config) + 1]; // más letras = más fácil
     return { letras: generarLetras(azar, n), jugadores: {} };
   },
 
