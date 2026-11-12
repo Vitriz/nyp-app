@@ -1,9 +1,6 @@
 // "Jugar en grupo": entrar a la sala de PARTY con su código (o escaneando el QR de la TV).
 import { h } from "../comun/ui.js";
-import { almacen } from "../comun/conexion.js";
-import { campoTexto } from "../comun/teclado.js";
-
-const CLAVE = "nyp-servidor"; // último código usado
+import { cifrasDe, formatearCodigo, buscarSala } from "../comun/codigo-sala.js";
 
 /** Del texto (código, enlace con #s=…, enlace del túnel o de la wifi) saca la dirección de PARTY. */
 export function baseDe(texto) {
@@ -33,43 +30,72 @@ export async function probarBase(base) {
   }
 }
 
-export function ultimoCodigo() {
-  return almacen.leer(CLAVE) ?? "";
+/** Código de números (1234-56), enlace o palabras del túnel → dirección de PARTY comprobada, o null. */
+export async function resolverSala(texto) {
+  const cifras = cifrasDe(texto);
+  const base = cifras && !/[a-z]/i.test(texto) ? await buscarSala(cifras) : baseDe(texto);
+  return base ? probarBase(base) : null;
 }
 
 /**
  * baseLocal: si la app viene del propio ordenador de PARTY, se puede entrar sin código.
  * alEntrar(base) entra en la partida; alVolver() vuelve al inicio.
  */
-export function pantallaGrupo({ baseLocal, codigo = ultimoCodigo(), aviso: avisoInicial = "", alEntrar, alVolver }) {
+export function pantallaGrupo({ baseLocal, aviso: avisoInicial = "", alEntrar, alVolver }) {
   const aviso = h("div.pl-aviso.mal", avisoInicial);
   const estado = h("p.suave.grupo-estado");
   let ocupado = false;
+  let cifras = "";
 
   async function entrar(texto) {
     if (ocupado) return;
-    const base = baseDe(texto);
-    if (!base) {
-      aviso.textContent = "El código son varias palabras unidas con guiones";
+    if (!cifrasDe(texto) && !baseDe(texto)) {
+      aviso.textContent = "El código son 6 números, como 1234-56";
       return;
     }
     ocupado = true;
     aviso.textContent = "";
     estado.textContent = "Buscando la partida…";
-    const ok = await probarBase(base);
+    const base = await resolverSala(texto);
     ocupado = false;
     estado.textContent = "";
-    if (!ok) {
+    if (!base) {
       aviso.textContent = "No encuentro esa partida. ¿Está abierta en la TV?";
+      navigator.vibrate?.([30, 40, 30]);
       return;
     }
-    const sub = base.match(/^https:\/\/([a-z0-9-]+)\.trycloudflare/)?.[1];
-    if (sub) almacen.guardar(CLAVE, sub);
     pararCamara();
     alEntrar(base);
   }
 
-  const campo = campoTexto({ valor: codigo, max: 60, modo: "codigo", placeholder: "palabra-palabra-palabra", alAceptar: entrar });
+  // ---- código de números con teclado propio
+  const visor = h("div.codigo-sala", { role: "textbox", "aria-label": "Código de la sala" });
+  const pintarCodigo = () =>
+    visor.replaceChildren(
+      ...[..."000000"].flatMap((_, i) => [
+        ...(i === 4 ? [h("span.codigo-guion", "–")] : []),
+        h(`span.codigo-cifra${i === cifras.length ? ".actual" : ""}`, cifras[i] ?? ""),
+      ])
+    );
+  const teclas = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "OK"];
+  const teclado = h(
+    "div.teclado-codigo",
+    teclas.map((t) => h(`button.tecla-l${t === "⌫" ? ".borrar" : t === "OK" ? ".aceptar" : ""}`, { type: "button", "data-t": t }, t))
+  );
+  teclado.addEventListener("pointerdown", (ev) => {
+    const b = ev.target.closest("button");
+    if (!b) return;
+    ev.preventDefault();
+    navigator.vibrate?.(6);
+    const t = b.dataset.t;
+    if (t === "OK") return entrar(cifras);
+    if (t === "⌫") cifras = cifras.slice(0, -1);
+    else if (cifras.length < 6) cifras += t;
+    aviso.textContent = "";
+    pintarCodigo();
+    if (cifras.length === 6) entrar(cifras); // con la última cifra ya entra
+  });
+  pintarCodigo();
 
   // ---- cámara (QR de la TV)
   const video = h("video.grupo-camara.oculto", { playsinline: true, muted: true });
@@ -120,7 +146,7 @@ export function pantallaGrupo({ baseLocal, codigo = ultimoCodigo(), aviso: aviso
           texto = window.jsQR(ctx.getImageData(0, 0, lienzo.width, lienzo.height).data, lienzo.width, lienzo.height)?.data ?? null;
         }
       } catch {}
-      if (texto && baseDe(texto)) return entrar(texto);
+      if (texto && (baseDe(texto) || cifrasDe(texto))) return entrar(texto);
       setTimeout(mirar, 250);
     };
     mirar();
@@ -140,10 +166,10 @@ export function pantallaGrupo({ baseLocal, codigo = ultimoCodigo(), aviso: aviso
     video,
     escanear,
     h("p.suave.grupo-ayuda", "o escribe el código que sale en la TV:"),
-    campo.visor,
+    visor,
     estado,
     aviso,
-    h("div.grupo-teclado", campo.teclado)
+    h("div.grupo-teclado", teclado)
   );
   return { el, desmontar: pararCamara };
 }

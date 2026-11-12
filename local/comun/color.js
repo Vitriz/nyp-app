@@ -73,8 +73,8 @@ export function selectorColor({ valor, colores, alCambiar, ninguno = null }) {
       ...(ninguno
         ? [h(`button.color.color-ninguno${actual == null ? ".elegido" : ""}`, { type: "button", "aria-label": ninguno, onclick: () => elegir(null) }, "∅")]
         : []),
-      ...colores.map((c) => h(`button.color${actual === c ? ".elegido" : ""}`, { type: "button", style: { "--c": c }, "aria-label": c, onclick: () => elegir(c) })),
-      botonRueda
+      botonRueda, // la rueda siempre a la vista, al principio
+      ...colores.map((c) => h(`button.color${actual === c ? ".elegido" : ""}`, { type: "button", style: { "--c": c }, "aria-label": c, onclick: () => elegir(c) }))
     );
     botonRueda.classList.toggle("elegido", actual != null && !enLista);
     botonRueda.style.setProperty("--c", actual != null && !enLista ? actual : "transparent");

@@ -3,7 +3,7 @@ import { iniciarFondo } from "../comun/fondo.js";
 import { h, cambiarPantalla, banner, servidor } from "../comun/ui.js";
 import { cargarPerfil, pantallaPerfil } from "./perfil.js";
 import { entrarParty } from "./party.js";
-import { pantallaGrupo, baseDe, probarBase } from "./grupo.js";
+import { pantallaGrupo, resolverSala } from "./grupo.js";
 import { actualizarPaquete } from "../solo/paquete.js";
 
 iniciarFondo({ espaciado: 30 });
@@ -98,11 +98,10 @@ function conPerfil(siguiente) {
 }
 
 // ------------------------------------------------------------------ partida y solo
-function irParty(codigo, aviso = "") {
+function irParty(aviso = "") {
   pantallaCompleta();
   const p = pantallaGrupo({
     baseLocal,
-    ...(codigo ? { codigo } : {}),
     aviso,
     alVolver: inicio,
     alEntrar: (base) => {
@@ -116,12 +115,12 @@ function irParty(codigo, aviso = "") {
 /** Abierta desde el QR de la TV: entramos directo a esa partida. */
 async function irPartyDirecto(texto) {
   pantallaCompleta();
-  const base = texto ? baseDe(texto) : baseLocal;
-  if (base && (base === baseLocal || (await probarBase(base)))) {
+  const base = texto ? await resolverSala(texto) : baseLocal;
+  if (base) {
     carcasa?.alConectar?.(base);
     return entrarParty({ app, base, perfil, alSalir: inicio, alPaquete: cambioPaquete });
   }
-  irParty(base?.match(/^https:\/\/([a-z0-9-]+)\.trycloudflare/)?.[1], "No encuentro esa partida. ¿Está abierta en la TV?");
+  irParty("No encuentro esa partida. ¿Está abierta en la TV?");
 }
 
 async function irSolo() {

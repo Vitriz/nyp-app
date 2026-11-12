@@ -379,8 +379,35 @@ html, body { height: 100dvh; }
 
 /* ---------- jugar en grupo (código de la sala) ---------- */
 .grupo { gap: 0.7rem; overflow-y: auto; align-items: stretch; }
-.grupo .campo-propio { font-size: 1.05rem; word-break: break-all; }
+.codigo-sala { display: flex; justify-content: center; align-items: center; gap: 0.35rem; font-size: 1.8rem; font-weight: 900; }
+.codigo-cifra { display: inline-grid; place-items: center; width: 1.45em; height: 1.75em; border-radius: 0.3em;
+  background: var(--ficha, #fff); color: var(--ficha-texto); border: 0.12em solid #0a1b4a; box-shadow: 0 0.1em 0 rgba(4, 12, 40, 0.45); }
+.codigo-cifra.actual { border-color: var(--oro, #e9c75a); }
+.codigo-guion { color: var(--texto); }
+.teclado-codigo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.45rem; width: min(100%, 20rem); margin: 0 auto; }
+.teclado-codigo .tecla-l { max-width: none; height: 3.3rem; font-size: 1.5rem; }
 .grupo-ayuda { text-align: center; margin: 0.3rem 0 0; }
 .grupo-estado { text-align: center; margin: 0; min-height: 1.2em; }
 .grupo-teclado { margin-top: auto; }
 .grupo-camara { width: min(100%, 18rem); aspect-ratio: 1; object-fit: cover; border-radius: 1rem; border: 4px solid #fff; background: #000; align-self: center; }
+
+/* Colores del perfil: una sola fila (se desliza si no cabe) */
+.colores-perfil .paleta { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.45rem; padding: 0.35rem 0.2rem; scrollbar-width: none; }
+.colores-perfil .paleta::-webkit-scrollbar { display: none; }
+.colores-perfil .paleta .color { flex: 0 0 2.5rem; height: 2.5rem; }
+.partes-color button { font-size: 1rem; }
+
+/* Cámara del perfil con círculo guía */
+.capa-camara { position: fixed; inset: 0; z-index: 50; background: #050d2a; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.2rem;
+  padding: calc(env(safe-area-inset-top) + 1rem) 1rem calc(env(safe-area-inset-bottom) + 1rem); }
+.cam-visor { position: relative; width: min(92vw, 62vh); aspect-ratio: 1; border-radius: 1.2rem; overflow: hidden; background: #000; }
+.cam-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cam-video.espejo { transform: scaleX(-1); }
+/* Todo oscuro menos el círculo (80 % del visor) */
+.cam-circulo { position: absolute; left: 10%; top: 10%; width: 80%; height: 80%; border-radius: 50%; border: 0.25rem solid #fff;
+  box-shadow: 0 0 0 100vmax rgba(5, 13, 42, 0.62); pointer-events: none; }
+.cam-aviso { margin: 0; font-weight: 800; color: var(--texto); }
+.cam-botones { display: flex; align-items: center; justify-content: center; gap: 2.2rem; }
+.cam-disparo { width: 4.6rem; height: 4.6rem; border-radius: 50%; background: #fff; border: 0.35rem solid var(--acento, #5fb7d0); box-shadow: 0 0 0 0.25rem #fff; }
+.cam-disparo:active { transform: scale(0.94); }
+.cam-lateral { width: 3rem; height: 3rem; font-size: 1.3rem; }
