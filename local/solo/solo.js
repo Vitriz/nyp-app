@@ -4,6 +4,7 @@ import { calmarFondo } from "../comun/fondo.js";
 import { almacen } from "../comun/conexion.js";
 import { leerPaquete, diccionarioIncluido, desbloquearDiccionario, actualizarIncluido } from "./paquete.js";
 import { campoTexto } from "../comun/teclado.js";
+import { selectorJuegos } from "./selector.js";
 
 const SIN_SOLO = new Set(["pulsador"]); // necesita presentador y más jugadores
 
@@ -73,21 +74,14 @@ export function entrarSolo({ app, perfil, alSalir }) {
     const juegos = m.juegos.listaJuegos().filter((j) => j.disponible && !SIN_SOLO.has(j.id));
     mostrar({
       el: h(
-        "section.solo",
+        "section.solo.solo-sel",
         barra(h("button.icono-btn", { type: "button", onclick: alSalir, "aria-label": "Volver al inicio" }, "✕")),
-        h("h2.solo-titulo", "Jugar solo"),
-        h(
-          "div.solo-juegos",
-          juegos.map((j) => {
-            const falta = j.categoria === "palabras" && !conDiccionario;
-            return h(
-              `button.boton.suave.solo-juego${falta ? ".bloqueado" : ""}`,
-              { type: "button", onclick: () => (falta ? sinDiccionario() : presentar(j)) },
-              h("b", j.nombre),
-              h("small", falta ? "🔒 Toca para desbloquear" : records[j.id] ? `🏆 ${records[j.id].texto}` : j.categoria === "palabras" ? "Palabras" : "Números")
-            );
-          })
-        )
+        selectorJuegos({
+          juegos: juegos.map((j) => ({ ...j, bloqueado: j.categoria === "palabras" && !conDiccionario })),
+          records,
+          alJugar: preparar,
+          alDesbloquear: sinDiccionario,
+        })
       ),
     });
   }
@@ -147,25 +141,6 @@ export function entrarSolo({ app, perfil, alSalir }) {
         campo.visor,
         aviso,
         h("div.grupo-teclado", campo.teclado)
-      ),
-    });
-  }
-
-  function presentar(meta) {
-    const record = leerRecords()[meta.id];
-    mostrar({
-      el: h(
-        "section",
-        barra(),
-        h(
-          "div.espera",
-          h("span.suave", meta.categoria === "palabras" ? "Prueba de palabras" : "Prueba de números"),
-          h("h1", meta.nombre),
-          h("p", meta.descripcion),
-          h("p.suave", `${meta.duracion} segundos`),
-          record ? h("p", `🏆 Tu récord: ${record.texto}`) : null
-        ),
-        h("div.pl-botones", h("button.boton.suave", { type: "button", onclick: lista }, "Volver"), h("button.boton.acento", { type: "button", onclick: () => preparar(meta) }, "¡Empezar!"))
       ),
     });
   }
@@ -245,7 +220,11 @@ export function entrarSolo({ app, perfil, alSalir }) {
       acabado = true;
       limpiar();
       const r = impl.resultados(ronda, [yo.id])[0];
-      resultado(meta, r);
+      let resumen = null;
+      try {
+        resumen = impl.resumen?.(ronda) ?? null;
+      } catch {}
+      resultado(meta, r, resumen);
     }
 
     calmarFondo(true); // fondo quieto y tenue mientras se juega
@@ -268,7 +247,19 @@ export function entrarSolo({ app, perfil, alSalir }) {
     });
   }
 
-  function resultado(meta, r) {
+  /** Lo que se podía haber hecho (de momento, las palabras más largas). */
+  function solucion(meta, resumen) {
+    if (meta.id !== "palabra-larga" || !resumen?.mejores?.length) return null;
+    const lista = [...resumen.mejores];
+    if (resumen.rara) lista.unshift({ ...resumen.rara, rara: true });
+    return h(
+      "div.solo-solucion.tarjeta",
+      h("small", "Las más largas que se podían formar"),
+      h("div.solo-chips", lista.map((p) => h(`span.pg-chip${p.rara ? ".rara" : ""}`, `${p.forma.toUpperCase()} · ${p.largo}`)))
+    );
+  }
+
+  function resultado(meta, r, resumen = null) {
     const anterior = apuntar(meta.id, r);
     const record = r.valor != null && (!anterior || r.valor > anterior.valor);
     if (record) navigator.vibrate?.([60, 60, 120]);
@@ -283,7 +274,8 @@ export function entrarSolo({ app, perfil, alSalir }) {
           h("h1", record ? (anterior ? "¡Nuevo récord!" : "¡Primer récord!") : r.valor != null ? "¡Bien jugado!" : "Esta vez no ha salido"),
           h("p", r.texto),
           anterior && !record ? h("p.suave", `Tu récord: ${anterior.texto}`) : null,
-          anterior && record ? h("p.suave", `Antes: ${anterior.texto}`) : null
+          anterior && record ? h("p.suave", `Antes: ${anterior.texto}`) : null,
+          solucion(meta, resumen)
         ),
         h(
           "div.pl-botones",

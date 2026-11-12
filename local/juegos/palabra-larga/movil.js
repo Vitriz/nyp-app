@@ -15,7 +15,7 @@ export function montar(cuerpo, e, ctx) {
   const fichas = letras.map((l, i) =>
     h("button.ficha.pl-ficha", { type: "button", "data-i": i }, l.toUpperCase())
   );
-  const tablero = h("div.pl-tablero", fichas);
+  const tablero = h("div.pl-tablero", { style: { "--filas": Math.ceil(letras.length / 5) } }, fichas);
 
   const deshacer = h("button.boton.suave.icono-juego", { type: "button", onclick: () => quitar(elegidas.length - 1), "aria-label": "Deshacer" }, "↶");
   const borrar = botonMantener("🗑", () => {
@@ -34,7 +34,8 @@ export function montar(cuerpo, e, ctx) {
     h("div.pl-pie", mejor, terminar),
     // Lo que escribes, justo encima de las letras.
     h("div.pl-caja.tarjeta", respuesta, aviso),
-    tablero,
+    // La zona de las letras se encoge si la ventana es baja (las fichas nunca se cortan).
+    h("div.pl-zona", tablero),
     h("div.fila-acciones", deshacer, borrar, comprobar)
   );
   cuerpo.append(raiz);
@@ -100,6 +101,8 @@ export function montar(cuerpo, e, ctx) {
       const r = respuesta.getBoundingClientRect();
       ctx.onda(r.left + r.width / 2, r.top + r.height / 2, 1);
       navigator.vibrate?.(20);
+      elegidas = []; // palabra aceptada: el recuadro queda listo para la siguiente
+      pintar();
     } else {
       aviso.className = "pl-aviso mal";
       aviso.textContent = `✘ ${u.motivo}`;

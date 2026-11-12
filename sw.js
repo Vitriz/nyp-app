@@ -2,17 +2,18 @@
 // El juego (local/) vive en "nyp-juego-local": viene con la app y PARTY lo actualiza al jugar en grupo.
 // La build (herramientas/preparar-carcasa.js) pone aquí una huella de los archivos: si cambia algo,
 // el móvil instala la versión nueva.
-const VERSION = "b53d714c6c";
+const VERSION = "b3a07b48f6";
 const CACHE = "nyp-carcasa-v3-" + VERSION;
 const CACHE_LOCAL = "nyp-juego-local";
 const BASICOS = ["./", "index.html", "cargador.js", "manifest.webmanifest", "iconos/icono.svg", "iconos/icono-192.png", "iconos/icono-512.png"];
 
 async function guardarJuego() {
-  const lista = await (await fetch("local/archivos.json", { cache: "no-store" })).json();
+  // ?v= evita que el CDN de GitHub dé un archivo de la versión anterior justo después de publicar.
+  const lista = await (await fetch("local/archivos.json?v=" + VERSION, { cache: "no-store" })).json();
   const c = await caches.open(CACHE_LOCAL);
   await Promise.all(
     lista.map(async (ruta) => {
-      const r = await fetch("local/" + ruta, { cache: "no-store" });
+      const r = await fetch("local/" + ruta + "?v=" + VERSION, { cache: "no-store" });
       if (r.ok) await c.put(new URL("local/" + ruta, self.registration.scope).href, r);
     })
   );
