@@ -497,3 +497,12 @@ html, body { height: 100dvh; }
 .pg-botones .boton { white-space: nowrap; font-size: 0.95rem; padding: 0.3rem 0.2rem; }
 .pg-botones .pl-comprobar { font-size: 1.05rem; }
 @container (min-width: 40rem) { .pg-botones .boton { font-size: 1.05rem; } .pg-botones .pl-comprobar { font-size: 1.2rem; } }
+
+/* ---------- cálculo mental: la operación entera ---------- */
+.cm-expresion {
+  font-family: var(--fuente-ficha); font-weight: 900; text-align: center; line-height: 1.3; letter-spacing: 0.01em;
+  font-size: min(2rem, calc(var(--ancho) / 14)); text-wrap: balance; padding: 0.7rem 0.9rem; border-radius: var(--radio);
+  background: #17346f; border: 2px solid rgba(160, 190, 255, 0.25);
+}
+.cm-igual { color: var(--oro); white-space: nowrap; }
+.cm-punto.actual { outline: 0.15rem solid var(--oro); outline-offset: 0.12rem; }

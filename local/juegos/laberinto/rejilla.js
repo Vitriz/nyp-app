@@ -3,16 +3,29 @@ import { h } from "../../comun/ui.js";
 
 const OPS = { "+": (a, b) => a + b, "−": (a, b) => a - b, "×": (a, b) => a * b, "÷": (a, b) => (b && a % b === 0 ? a / b : NaN) };
 
-export function crearRejilla({ filas, cols, rejilla }, { conHuecos = true } = {}) {
+const COLORES_CAMINO = ["#5fb7d0", "#e7a05c", "#6cc49a", "#c58be0", "#e9c75a", "#f08fb5", "#7c9cf0", "#b4c06a", "#e46a62"];
+
+export function crearRejilla({ filas, cols, rejilla, ecs = [] }, { conHuecos = true } = {}) {
   const el = h("div.lab", { style: { gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${filas}, 1fr)`, "--cols": cols, "--filas": filas } });
   const nodos = new Map();
   const info = new Map(rejilla.map((x) => [x.k, x]));
+  // Caminos: una banda de color por operación, detrás de las casillas; sus signos van del mismo color.
+  ecs.forEach((celdas, n) => {
+    const a = info.get(celdas[0]), b = info.get(celdas[celdas.length - 1]);
+    if (!a || !b) return;
+    const color = COLORES_CAMINO[n % COLORES_CAMINO.length];
+    const banda = h(`span.lab-camino.${a.r === b.r ? "horizontal" : "vertical"}`, { style: { "--c": color } });
+    banda.style.gridRow = `${Math.min(a.r, b.r) + 1} / ${Math.max(a.r, b.r) + 2}`;
+    banda.style.gridColumn = `${Math.min(a.c, b.c) + 1} / ${Math.max(a.c, b.c) + 2}`;
+    el.append(banda);
+    for (const k of [celdas[1], celdas[3]]) info.get(k) && (info.get(k).color = color);
+  });
   for (const x of rejilla) {
     let n;
     if (x.tipo === "num") {
       if (x.texto == null && conHuecos) n = h("button.lab-hueco", { type: "button", "data-k": x.k });
       else n = h(`span.ficha.lab-num${x.hueco ? ".era-hueco" : ""}`, x.texto ?? "");
-    } else n = h("span.lab-op", x.texto);
+    } else n = h("span.lab-op", { style: x.color ? { "--c": x.color } : {} }, x.texto);
     n.style.gridRow = x.r + 1;
     n.style.gridColumn = x.c + 1;
     el.append(n);

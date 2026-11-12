@@ -1,4 +1,4 @@
-// Cálculo mental · móvil: la operación actual en grande y, al final, el teclado para responder.
+// Cálculo mental · móvil: la operación entera (con sus paréntesis) y el teclado para responder.
 import { h } from "../../comun/ui.js";
 import { tecladoNumerico, momentoCadena, reiniciarAnim } from "../comun/util.js";
 
@@ -38,17 +38,16 @@ export function montar(cuerpo, e, ctx) {
     const clave = `${m.k}-${m.fase}-${m.paso ?? ""}-${r ? (r.pendiente ? "p" : r.ok) : ""}-${m.c.resultado ?? ""}`;
     if (clave !== ultimaClave) {
       ultimaClave = clave;
-      etiqueta.textContent = `Cadena ${m.k + 1} de ${d.cadenas.length}`;
-      puntos.replaceChildren(
-        ...m.c.pasos.map((_, i) => h(`span.cm-punto${m.fase !== "pasos" || i <= (m.paso ?? -1) ? ".hecho" : ""}`))
-      );
+      etiqueta.textContent = `Operación ${m.k + 1} de ${d.cadenas.length}`;
+      // Un punto por operación: las ya pasadas, encendidas.
+      puntos.replaceChildren(...d.cadenas.map((_, i) => h(`span.cm-punto${i < m.k || (i === m.k && m.fase === "fin") ? ".hecho" : ""}${i === m.k ? ".actual" : ""}`)));
       zonaResp.classList.toggle("oculto", !(m.fase === "responder" && !r));
       if (m.fase === "previa") grande.replaceChildren(h("span.cm-texto.suave", "Prepárate…"));
       else if (m.fase === "pasos") {
         grande.replaceChildren(h("span.ficha.cm-paso", m.c.pasos[m.paso]));
         reiniciarAnim(grande.firstChild, "aparece");
       } else if (m.fase === "responder" && !r) {
-        grande.replaceChildren(h("span.cm-texto", "¿Resultado?"));
+        grande.replaceChildren(h("div.cm-expresion", m.c.expresion ?? m.c.pasos.join(" "), h("span.cm-igual", " = ?")));
         resp.textContent = respuesta || " ";
       } else if (r && m.c.resultado == null) {
         grande.replaceChildren(h("span.cm-texto", "Respuesta enviada"), h("span.ficha.cm-paso", String(r.valor)));

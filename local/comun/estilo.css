@@ -268,3 +268,18 @@ html, body {
   text-shadow: 0.07em 0 var(--contorno), -0.07em 0 var(--contorno), 0 0.07em var(--contorno), 0 -0.07em var(--contorno),
     0.05em 0.05em var(--contorno), -0.05em 0.05em var(--contorno), 0.05em -0.05em var(--contorno), -0.05em -0.05em var(--contorno);
 }
+
+/* Laberinto: cada operación es un camino de color, para ver qué casillas van juntas */
+.lab > .lab-camino {
+  aspect-ratio: auto; z-index: 0; pointer-events: none; place-self: stretch; margin: -0.06em;
+  border-radius: 0.45em; border: 0.07em solid color-mix(in srgb, var(--c) 75%, transparent);
+  background: color-mix(in srgb, var(--c) 22%, transparent);
+}
+.lab > :not(.lab-camino) { position: relative; z-index: 1; }
+.lab-op { color: var(--c, var(--texto-suave)); text-shadow: 0 0.04em 0 rgba(4, 12, 40, 0.5); }
+.lab-hueco.sobre { outline: 0.12em solid var(--oro); outline-offset: 0.05em; background: rgba(233, 199, 90, 0.25); }
+.lab-fantasma {
+  position: fixed; z-index: 60; pointer-events: none; transform: translate(-50%, -60%) scale(1.12); min-width: 0; padding: 0;
+  box-shadow: 0 0.4em 1em rgba(4, 12, 40, 0.55); opacity: 0.95;
+}
+.lab, .lab-banco { touch-action: none; }

@@ -192,7 +192,7 @@ export default {
 
   vistaTV(ronda) {
     return {
-      filas: ronda.filas, cols: ronda.cols, rejilla: ronda.rejilla,
+      filas: ronda.filas, cols: ronda.cols, rejilla: ronda.rejilla, ecs: ronda.ecs.map((e) => e.celdas),
       total: this.contables(ronda).length,
       jugadores: Object.fromEntries(Object.entries(ronda.jugadores).map(([id, j]) => [id, j.correctas])),
     };
@@ -240,6 +240,6 @@ export default {
   },
 
   resumen(ronda) {
-    return { filas: ronda.filas, cols: ronda.cols, rejilla: ronda.rejilla.map((x) => ({ ...x, texto: x.texto ?? String(ronda.valores[x.k]), hueco: x.texto == null })) };
+    return { filas: ronda.filas, cols: ronda.cols, ecs: ronda.ecs.map((e) => e.celdas), rejilla: ronda.rejilla.map((x) => ({ ...x, texto: x.texto ?? String(ronda.valores[x.k]), hueco: x.texto == null })) };
   },
 };
