@@ -178,6 +178,49 @@ export function piezaCuenta(txt) {
   return h("span.cuenta-ya", h("span.cuenta-ya-rayos"), h("span.cuenta-ya-texto", "¡YA!"));
 }
 
+const sinMovimiento = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** Confeti dorado que cae por toda la pantalla (se quita solo). */
+export function confeti(n = 70) {
+  if (sinMovimiento()) return;
+  const colores = ["#ffd34d", "#f5a623", "#fff3b0", "#5fd68e", "#5aaaf2", "#f47fb0"];
+  const capa = h("div.confeti", { "aria-hidden": "true" });
+  for (let i = 0; i < n; i++) {
+    capa.append(
+      h("i", {
+        style: {
+          left: `${Math.random() * 100}%`,
+          background: colores[i % colores.length],
+          animationDelay: `${Math.random() * 500}ms`,
+          animationDuration: `${1700 + Math.random() * 1300}ms`,
+          "--giro": `${(Math.random() - 0.5) * 1440}deg`,
+          "--deriva": `${(Math.random() - 0.5) * 30}vw`,
+          width: `${0.4 + Math.random() * 0.4}rem`,
+          height: `${0.6 + Math.random() * 0.6}rem`,
+        },
+      })
+    );
+  }
+  document.body.append(capa);
+  setTimeout(() => capa.remove(), 3600);
+}
+
+/** Escribe `texto` en `el` haciendo que su primer número cuente desde 0. */
+export function contarHasta(el, texto) {
+  const m = /\d+/.exec(texto);
+  el.textContent = texto;
+  if (!m || sinMovimiento()) return;
+  const fin = Number(m[0]);
+  const t0 = performance.now(), dur = Math.min(1400, 500 + fin * 25);
+  const paso = (t) => {
+    const k = Math.min(1, (t - t0) / dur);
+    const v = Math.round(fin * (1 - Math.pow(1 - k, 3)));
+    el.textContent = texto.slice(0, m.index) + v + texto.slice(m.index + m[0].length);
+    if (k < 1 && el.isConnected !== false) requestAnimationFrame(paso);
+  };
+  requestAnimationFrame(paso);
+}
+
 export function textoPuesto(p) {
   return p == null ? "–" : `${p}º`;
 }

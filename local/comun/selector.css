@@ -69,28 +69,101 @@
   .sel-jugar { min-height: 4rem; font-size: 1.55rem; }
 }
 
-/* Tiempo y nivel (modo solo): cada uno en su casilla, que gira como una rueda */
-.sel-datos:has(.sel-giro) { grid-template-columns: 1fr 1fr; }
-.sel-datos:has(.sel-giro) .record { grid-column: 1 / -1; }
-.sel-giro { align-items: center; padding: 0.35rem 0.4rem 0.4rem; }
-.sel-giro-caja { display: flex; flex-direction: column; align-items: stretch; width: 100%; }
-.sel-giro-flecha {
-  appearance: none; font: inherit; font-size: 0.85rem; line-height: 1; padding: 0.3rem 0; cursor: pointer; border-radius: 0.5rem;
-  color: var(--texto); background: rgba(120, 160, 255, 0.14); border: 1.5px solid var(--borde-suave);
+/* ======================================================================
+   Estilo más limpio: una sola tarjeta, sin cajas dentro; el dorado solo para lo elegido y los récords.
+   ====================================================================== */
+.sel-ficha {
+  border: none; gap: 0.75rem;
+  background: linear-gradient(160deg, rgba(40, 78, 160, 0.92), rgba(19, 44, 100, 0.92));
+  box-shadow: 0 0.9rem 2.4rem rgba(3, 10, 36, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
-.sel-giro-flecha:active { transform: translateY(0.08rem); }
-.sel-giro-flecha:disabled { opacity: 0.3; cursor: default; }
-.sel-giro-ventana {
-  display: flex; flex-direction: column; align-items: center; overflow: hidden; touch-action: none; cursor: ns-resize; user-select: none;
-  margin: 0.2rem 0; height: 4.4rem; justify-content: center;
-  mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent); -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+.sel-desc { -webkit-line-clamp: unset; display: block; }
+.sel-contador { color: var(--texto-suave); font-size: 0.95rem; }
+
+/* Al cambiar de juego: la ficha entra deslizando y el icono da un saltito */
+.sel-ficha.cambia { animation: sel-entra 320ms var(--curva); }
+@keyframes sel-entra { from { opacity: 0; transform: translateY(0.5rem); } }
+.sel-ficha.cambia .sel-icono { animation: sel-icono 520ms cubic-bezier(0.3, 1.7, 0.5, 1); }
+@keyframes sel-icono { 0% { transform: scale(0.5) rotate(-14deg); } 100% { transform: none; } }
+.sel-ficha.cambia .sel-nombre, .sel-ficha.cambia .sel-desc { animation: sel-texto 380ms var(--curva) both; }
+.sel-ficha.cambia .sel-desc { animation-delay: 60ms; }
+@keyframes sel-texto { from { opacity: 0; transform: translateX(-0.5rem); } }
+
+/* Tu récord: una línea, no una caja */
+.sel-record { margin: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 0.3rem; font-size: 0.98rem; font-weight: 700; min-height: 1.4em; }
+.sel-record b { color: var(--oro); font-weight: 900; }
+.sel-record small { color: var(--texto-suave); font-weight: 700; }
+.sel-record-copa { display: inline-block; }
+.sel-record.cambia { animation: sel-texto 300ms var(--curva); }
+.sel-record.con.cambia .sel-record-copa { animation: sel-icono 600ms cubic-bezier(0.3, 1.7, 0.5, 1); }
+
+/* Tiempo y nivel: dos píldoras en una fila  ⏱ ▲ 1 min ▼ */
+.sel-ajustes { display: flex; gap: 0.5rem; }
+.sel-pildora, .sel-chip {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.15rem; padding: 0.2rem; border-radius: 999px;
+  background: rgba(6, 18, 56, 0.45); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
-.sel-giro-otro { font-weight: 800; font-size: 0.85rem; color: var(--texto-suave); height: 1.2rem; line-height: 1.2rem; white-space: nowrap; }
-.sel-giro-valor {
-  font-family: var(--fuente-ficha); font-weight: 900; font-size: 1.15rem; line-height: 1.9rem; height: 1.9rem; padding: 0 0.7rem; white-space: nowrap;
-  border-radius: 0.55rem; background: linear-gradient(180deg, #fff, var(--ficha-2)); color: var(--ficha-texto); box-shadow: 0 0 0 2px var(--oro);
+.sel-chip { flex: none; padding: 0.45rem 0.9rem; font-weight: 800; }
+.sel-pil-icono { flex: none; width: 1.6rem; text-align: center; font-size: 1rem; opacity: 0.75; }
+.sel-pil-flecha {
+  appearance: none; flex: none; width: 2.75rem; height: 2.75rem; border: none; border-radius: 50%; cursor: pointer;
+  font: inherit; font-size: 0.8rem; color: var(--texto); background: rgba(120, 160, 255, 0.14);
+  transition: background 150ms, transform 120ms;
 }
-.sel-giro-valor.sube { animation: giro-sube 200ms var(--curva); }
-.sel-giro-valor.baja { animation: giro-baja 200ms var(--curva); }
-@keyframes giro-sube { from { transform: translateY(0.9rem); opacity: 0.4; } }
-@keyframes giro-baja { from { transform: translateY(-0.9rem); opacity: 0.4; } }
+.sel-pil-flecha:hover:not(:disabled) { background: rgba(120, 160, 255, 0.26); }
+.sel-pil-flecha:active:not(:disabled) { transform: scale(0.9); }
+.sel-pil-flecha:disabled { opacity: 0.25; cursor: default; }
+.sel-pil-ventana {
+  flex: 1; min-width: 0; height: 2.75rem; display: grid; place-items: center; overflow: hidden;
+  touch-action: none; cursor: ns-resize; user-select: none;
+}
+.sel-pil-valor { font-family: var(--fuente-ficha); font-weight: 900; font-size: 1.15rem; white-space: nowrap; }
+.sel-pil-valor.sube { animation: pil-sube 260ms var(--curva); }
+.sel-pil-valor.baja { animation: pil-baja 260ms var(--curva); }
+@keyframes pil-sube { from { transform: translateY(1.3rem); opacity: 0; } }
+@keyframes pil-baja { from { transform: translateY(-1.3rem); opacity: 0; } }
+
+/* ¡Jugar!: un brillo que lo recorre de vez en cuando y un rebote al tocarlo */
+.sel-jugar { position: relative; overflow: hidden; isolation: isolate; transition: transform 140ms var(--curva); }
+.sel-jugar::after {
+  content: ""; position: absolute; inset: -20% auto -20% -40%; width: 30%; z-index: -1; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent); transform: skewX(-18deg);
+  animation: brillo 3.6s ease-in-out 1.2s infinite;
+}
+.sel-jugar.bloqueado::after { display: none; }
+.sel-jugar:active { transform: scale(0.97); }
+@keyframes brillo { 0%, 70% { left: -40%; } 100% { left: 130%; } }
+
+/* La rueda encaja con un pequeño rebote */
+.sel-item { transition: transform 380ms cubic-bezier(0.25, 1.35, 0.45, 1), opacity 300ms, background 200ms, color 200ms; }
+.sel-item { border-width: 0 0 0 0.45rem; box-shadow: 0 0.25rem 0.8rem rgba(4, 12, 40, 0.35); }
+.sel-item.elegido { border-width: 0 0 0 0.45rem; box-shadow: 0 0 0 0.15rem rgba(233, 199, 90, 0.55), 0 0.5rem 1.4rem rgba(4, 12, 40, 0.5); }
+
+/* Botón de récords en la barra de arriba */
+.barra-botones { margin-left: auto; display: flex; gap: 0.5rem; }
+.icono-btn.records { font-size: 1.25rem; }
+
+/* Mis récords: hoja que sube desde abajo, filas escalonadas */
+.capa-records { place-items: end center; }
+.capa-records .caja { max-width: 32rem; max-height: 85dvh; text-align: left; gap: 0.6rem; animation: hoja 340ms var(--curva); border-radius: 1.4rem 1.4rem 1rem 1rem; }
+@keyframes hoja { from { transform: translateY(40%); opacity: 0; } }
+.records-cabeza { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.records-lista { overflow-y: auto; display: flex; flex-direction: column; gap: 0.45rem; padding-right: 0.2rem; }
+.record-fila {
+  display: grid; grid-template-columns: 2.4rem 1fr auto; align-items: center; gap: 0.2rem 0.6rem; padding: 0.55rem 0.7rem;
+  border-radius: 0.9rem; background: rgba(120, 160, 255, 0.1); animation: sel-texto 340ms var(--curva) both;
+}
+.record-fila .ico { grid-row: span 2; font-size: 1.5rem; text-align: center; }
+.record-fila b { font-size: 1.02rem; }
+.record-fila .mejor { color: var(--oro); font-weight: 900; text-align: right; }
+.record-fila .marcas { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 0.25rem 0.4rem; font-size: 0.8rem; color: var(--texto-suave); font-weight: 700; }
+.record-fila .marcas span { white-space: nowrap; }
+.record-fila.sin { opacity: 0.55; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sel-ficha.cambia, .sel-ficha.cambia *, .sel-record.cambia, .sel-pil-valor, .sel-jugar::after, .record-fila, .capa-records .caja { animation: none !important; }
+  .sel-item { transition: opacity 200ms; }
+}
+/* Móvil estrecho: flechas más finas (pero altas, para el dedo) y sin el iconito */
+.sel-pil-flecha { width: 2.3rem; border-radius: 1.2rem; }
+@container (max-width: 30rem) { .sel-pil-icono { display: none; } .sel-pildora { padding: 0.2rem; } }

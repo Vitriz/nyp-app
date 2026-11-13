@@ -324,3 +324,16 @@ html, body {
 }
 @keyframes ya-entra { 0% { transform: scale(0.2); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 @keyframes ya-rayos { from { transform: scale(0.4) rotate(0deg); opacity: 0; } 30% { opacity: 1; } to { transform: scale(1.1) rotate(40deg); } }
+
+/* ---------- celebración de récord ---------- */
+.confeti { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+.confeti i { position: absolute; top: -1.5rem; border-radius: 0.12rem; animation: confeti linear both; }
+@keyframes confeti { to { transform: translate(var(--deriva), 110vh) rotate(var(--giro)); } }
+.copa-record { animation: copa-record 900ms cubic-bezier(0.3, 1.6, 0.5, 1) both; filter: drop-shadow(0 0 1.2rem rgba(255, 211, 77, 0.6)); }
+@keyframes copa-record { 0% { transform: scale(0.2) rotate(-25deg); opacity: 0; } 60% { transform: scale(1.15) rotate(6deg); opacity: 1; } 100% { transform: none; } }
+.titulo-record {
+  background: linear-gradient(90deg, #ffd34d, #fff3b0, #f5a623, #ffd34d); background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent; animation: titulo-brillo 2.4s linear infinite;
+}
+@keyframes titulo-brillo { to { background-position: 300% 0; } }
+@media (prefers-reduced-motion: reduce) { .copa-record, .titulo-record { animation: none; } }

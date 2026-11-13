@@ -3,7 +3,7 @@
 import { h } from "../comun/ui.js";
 import { teclasFisicas } from "../comun/teclas.js";
 
-const ICONOS = {
+export const ICONOS = {
   "palabra-larga": "🔠", definicion: "📖", sopa: "🔍", revuelto: "🔀", paraulogico: "🐝",
   "calculo-mental": "🧠", "llegar-resultado": "🎯", "mates-fugaces": "⚡", laberinto: "🧩", pulsador: "🔔",
 };
@@ -11,15 +11,15 @@ const PASO = 3.9; // rem entre elementos de la rueda
 let ultimoId = null; // al volver, la rueda sigue en el último juego
 
 /**
- * Una casilla que gira como una rueda (de arriba a abajo): ▲ y ▼ van de una en una,
- * y también se puede arrastrar con el dedo o usar la rueda del ratón.
+ * Una píldora que gira como una rueda (de arriba a abajo): ▲ y ▼ van de una en una,
+ * y también se puede arrastrar el valor con el dedo o usar la rueda del ratón.
  * alPaso(+1 | -1): pide pasar al siguiente o al anterior.
  */
-function ruedaValor(etiqueta, alPaso) {
-  const arriba = h("button.sel-giro-flecha", { type: "button", "aria-label": `${etiqueta}: anterior` }, "▲");
-  const abajo = h("button.sel-giro-flecha", { type: "button", "aria-label": `${etiqueta}: siguiente` }, "▼");
-  const ventana = h("div.sel-giro-ventana");
-  const el = h("div.sel-dato.sel-giro", h("small", etiqueta), h("div.sel-giro-caja", arriba, ventana, abajo));
+function ruedaValor(icono, etiqueta, alPaso) {
+  const arriba = h("button.sel-pil-flecha", { type: "button", "aria-label": `${etiqueta}: anterior` }, "▲");
+  const abajo = h("button.sel-pil-flecha", { type: "button", "aria-label": `${etiqueta}: siguiente` }, "▼");
+  const ventana = h("div.sel-pil-ventana", { role: "spinbutton", "aria-label": etiqueta });
+  const el = h("div.sel-pildora", { title: etiqueta }, h("span.sel-pil-icono", { "aria-hidden": "true" }, icono), arriba, ventana, abajo);
   arriba.addEventListener("click", () => alPaso(-1));
   abajo.addEventListener("click", () => alPaso(1));
   let arrastre = null;
@@ -29,7 +29,7 @@ function ruedaValor(etiqueta, alPaso) {
   });
   ventana.addEventListener("pointermove", (ev) => {
     if (!arrastre || ev.pointerId !== arrastre.id) return;
-    const paso = parseFloat(getComputedStyle(document.documentElement).fontSize) * 1.5;
+    const paso = parseFloat(getComputedStyle(document.documentElement).fontSize) * 1.4;
     const dy = arrastre.y - ev.clientY; // dedo hacia arriba: el siguiente
     if (Math.abs(dy) >= paso) {
       alPaso(Math.sign(dy));
@@ -56,22 +56,20 @@ function ruedaValor(etiqueta, alPaso) {
   let ultimo = null;
   return {
     el,
-    /** textos: los valores ya escritos; i: el elegido. */
+    /** textos: los valores ya escritos; i: el elegido. El valor rueda hacia arriba o abajo al cambiar. */
     pintar(textos, i) {
       const dir = ultimo == null || ultimo.textos !== textos.join() ? 0 : Math.sign(i - ultimo.i);
+      if (ultimo && ultimo.textos === textos.join() && ultimo.i === i) return;
       ultimo = { textos: textos.join(), i };
-      ventana.replaceChildren(
-        h("span.sel-giro-otro", textos[i - 1] ?? ""),
-        h(`span.sel-giro-valor${dir > 0 ? ".sube" : dir < 0 ? ".baja" : ""}`, textos[i] ?? ""),
-        h("span.sel-giro-otro", textos[i + 1] ?? "")
-      );
+      ventana.replaceChildren(h(`span.sel-pil-valor${dir > 0 ? ".sube" : dir < 0 ? ".baja" : ""}`, textos[i] ?? ""));
+      ventana.setAttribute("aria-valuetext", textos[i] ?? "");
       arriba.disabled = i <= 0;
       abajo.disabled = i >= textos.length - 1;
     },
   };
 }
 
-const textoSegundos = (s) => (s < 60 || s % 60 ? `${s} s` : `${s / 60} min`);
+export const textoSegundos = (s) => (s < 60 || s % 60 ? `${s} s` : `${s / 60} min`);
 
 /**
  * juegos: [{ id, nombre, categoria, descripcion, duracion, bloqueado }]
@@ -81,14 +79,19 @@ const textoSegundos = (s) => (s < 60 || s % 60 ? `${s} s` : `${s / 60} min`);
  * textoJugar: texto del botón grande
  * alJugar(juego) / alDesbloquear(juego)
  */
+function reiniciar(el, clase) {
+  el.classList.remove(clase);
+  void el.offsetWidth;
+  el.classList.add(clase);
+}
+
 export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel = null, textoJugar = "¡Jugar! ▶", alJugar, alDesbloquear }) {
   const conRecords = recordDe != null;
   const segundosDe = (j) => tiempo?.de(j) ?? j.duracion;
   const listaDe = (j) => (typeof tiempo?.lista === "function" ? tiempo.lista(j) : tiempo?.lista ?? [j.duracion]);
   const nivelDe = (j) => nivel?.de(j) ?? "normal";
-  const conCopa = (j) => conRecords && listaDe(j).some((s) => (nivel?.lista ?? ["normal"]).some((nv) => recordDe(j, s, nv)));
-  const ruedaTiempo = tiempo ? ruedaValor("Tiempo", (p) => pasoTiempo(p)) : null;
-  const ruedaNivel = nivel ? ruedaValor("Nivel", (p) => pasoNivel(p)) : null;
+  const ruedaTiempo = tiempo ? ruedaValor("⏱", "Tiempo", (p) => pasoTiempo(p)) : null;
+  const ruedaNivel = nivel ? ruedaValor("◆", "Nivel", (p) => pasoNivel(p)) : null;
   const n = juegos.length;
   let sel = Math.max(0, juegos.findIndex((j) => j.id === ultimoId));
   const antes = new Array(n).fill(null);
@@ -99,8 +102,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       `button.sel-item.${j.categoria}${j.bloqueado ? ".bloqueado" : ""}`,
       { type: "button", "data-i": i, tabindex: -1 },
       h("span.sel-item-icono", j.bloqueado ? "🔒" : ICONOS[j.id] ?? "🎲"),
-      h("span.sel-item-nombre", j.nombre),
-      conCopa(j) ? h("span.sel-item-copa", "🏆") : null
+      h("span.sel-item-nombre", j.nombre)
     )
   );
   const rueda = h("div.sel-rueda", { role: "listbox", "aria-label": "Juegos" }, h("div.sel-guia"), items);
@@ -109,7 +111,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
   const ficha = h("div.sel-ficha.tarjeta");
   const contador = h("span.sel-contador");
 
-  const recordEl = h("div.sel-dato.record");
+  const recordEl = h("p.sel-record");
 
   /** Solo las casillas de tiempo y nivel y el récord (sin rehacer la ficha: así no se corta el arrastre). */
   function pintarAjustes() {
@@ -123,7 +125,14 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     if (ruedaNivel) ruedaNivel.pintar(nivel.lista.map((x) => nivel.nombres[x]), Math.max(0, nivel.lista.indexOf(nv)));
     if (conRecords) {
       const r = recordDe(j, seg, nv);
-      recordEl.replaceChildren(h("small", `Tu récord · ${textoSegundos(seg)}${nivel ? ` · ${nivel.nombres[nv]}` : ""}`), h("b", r ? `🏆 ${r.texto}` : "—"));
+      const donde = `${textoSegundos(seg)}${nivel ? ` · ${nivel.nombres[nv]}` : ""}`;
+      recordEl.replaceChildren(
+        ...(r
+          ? [h("span.sel-record-copa", "🏆"), h("span", "Tu récord: "), h("b", r.texto), h("small", ` (${donde})`)]
+          : [h("span.suave", `Aún sin récord en ${donde}`)])
+      );
+      recordEl.classList.toggle("con", Boolean(r));
+      reiniciar(recordEl, "cambia");
     }
   }
 
@@ -143,19 +152,15 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
         h("div", h("span.sel-cat", { palabras: "Palabras", numeros: "Números", pulsador: "Pulsador" }[j.categoria] ?? ""), h("h2.sel-nombre", j.nombre))
       ),
       h("p.sel-desc", j.descripcion),
+      ...(conRecords ? [recordEl] : []),
       h(
-        "div.sel-datos",
-        ruedaTiempo ? ruedaTiempo.el : h("div.sel-dato", h("small", "Tiempo"), h("b", `${seg} s`)),
-        ruedaNivel ? ruedaNivel.el : null,
-        conRecords
-          ? recordEl
-          : h("div.sel-dato", h("small", "Tipo"), h("b", j.categoria === "palabras" ? "Palabras" : j.categoria === "pulsador" ? "Pulsador" : "Números"))
+        "div.sel-ajustes",
+        ruedaTiempo ? ruedaTiempo.el : h("span.sel-chip", `⏱ ${textoSegundos(seg)}`),
+        ruedaNivel ? ruedaNivel.el : null
       ),
       jugar
     );
-    ficha.classList.remove("cambia");
-    void ficha.offsetWidth;
-    ficha.classList.add("cambia");
+    reiniciar(ficha, "cambia");
     contador.textContent = `${sel + 1} / ${n}`;
   }
 

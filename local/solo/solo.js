@@ -1,10 +1,10 @@
 // Modo solo: los mismos juegos que en PARTY, ejecutados en el propio móvil, con récords personales.
-import { h, cambiarPantalla, banner, avatar, crearReloj, textoCuenta, piezaCuenta, detalleJugador } from "../comun/ui.js";
+import { h, cambiarPantalla, banner, avatar, crearReloj, textoCuenta, piezaCuenta, detalleJugador, confeti, contarHasta } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { almacen } from "../comun/conexion.js";
 import { leerPaquete, diccionarioIncluido, desbloquearDiccionario, actualizarIncluido } from "./paquete.js";
 import { campoTexto } from "../comun/teclado.js";
-import { selectorJuegos } from "./selector.js";
+import { selectorJuegos, ICONOS, textoSegundos } from "./selector.js";
 
 const SIN_SOLO = new Set(["pulsador"]); // necesita presentador y más jugadores
 
@@ -111,7 +111,13 @@ export function entrarSolo({ app, perfil, alSalir }) {
     mostrar({
       el: h(
         "section.solo.solo-sel",
-        barra(h("button.icono-btn", { type: "button", onclick: alSalir, "aria-label": "Volver al inicio" }, "✕")),
+        barra(
+          h(
+            "div.barra-botones",
+            h("button.icono-btn.records", { type: "button", onclick: () => verRecords(juegos), "aria-label": "Mis récords" }, "🏆"),
+            h("button.icono-btn", { type: "button", onclick: alSalir, "aria-label": "Volver al inicio" }, "✕")
+          )
+        ),
         selectorJuegos({
           juegos: juegos.map((j) => ({ ...j, duracionBase: j.duracion, bloqueado: j.categoria === "palabras" && !conDiccionario })),
           recordDe: (j, seg, nv) => recordDe(records, j, seg, nv),
@@ -137,6 +143,51 @@ export function entrarSolo({ app, perfil, alSalir }) {
         })
       ),
     });
+  }
+
+  /** Mis récords: cada juego con su mejor marca y las de cada tiempo y nivel. */
+  function verRecords(juegos) {
+    const records = leerRecords();
+    const filas = juegos.map((j) => {
+      const marcas = [];
+      for (const [k, r] of Object.entries(records)) {
+        const [id, seg, nv = "normal"] = k.split("@");
+        if (id !== j.id) continue;
+        marcas.push({ seg: seg ? Number(seg) : j.duracion, nv, r });
+      }
+      marcas.sort((a, b) => a.seg - b.seg || NIVELES.indexOf(a.nv) - NIVELES.indexOf(b.nv));
+      const mejor = marcas.reduce((m, x) => (!m || x.r.valor > m.r.valor ? x : m), null);
+      return { j, marcas, mejor };
+    });
+    filas.sort((a, b) => Boolean(b.mejor) - Boolean(a.mejor));
+    const cerrar = () => capa.remove();
+    const capa = h(
+      "div.capa-movil.capa-records",
+      { onclick: (ev) => ev.target === capa && cerrar() },
+      h(
+        "div.caja.tarjeta",
+        h("div.records-cabeza", h("h2", "🏆 Mis récords"), h("button.icono-btn", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
+        h(
+          "div.records-lista",
+          filas.map(({ j, marcas, mejor }, i) =>
+            h(
+              `div.record-fila${mejor ? "" : ".sin"}`,
+              { style: { animationDelay: `${80 + i * 45}ms` } },
+              h("span.ico", ICONOS[j.id] ?? "🎲"),
+              h("b", j.nombre),
+              h("span.mejor", mejor ? mejor.r.texto : "—"),
+              h(
+                "div.marcas",
+                marcas.length
+                  ? marcas.map((m) => h("span", `${textoSegundos(m.seg)} · ${NOMBRES_NIVEL[m.nv] ?? m.nv}: ${m.r.texto}`))
+                  : h("span", "Aún sin récord")
+              )
+            )
+          )
+        )
+      )
+    );
+    document.body.append(capa);
   }
 
   async function sinDiccionario() {
@@ -316,6 +367,12 @@ export function entrarSolo({ app, perfil, alSalir }) {
     const anterior = apuntar(meta, r);
     const record = r.valor != null && (!anterior || r.valor > anterior.valor);
     if (record) navigator.vibrate?.([60, 60, 120]);
+    const textoR = h("p", r.texto);
+    if (record) {
+      // Récord nuevo: confeti dorado y la marca contando hasta su número.
+      setTimeout(() => confeti(), 250);
+      contarHasta(textoR, r.texto);
+    }
     mostrar({
       el: h(
         "section",
@@ -323,9 +380,9 @@ export function entrarSolo({ app, perfil, alSalir }) {
         h(
           "div.espera",
           h("span.suave", `${meta.nombre} · ${meta.duracion} s · ${NOMBRES_NIVEL[meta.dificultad ?? "normal"]}`),
-          h("div.puesto-grande.aparece", record ? "🏆" : r.valor != null ? "👏" : "🙂"),
-          h("h1", record ? (anterior ? "¡Nuevo récord!" : "¡Primer récord!") : r.valor != null ? "¡Bien jugado!" : "Esta vez no ha salido"),
-          h("p", r.texto),
+          h(`div.puesto-grande.aparece${record ? ".copa-record" : ""}`, record ? "🏆" : r.valor != null ? "👏" : "🙂"),
+          h(`h1${record ? ".titulo-record" : ""}`, record ? (anterior ? "¡Nuevo récord!" : "¡Primer récord!") : r.valor != null ? "¡Bien jugado!" : "Esta vez no ha salido"),
+          textoR,
           detalleJugador(r.detalle, { clase: ".mis-respuestas" }),
           anterior && !record ? h("p.suave", `Tu récord: ${anterior.texto}`) : null,
           anterior && !record && meta.id === "llegar-resultado" ? detalleJugador(anterior.detalle, { clase: ".mis-respuestas.record" }) : null,
