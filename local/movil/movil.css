@@ -676,8 +676,7 @@ html, body { height: 100dvh; }
 .rec-botones .boton { min-height: 3.2rem; }
 .rec-cancelar { min-height: 2.6rem; padding: 0.3rem 1.4rem; }
 /* Editor de foto: detectar y lazo con imán */
-.rec-herramientas { display: grid; grid-template-columns: 1.4fr 1fr; gap: 0.6rem; width: min(92vw, 26rem); }
+.rec-herramientas { display: grid; grid-template-columns: 1fr; gap: 0.6rem; width: min(92vw, 26rem); }
 .rec-herramientas .boton { min-height: 3rem; }
 .rec-detectar { background: linear-gradient(180deg, #ffe48a, #f0c64a); color: #3a2a00; }
-.rec-iman.activo { background: linear-gradient(180deg, #8fd0ff, var(--acento)); color: #0b2546; border-color: transparent; }
 .capa-recorte { gap: 0.7rem; overflow-y: auto; justify-content: safe center; }

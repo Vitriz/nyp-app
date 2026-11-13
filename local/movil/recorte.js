@@ -2,8 +2,7 @@
 //  - ✨ Detectar: un detector (MediaPipe, de Google) encuentra a la persona y su cara en la foto y
 //    recorta la cabeza con el pelo. Funciona dentro del navegador del móvil: lo único que se descarga
 //    (la primera vez, con internet) es el propio detector; la foto no se envía a ningún sitio.
-//  - ✍️ Lazo con imán: rodeas la cabeza con el dedo y el trazo se pega a los bordes cercanos.
-//  - Los bordes del recorte quedan suaves (difuminados), no a dientes de sierra.
+//  - ✍️ A mano: rodeas la cabeza con el dedo y se recorta lo que queda dentro del trazo.
 // El resultado es una imagen con fondo transparente que asoma por encima del círculo del avatar.
 import { h } from "../comun/ui.js";
 
@@ -81,89 +80,18 @@ function fotoRecortada(src, mascara) {
   return webp.startsWith("data:image/webp") ? webp : c.toDataURL("image/png");
 }
 
-// ------------------------------------------------------------------ lazo con imán
+// ------------------------------------------------------------------ a mano
 
-/** Suaviza el trazo (Chaikin): quita los picos del dedo. */
-function suavizar(puntos, veces = 3) {
-  let p = puntos;
-  for (let k = 0; k < veces; k++) {
-    const q = [];
-    for (let i = 0; i < p.length; i++) {
-      const a = p[i], b = p[(i + 1) % p.length];
-      q.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25], [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]);
-    }
-    p = q;
-  }
-  return p;
-}
-
-/** Máscara de un trazo cerrado, con el borde difuminado. */
+/** Máscara de un trazo cerrado (lo que queda dentro). */
 function mascaraDeTrazo(puntos) {
-  const lisos = suavizar(puntos);
-  const forma = lienzoNuevo(LADO);
-  const f = forma.getContext("2d");
-  f.beginPath();
-  lisos.forEach(([x, y], i) => (i ? f.lineTo(x, y) : f.moveTo(x, y)));
-  f.closePath();
-  f.fillStyle = "#fff";
-  f.fill();
   const m = lienzoNuevo(LADO);
   const c = m.getContext("2d");
-  c.filter = "blur(2.5px)"; // borde suave
-  c.drawImage(forma, 0, 0);
+  c.beginPath();
+  puntos.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y)));
+  c.closePath();
+  c.fillStyle = "#fff";
+  c.fill();
   return m;
-}
-
-/**
- * Mapa de bordes de la foto (a mitad de tamaño): dónde cambia mucho el color (contorno del pelo, la cara…).
- * Devuelve una función que mueve un punto al borde fuerte más cercano.
- */
-function iman(src) {
-  const N = LADO / 2;
-  const c = lienzoNuevo(N);
-  const ctx = c.getContext("2d", { willReadFrequently: true });
-  ctx.filter = "blur(1px)"; // sin ruido fino (poros, pelos sueltos)
-  ctx.drawImage(src, 0, 0, N, N);
-  const d = ctx.getImageData(0, 0, N, N).data;
-  // Borde = cuánto cambia el color (cada canal por separado: así se nota piel contra fondo aunque
-  // tengan el mismo brillo).
-  const borde = new Float32Array(N * N);
-  for (let y = 1; y < N - 1; y++) {
-    for (let x = 1; x < N - 1; x++) {
-      let suma = 0;
-      for (let ch = 0; ch < 3; ch++) {
-        const g = (dx, dy) => d[((y + dy) * N + x + dx) * 4 + ch];
-        const gx = g(1, -1) + 2 * g(1, 0) + g(1, 1) - g(-1, -1) - 2 * g(-1, 0) - g(-1, 1);
-        const gy = g(-1, 1) + 2 * g(0, 1) + g(1, 1) - g(-1, -1) - 2 * g(0, -1) - g(1, -1);
-        suma += gx * gx + gy * gy;
-      }
-      borde[y * N + x] = Math.sqrt(suma);
-    }
-  }
-  // Se normaliza con el percentil 97 (no con el máximo): así un borde muy fuerte no apaga a los demás.
-  const muestra = Array.from(borde.filter((v, i) => i % 7 === 0 && v > 0)).sort((a, b) => a - b);
-  const max = Math.max(1, muestra[Math.floor(muestra.length * 0.97)] ?? 1);
-  for (let i = 0; i < borde.length; i++) borde[i] = Math.min(1, borde[i] / max);
-  const R = 13; // radio de búsqueda (en la mitad de tamaño = 26 px de la foto)
-  return ([px, py]) => {
-    const cx = Math.round(px / 2), cy = Math.round(py / 2);
-    let mejor = null, puntos = -Infinity;
-    for (let dy = -R; dy <= R; dy++) {
-      for (let dx = -R; dx <= R; dx++) {
-        const x = cx + dx, y = cy + dy;
-        if (x < 1 || y < 1 || x >= N - 1 || y >= N - 1) continue;
-        const dist = Math.hypot(dx, dy);
-        if (dist > R) continue;
-        const v = borde[y * N + x] - dist * 0.015; // más fuerte y más cerca, mejor
-        if (v > puntos) {
-          puntos = v;
-          mejor = [x * 2, y * 2];
-        }
-      }
-    }
-    // Si por ahí no hay ningún borde claro, el punto se queda donde está el dedo.
-    return mejor && puntos > 0.2 ? mejor : [px, py];
-  };
 }
 
 // ------------------------------------------------------------------ detección automática
@@ -246,20 +174,11 @@ export function editarFoto(src, fraccion = 1) {
     let puntos = []; // trazo del dedo, en píxeles de src
     let dibujando = false;
     let mascara = null; // lo que se va a recortar
-    let conIman = true;
-    let pegar = null; // función del imán (se calcula la primera vez)
 
     const aviso = h("p.cam-aviso", "Toca ✨ Detectar o rodea tu cabeza con el dedo");
     const muestra = h("div.rec-muestra");
     const usar = h("button.boton.acento", { type: "button", disabled: true, onclick: () => cerrar(fotoRecortada(src, mascara)) }, "✂️ Usar recorte");
     const detectar = h("button.boton.rec-detectar", { type: "button", onclick: () => auto() }, "✨ Detectar");
-    const botonIman = h("button.boton.suave.rec-iman.activo", { type: "button", onclick: () => cambiarIman(), "aria-pressed": "true" }, "🧲 Imán");
-
-    function cambiarIman() {
-      conIman = !conIman;
-      botonIman.classList.toggle("activo", conIman);
-      botonIman.setAttribute("aria-pressed", String(conIman));
-    }
 
     function tamaño() {
       const lado = Math.round(Math.min(innerWidth * 0.92, innerHeight * 0.5) * devicePixelRatio);
@@ -283,8 +202,7 @@ export function editarFoto(src, fraccion = 1) {
       }
       if (puntos.length > 1) {
         ctx.beginPath();
-        const lisos = dibujando ? puntos : suavizar(puntos);
-        lisos.forEach(([x, y], i) => (i ? ctx.lineTo(x * k, y * k) : ctx.moveTo(x * k, y * k)));
+        puntos.forEach(([x, y], i) => (i ? ctx.lineTo(x * k, y * k) : ctx.moveTo(x * k, y * k)));
         if (!dibujando) ctx.closePath();
         ctx.lineWidth = Math.max(3, L / 150);
         ctx.setLineDash(dibujando ? [] : [L / 50, L / 80]);
@@ -325,7 +243,7 @@ export function editarFoto(src, fraccion = 1) {
       const r = lienzo.getBoundingClientRect();
       return [((ev.clientX - r.left) / r.width) * src.width, ((ev.clientY - r.top) / r.height) * src.height];
     };
-    const añadir = (p) => puntos.push(conIman ? (pegar ??= iman(src))(p) : p);
+    const añadir = (p) => puntos.push(p);
     lienzo.addEventListener("pointerdown", (ev) => {
       ev.preventDefault();
       try {
@@ -341,7 +259,7 @@ export function editarFoto(src, fraccion = 1) {
     lienzo.addEventListener("pointermove", (ev) => {
       if (!dibujando) return;
       const p = aPunto(ev), u = puntos.at(-1);
-      if (Math.hypot(p[0] - u[0], p[1] - u[1]) < src.width / 160) return;
+      if (Math.hypot(p[0] - u[0], p[1] - u[1]) < src.width / 200) return;
       añadir(p);
       pintar();
     });
@@ -370,7 +288,7 @@ export function editarFoto(src, fraccion = 1) {
     const capa = h(
       "div.capa-camara.capa-recorte",
       h("div.rec-visor", lienzo),
-      h("div.rec-herramientas", detectar, botonIman),
+      h("div.rec-herramientas", detectar),
       aviso,
       muestra,
       h(
