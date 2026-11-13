@@ -946,3 +946,28 @@ html, body { height: 100dvh; }
 
 /* Portada: más aire arriba (título) y abajo (botones) */
 .inicio { padding-top: calc(env(safe-area-inset-top) + 3rem); padding-bottom: calc(env(safe-area-inset-bottom) + 2.6rem); }
+
+/* iPhone en horizontal: que Safari no agrande el texto por su cuenta (descolocaba la ficha y la barra). */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+/* ---------- móvil en horizontal: la app usa el ancho (no una columna estrecha) ---------- */
+@media (orientation: landscape) and (max-height: 560px) {
+  :root { --ancho: min(100vw, 60rem); }
+  html { font-size: clamp(13px, 3.6dvh, 18px); }
+  .pantalla { padding: calc(env(safe-area-inset-top) + 0.6rem) calc(env(safe-area-inset-right) + 1rem) calc(env(safe-area-inset-bottom) + 0.6rem) calc(env(safe-area-inset-left) + 1rem); gap: 0.6rem; }
+  /* Portada: título y perfil a la izquierda, botones a la derecha */
+  .inicio { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr; align-items: center; column-gap: 2rem; row-gap: 0.6rem;
+    padding-top: calc(env(safe-area-inset-top) + 1rem); padding-bottom: calc(env(safe-area-inset-bottom) + 1rem); }
+  .inicio > .titulo-nyp { grid-column: 1; grid-row: 1; font-size: min(1.9rem, calc((var(--ancho) / 2 - 3rem) / 13.2)); }
+  .inicio-perfil { grid-column: 1; grid-row: 2; min-height: 0; }
+  .inicio-opciones { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+  .inicio > :not(.titulo-nyp):not(.inicio-perfil):not(.inicio-opciones) { grid-column: 2; }
+  .inicio .banner-grande { font-size: 1.5rem; }
+  .opcion { min-height: 4.4rem; }
+  /* Teclados más bajos: el numérico en 2 filas de 6 */
+  .teclado { grid-template-columns: repeat(6, 1fr); width: min(100%, 40rem); gap: 0.45rem; }
+  .teclado .boton { min-height: 2.9rem; font-size: 1.5rem; }
+  .teclado-letras { gap: 0.25rem; width: min(100%, 40rem); margin-inline: auto; }
+  .tecla-l { height: 2.5rem; }
+  .barra-juego { min-height: 2.8rem; }
+}

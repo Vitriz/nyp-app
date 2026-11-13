@@ -296,3 +296,18 @@
 }
 .sel-casilla:active { transform: scale(0.94); }
 @media (prefers-reduced-motion: reduce) { .sel-casilla { transition: none; } }
+
+/* Mientras arrastras, la rueda va pegada al dedo (sin transiciones); al soltar, encaja con su rebote. */
+.sel-rueda.arrastrando .sel-item { transition: background 200ms, color 200ms; }
+.sel-item { will-change: transform; }
+
+/* Móvil en horizontal: la ficha ocupa siempre el mismo alto (no salta al cambiar de juego ni tapa la barra de arriba). */
+@media (orientation: landscape) and (max-height: 560px) {
+  .sel-lado { justify-content: stretch; min-height: 0; overflow: hidden; }
+  .sel-ficha { flex: 1; min-height: 0; padding: 0.9rem 1.1rem 1rem; gap: 0.6rem; }
+  .sel-icono { width: 3.6rem; height: 3.6rem; font-size: 2rem; }
+  .sel-nombre { font-size: 1.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sel-cabeza-textos { min-width: 0; flex: 1; }
+  .sel-desc { font-size: 1rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.7em; }
+  .sel-jugar { margin-top: auto; min-height: 3.2rem; font-size: 1.35rem; }
+}

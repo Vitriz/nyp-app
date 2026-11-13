@@ -239,20 +239,22 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     cambiarTiempo(l[Math.max(0, Math.min(l.length - 1, (i < 0 ? 0 : i) + paso))]);
   }
 
-  function colocar() {
+  /** desfase: fracción de paso que lleva el dedo (la rueda sigue al dedo sin esperar al siguiente juego). */
+  function colocar(desfase = 0) {
     items.forEach((el, i) => {
       // Distancia al elegido, dando la vuelta (la rueda no tiene fin).
-      let d = (((i - sel) % n) + n) % n;
-      if (d > n / 2) d -= n;
-      const salto = antes[i] != null && Math.abs(d - antes[i]) > 1;
-      antes[i] = d;
+      let d0 = (((i - sel) % n) + n) % n;
+      if (d0 > n / 2) d0 -= n;
+      const salto = antes[i] != null && Math.abs(d0 - antes[i]) > 1;
+      antes[i] = d0;
+      const d = d0 - desfase;
       const a = Math.abs(d);
       el.style.transition = salto ? "none" : "";
       el.style.transform = `translate(${(a * a * 0.55).toFixed(2)}rem, calc(-50% + ${d * PASO}rem)) scale(${1 - Math.min(a, 4) * 0.05})`;
       el.style.opacity = a > 3.5 ? "0" : String(1 - a * 0.16);
       el.style.zIndex = String(10 - a);
-      el.classList.toggle("elegido", d === 0);
-      el.setAttribute("aria-selected", String(d === 0));
+      el.classList.toggle("elegido", d0 === 0);
+      el.setAttribute("aria-selected", String(d0 === 0));
     });
     casillas.forEach((el, i) => {
       el.classList.toggle("elegido", i === sel);
@@ -260,13 +262,22 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     });
   }
 
-  function mover(paso) {
-    if (!paso) return;
+  // Rehacer la ficha cuesta (sobre todo en iPhone): mientras giras deprisa, se espera a que pares un momento.
+  let fichaPendiente = null;
+  function fichaLuego(espera) {
+    clearTimeout(fichaPendiente);
+    if (!espera) return pintarFicha();
+    contador.textContent = `${sel + 1} / ${n}`;
+    fichaPendiente = setTimeout(pintarFicha, espera);
+  }
+
+  function mover(paso, { desfase = 0, espera = 0 } = {}) {
+    if (!paso) return colocar(desfase);
     sel = (((sel + paso) % n) + n) % n;
     ultimoId = juegos[sel].id;
     navigator.vibrate?.(5);
-    colocar();
-    pintarFicha();
+    colocar(desfase);
+    fichaLuego(espera);
   }
 
   function ir(i, jugarSiElegido = true) {
@@ -280,30 +291,45 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     (j.bloqueado ? alDesbloquear : alJugar)(j);
   }
 
-  // ---- dedo / ratón: arrastrar la rueda; tocar un juego lo elige
+  // ---- dedo / ratón: la rueda sigue al dedo; al soltar sigue girando un poco (inercia) y encaja.
   let arrastre = null;
+  const pasoPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) * PASO;
   rueda.addEventListener("pointerdown", (ev) => {
-    arrastre = { y: ev.clientY, y0: ev.clientY, movido: false, id: ev.pointerId };
+    arrastre = { y0: ev.clientY, base: 0, movido: false, id: ev.pointerId, px: pasoPx(), muestras: [[ev.timeStamp, ev.clientY]] };
     rueda.setPointerCapture(ev.pointerId);
   });
   rueda.addEventListener("pointermove", (ev) => {
     if (!arrastre || ev.pointerId !== arrastre.id) return;
-    const paso = parseFloat(getComputedStyle(document.documentElement).fontSize) * PASO * 0.8;
-    const dy = arrastre.y - ev.clientY;
-    if (Math.abs(ev.clientY - arrastre.y0) > 8) arrastre.movido = true;
-    if (Math.abs(dy) >= paso) {
-      mover(Math.trunc(dy / paso));
-      arrastre.y -= Math.trunc(dy / paso) * paso;
+    if (!arrastre.movido && Math.abs(ev.clientY - arrastre.y0) > 8) {
+      arrastre.movido = true;
+      rueda.classList.add("arrastrando");
     }
+    if (!arrastre.movido) return;
+    arrastre.muestras.push([ev.timeStamp, ev.clientY]);
+    if (arrastre.muestras.length > 6) arrastre.muestras.shift();
+    const pasos = (arrastre.y0 - ev.clientY) / arrastre.px - arrastre.base; // dedo hacia arriba: los siguientes
+    const entero = Math.round(pasos);
+    arrastre.base += entero;
+    mover(entero, { desfase: pasos - entero, espera: 140 });
   });
   const soltar = (ev) => {
     if (!arrastre) return;
-    const toque = !arrastre.movido;
+    const { movido, muestras, px } = arrastre;
     arrastre = null;
-    if (!toque || ev.type === "pointercancel") return;
-    // pointer capture: buscamos qué hay bajo el dedo
-    const el = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".sel-item");
-    if (el) ir(Number(el.dataset.i));
+    rueda.classList.remove("arrastrando");
+    if (!movido) {
+      if (ev.type === "pointercancel") return;
+      // pointer capture: buscamos qué hay bajo el dedo
+      const el = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".sel-item");
+      if (el) ir(Number(el.dataset.i));
+      return;
+    }
+    // Inercia: según la velocidad de los últimos movimientos, unos pasos más.
+    const [t0, y0] = muestras[0], [t1, y1] = muestras.at(-1);
+    const v = t1 - t0 > 12 && ev.timeStamp - t1 < 100 ? (y0 - y1) / px / (t1 - t0) : 0; // pasos por ms
+    const extra = Math.max(-6, Math.min(6, Math.round(v * 220)));
+    mover(extra, { espera: 0 });
+    if (!extra) fichaLuego(0);
   };
   rueda.addEventListener("pointerup", soltar);
   rueda.addEventListener("pointercancel", soltar);
