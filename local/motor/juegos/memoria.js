@@ -7,12 +7,13 @@
 import { cargarDefiniciones } from "../lexico.js";
 import { nivelDificultad } from "../util.js";
 
-// Siempre 6 tarjetas; la dificultad cambia el tiempo para memorizarlas (y los huecos de la rejilla).
+// Fácil: 4 tarjetas en 2 × 2. Medio: 6 en 3 × 2. Difícil: 6 repartidas en un 3 × 3 con huecos y menos tiempo.
 const NIVELES = [
-  { tarjetas: 6, ver: 7000, rejilla: 6 },
-  { tarjetas: 6, ver: 5500, rejilla: 9 },
+  { tarjetas: 4, ver: 5000, rejilla: 4 },
+  { tarjetas: 6, ver: 5500, rejilla: 6 },
   { tarjetas: 6, ver: 4500, rejilla: 9 },
 ];
+const NOMBRES = { orden: "Orden", pregunta: "Pregunta", cambio: "Cambio", paridad: "Pares/impares" };
 const TOTAL = 40;
 
 /** Palabras parecidas: misma longitud y solo una letra distinta (CASA → CAZA), entre las comunes. */
@@ -31,6 +32,17 @@ function parecidas(defs) {
   };
 }
 
+/** En qué orden hay que tocarlas (índices de las tarjetas). */
+export function ordenBueno(p) {
+  const l = p.textos.map((t, k) => [Number(t), k]).sort((a, b) => a[0] - b[0]);
+  if (p.sentido === "baja") l.reverse();
+  return l.map((x) => x[1]);
+}
+/** Las tarjetas que hay que tocar en «pares/impares». */
+export function buscadas(p) {
+  return p.textos.map((t, k) => [Number(t), k]).filter(([v]) => (v % 2 === 0) === p.par).map((x) => x[1]);
+}
+
 export default {
   id: "memoria",
   nombre: "Memoria fotográfica",
@@ -45,15 +57,27 @@ export default {
     // Parejas parecidas (CASA/CAZA), entre palabras comunes.
     const similares = parecidas(cargarDefiniciones().filter((d) => d.nivel <= 1 && d.clave.length >= 4 && d.clave.length <= 7));
     const conPareja = defs.filter((d) => similares(d).length);
-    const tipos = azar.barajar(["orden", "pregunta", "cambio"]);
+    const tipos = azar.barajar(["orden", "pregunta", "cambio", "paridad"]);
     const pruebas = [];
     for (let i = 0; i < TOTAL; i++) {
-      const tipo = tipos[i % 3];
+      const tipo = tipos[i % tipos.length];
       const sitios = azar.barajar([...Array(nivel.rejilla).keys()]).slice(0, nivel.tarjetas); // dónde va cada tarjeta
       if (tipo === "orden") {
+        // De menor a mayor o de mayor a menor.
         const nums = new Set();
         while (nums.size < nivel.tarjetas) nums.add(azar.entero(1, 99));
-        pruebas.push({ tipo, sitios, textos: [...nums].map(String) });
+        pruebas.push({ tipo, sitios, textos: [...nums].map(String), sentido: azar() < 0.5 ? "sube" : "baja" });
+        continue;
+      }
+      if (tipo === "paridad") {
+        // Toca todos los pares (o todos los impares): hay al menos uno de cada.
+        let nums;
+        do {
+          const s = new Set();
+          while (s.size < nivel.tarjetas) s.add(azar.entero(1, 99));
+          nums = [...s];
+        } while (nums.every((x) => x % 2) || nums.every((x) => !(x % 2)));
+        pruebas.push({ tipo, sitios, textos: nums.map(String), par: azar() < 0.5 });
         continue;
       }
       const elegidas = [];
@@ -107,8 +131,11 @@ export default {
     if (!p || msg.i !== j.i) return false;
     let ok = false;
     if (p.tipo === "orden") {
-      const bien = p.textos.map((t, k) => [Number(t), k]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
+      const bien = ordenBueno(p);
       ok = Array.isArray(msg.valor) && msg.valor.length === bien.length && msg.valor.every((x, n) => x === bien[n]);
+    } else if (p.tipo === "paridad") {
+      const bien = new Set(buscadas(p));
+      ok = Array.isArray(msg.valor) && msg.valor.length === bien.size && msg.valor.every((x) => bien.has(x));
     } else ok = msg.valor === p.respuesta;
     if (ok) j.aciertos++;
     j.ms += Math.max(0, Math.min(60000, Number(msg.ms) || 0));
@@ -125,7 +152,7 @@ export default {
     return ids.map((id) => {
       const j = ronda.jugadores[id];
       if (!j || !j.i) return { id, valor: null, texto: "No jugó" };
-      const detalle = j.hechas.map((ok, k) => ({ t: `${k + 1}. ${{ orden: "Orden", pregunta: "Pregunta", cambio: "Cambio" }[ronda.pruebas[k].tipo]}`, k: ok ? "bien" : "mal" }));
+      const detalle = j.hechas.map((ok, k) => ({ t: `${k + 1}. ${NOMBRES[ronda.pruebas[k].tipo]}`, k: ok ? "bien" : "mal" }));
       return {
         id,
         valor: j.aciertos ? j.aciertos * 1e7 - j.ms : null,

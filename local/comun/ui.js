@@ -90,6 +90,69 @@ export function banner(j, extra = "") {
   );
 }
 
+/**
+ * Banner que no se rehace al cambiar de pantalla: uno solo, fijo encima de todo, que se coloca sobre el
+ * «hueco» que deja cada pantalla y se abre (píldora con el nombre) o se cierra (círculo con tu icono).
+ * Así su animación nunca vuelve a empezar y no hay saltos entre la lista, el juego y el resultado.
+ *   const fijo = bannerFijo(yo);  h("div.barra-sup", fijo.hueco("abierto" | "cerrado"))  …  fijo.colocar()
+ */
+export function bannerFijo(j) {
+  const ban = banner(j);
+  const capa = h("div.barra-sup.banner-fijo.sin-transicion.oculto-fijo", { "aria-hidden": "true" }, ban);
+  document.body.append(capa);
+  let medidas = null;
+  let estado = "abierto";
+  let puesto = false;
+  function medir() {
+    capa.classList.add("sin-transicion");
+    capa.classList.remove("cerrado");
+    const abierto = [ban.offsetWidth, ban.offsetHeight];
+    capa.classList.add("cerrado");
+    const cerrado = [ban.offsetWidth, ban.offsetHeight];
+    capa.classList.toggle("cerrado", estado === "cerrado");
+    void ban.offsetWidth;
+    if (puesto) capa.classList.remove("sin-transicion");
+    return { abierto, cerrado };
+  }
+  function colocar() {
+    const huecos = document.querySelectorAll(".pantalla:not(.sale) .hueco-banner");
+    const hueco = huecos[huecos.length - 1];
+    if (!hueco) return capa.classList.add("oculto-fijo");
+    const r = hueco.getBoundingClientRect();
+    estado = hueco.dataset.estado;
+    capa.classList.toggle("cerrado", estado === "cerrado");
+    capa.style.left = `${r.left}px`;
+    capa.style.top = `${r.top + r.height / 2}px`;
+    capa.classList.remove("oculto-fijo");
+    if (!puesto) {
+      puesto = true;
+      void capa.offsetWidth;
+      capa.classList.remove("sin-transicion");
+    }
+  }
+  const alCambiarTamano = () => {
+    capa.classList.add("sin-transicion");
+    colocar();
+    void capa.offsetWidth;
+    capa.classList.remove("sin-transicion");
+  };
+  window.addEventListener("resize", alCambiarTamano);
+  return {
+    el: capa,
+    /** El sitio que el banner ocupa en la barra de una pantalla. */
+    hueco(e = "abierto") {
+      medidas ??= medir();
+      const [w, hh] = medidas[e] ?? medidas.abierto;
+      return h("span.hueco-banner", { "data-estado": e, style: { width: `${w}px`, height: `${hh}px` } });
+    },
+    colocar,
+    quitar() {
+      window.removeEventListener("resize", alCambiarTamano);
+      capa.remove();
+    },
+  };
+}
+
 /** Reloj circular que se actualiza solo con requestAnimationFrame. */
 // Color del reloj según lo que queda: blanco → dorado → rojo.
 const COLOR_RELOJ = [

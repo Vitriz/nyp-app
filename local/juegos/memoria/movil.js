@@ -3,6 +3,14 @@
 import { h } from "../../comun/ui.js";
 import { reiniciarAnim } from "../comun/util.js";
 
+// Las mismas reglas que el servidor.
+function ordenBueno(p) {
+  const l = p.textos.map((t, k) => [Number(t), k]).sort((a, b) => a[0] - b[0]);
+  if (p.sentido === "baja") l.reverse();
+  return l.map((x) => x[1]);
+}
+const buscadas = (p) => p.textos.map((t, k) => [Number(t), k]).filter(([v]) => (v % 2 === 0) === p.par).map((x) => x[1]);
+
 export function montar(cuerpo, e, ctx) {
   const d = e.datos;
   let i = d.i ?? 0;
@@ -67,7 +75,9 @@ export function montar(cuerpo, e, ctx) {
     barra.classList.add("oculta");
     tarjetas.forEach((t) => t.classList.add("tapada"));
     if (p.tipo === "orden") {
-      titulo.textContent = "🔢 Tócalas de menor a mayor";
+      titulo.textContent = p.sentido === "baja" ? "🔢 Tócalas de mayor a menor" : "🔢 Tócalas de menor a mayor";
+    } else if (p.tipo === "paridad") {
+      titulo.textContent = p.par ? "🎲 Toca todos los PARES" : "🎲 Toca todos los IMPARES";
     } else if (p.tipo === "pregunta") {
       titulo.textContent = "❓ Pregunta";
       pregunta.replaceChildren(h("p", p.pregunta));
@@ -93,12 +103,21 @@ export function montar(cuerpo, e, ctx) {
       if (estado.tocadas.includes(k)) return;
       estado.tocadas.push(k);
       t.classList.remove("tapada");
-      const bien = p.textos.map((x, n) => [Number(x), n]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
+      const bien = ordenBueno(p);
       const n = estado.tocadas.length - 1;
       if (bien[n] !== k) return responder(estado.tocadas, false, bien);
       t.classList.add("bien");
       navigator.vibrate?.(8);
       if (estado.tocadas.length === bien.length) responder(estado.tocadas, true, bien);
+    } else if (p.tipo === "paridad") {
+      if (estado.tocadas.includes(k)) return;
+      estado.tocadas.push(k);
+      t.classList.remove("tapada");
+      const bien = buscadas(p);
+      if (!bien.includes(k)) return responder(estado.tocadas, false);
+      t.classList.add("bien");
+      navigator.vibrate?.(8);
+      if (estado.tocadas.length === bien.length) responder(estado.tocadas, true);
     } else responder(k, k === p.respuesta);
   });
 
@@ -114,6 +133,11 @@ export function montar(cuerpo, e, ctx) {
     tarjetas.forEach((t, k) => {
       t.classList.remove("tapada");
       if (p.tipo === "cambio") t.firstChild.textContent = k === p.respuesta ? `${p.textos[k]} → ${p.despues[k]}` : p.textos[k];
+      if (p.tipo === "paridad") {
+        t.classList.toggle("bien", buscadas(p).includes(k));
+        if (!ok && k === valor.at(-1)) t.classList.add("mal");
+        return;
+      }
       if (p.tipo !== "orden") t.classList.toggle("bien", k === p.respuesta);
       if (p.tipo !== "orden" && k === valor && !ok) t.classList.add("mal");
     });

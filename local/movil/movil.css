@@ -1110,3 +1110,34 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .final-datos { grid-template-columns: repeat(2, 1fr); }
 .final-dato:last-child:nth-child(odd) { grid-column: 1 / -1; }
 @media (min-width: 900px) { .final-datos { grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); } .final-dato:last-child:nth-child(odd) { grid-column: auto; } }
+
+/* ---------- banner fijo: uno solo para todas las pantallas (se abre y se cierra, nunca se rehace) ---------- */
+.hueco-banner { flex: none; display: block; }
+.barra-sup.banner-fijo {
+  position: fixed; z-index: 20; display: block; min-height: 0; gap: 0; pointer-events: none;
+  transition: left 420ms var(--curva), top 420ms var(--curva), opacity 200ms;
+}
+.banner-fijo .banner { translate: 0 -50%; transition: padding 480ms var(--curva), gap 480ms var(--curva); }
+.banner-fijo .banner-nombre { max-width: 20em; transition: max-width 480ms var(--curva), opacity 280ms, padding 480ms var(--curva); }
+.banner-fijo .banner .avatar { transition: font-size 480ms var(--curva), margin 480ms var(--curva); }
+.banner-fijo.cerrado .banner { padding: 0; gap: 0; }
+.banner-fijo.cerrado .banner-nombre { max-width: 0; opacity: 0; padding: 0; }
+.banner-fijo.cerrado .banner .avatar { font-size: 0.85rem; margin: 0; }
+.banner-fijo.oculto-fijo { opacity: 0; }
+.banner-fijo.sin-transicion, .banner-fijo.sin-transicion * { transition: none !important; }
+@media (prefers-reduced-motion: reduce) { .banner-fijo, .banner-fijo * { transition-duration: 1ms !important; } }
+/* KenKen: lo elegido se marca con un borde por dentro (el número no se mueve) */
+.kk-celda.sel, .kk-celda.sel.jaula-bien, .kk-celda.sel.jaula-mal { background: color-mix(in srgb, var(--zona) 45%, #ffd96a); box-shadow: inset 0 0 0 0.06em #e8a400; }
+.kk-celda.jaula-bien { background: color-mix(in srgb, var(--zona) 45%, #9be0bd); }
+.kk-celda.jaula-mal .kk-cuenta { background: #ffd9d5; color: #a3241c; }
+.kk-celda.choca .kk-num { color: #d43c34; }
+/* Final: la solución, con lo que tenías bien en verde y lo que no, en rojo */
+.kk-celda.sol-bien { background: color-mix(in srgb, var(--zona) 35%, #9be0bd); }
+.kk-celda.sol-mal { background: color-mix(in srgb, var(--zona) 40%, #f6b1a8); }
+.kk-celda .kk-tuyo { position: absolute; right: 0.1em; bottom: 0.06em; font-size: 0.2em; font-weight: 900; color: #a3241c; text-decoration: line-through; font-family: var(--fuente-ficha); }
+.final-kk { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 0.8rem; }
+.final-kk small { color: var(--texto-suave); font-weight: 800; }
+.final-kk .kk { width: min(100%, 20rem); font-size: calc(min(100cqw, 20rem) / var(--n)); }
+.final-kk { container-type: inline-size; }
+.final-kk .kk-leyenda { display: flex; gap: 0.8rem; font-size: 0.8rem; font-weight: 800; color: var(--texto-suave); }
+.final-kk .kk-leyenda i { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 0.2rem; margin-right: 0.25rem; vertical-align: -0.1rem; font-style: normal; }

@@ -464,3 +464,19 @@ html, body {
 .cx-estudio-titulo { font-size: 0.75rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texto-suave); }
 .cx-estudio .cx-franja.perdido::after { content: "No lo encontraste"; font-size: 0.7em; font-weight: 800; text-align: center; color: rgba(255, 255, 255, 0.75); }
 .cx-franja .cx-mini { font-size: 1em; }
+
+/* ---------- KenKen: zonas de color, cuenta «signo = resultado» y casillas siempre del mismo tamaño ---------- */
+.kk { grid-template-rows: repeat(var(--n), 1fr); }
+.kk-celda { display: block; min-width: 0; min-height: 0; overflow: hidden; background: var(--zona, #e9f0fb); }
+.kk-celda.b-arr { border-top-color: #0b1f55; }
+.kk-num { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding-top: 0.14em; font-size: 0.5em; color: #0a1b4a; }
+.kk-cuenta {
+  position: absolute; top: 0.07em; left: 0.07em; z-index: 1; display: inline-flex; align-items: center; gap: 0.12em; max-width: calc(100% - 0.14em);
+  padding: 0.12em 0.38em 0.12em 0.12em; border-radius: 1em; font-size: 0.17em; line-height: 1; white-space: nowrap;
+  background: rgba(255, 255, 255, 0.85); color: #0a1b4a; box-shadow: 0 0.08em 0.2em rgba(10, 27, 74, 0.25);
+}
+.kk-cuenta b { font-family: var(--fuente-ficha); font-weight: 900; }
+.kk-op {
+  font-style: normal; display: grid; place-items: center; width: 1.4em; height: 1.4em; border-radius: 50%;
+  background: var(--zona-borde, #23407a); color: #fff; font-family: var(--fuente-ficha); font-weight: 900;
+}

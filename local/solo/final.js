@@ -1,5 +1,21 @@
 // Pantalla final del modo solo: casillas con los datos de la partida, distintas para cada juego.
 import { h } from "../comun/ui.js";
+import { crearRejilla } from "../juegos/kenken/rejilla.js";
+
+/** KenKen: ¿cada casilla tiene el número de la solución? (si lo resolvió, todo vale) */
+const kkBien = (j, ronda) => ronda.solucion.map((v, k) => j.ms != null || j.valores[k] === v);
+function kkJaulasBien(j, ronda) {
+  const v = j.valores;
+  return ronda.jaulas.filter((jj) => {
+    const x = jj.celdas.map((k) => v[k]);
+    if (x.some((y) => !y)) return false;
+    if (!jj.op) return x[0] === jj.objetivo;
+    if (jj.op === "+") return x.reduce((a, b) => a + b, 0) === jj.objetivo;
+    if (jj.op === "×") return x.reduce((a, b) => a * b, 1) === jj.objetivo;
+    const [a, b] = [Math.max(...x), Math.min(...x)];
+    return jj.op === "−" ? a - b === jj.objetivo : a / b === jj.objetivo;
+  }).length;
+}
 
 const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 const reloj = (ms) => {
@@ -96,11 +112,14 @@ const POR_JUEGO = {
     ["🧩", "Casillas puestas", Object.keys(j.puestos ?? {}).length],
     ...(j.ms != null ? [["⏱", "Tiempo", reloj(j.ms), "bien"]] : []),
   ],
-  kenken: (j, ronda) => [
-    ["🔢", "Tablero", `${ronda.n} × ${ronda.n}`],
-    ["✏️", "Casillas", `${j.valores.filter(Boolean).length} / ${ronda.n * ronda.n}`, "oro"],
-    ...(j.ms != null ? [["⏱", "Tiempo", reloj(j.ms), "bien"]] : []),
-  ],
+  kenken: (j, ronda) => {
+    const bien = kkBien(j, ronda).filter(Boolean).length;
+    return [
+      ["✅", "Casillas bien", `${bien} / ${ronda.n * ronda.n}`, "oro"],
+      ["🧮", "Zonas que cuadran", `${kkJaulasBien(j, ronda)} / ${ronda.jaulas.length}`],
+      ...(j.ms != null ? [["⏱", "Tiempo", reloj(j.ms), "bien"]] : []),
+    ];
+  },
 };
 
 /** Las casillas de datos de la partida (o null si el juego no tiene). */
@@ -116,6 +135,26 @@ export function casillasFinal(meta, ronda, j) {
     filas.map(([ico, etq, val, tono], k) =>
       h(`div.final-dato${tono ? `.${tono}` : ""}`, { style: { animationDelay: `${250 + k * 70}ms` } }, h("span.final-dato-ico", ico), h("b.final-dato-valor", String(val)), h("small", etq))
     )
+  );
+}
+
+/** Algo más que enseñar al final (de momento, la solución del KenKen marcando lo que tenías bien). */
+export function extraFinal(meta, ronda, j) {
+  if (meta.id !== "kenken" || !ronda?.solucion) return null;
+  const rejilla = crearRejilla(ronda);
+  rejilla.poner(ronda.solucion);
+  const bien = kkBien(j, ronda);
+  rejilla.celdas.forEach((c, k) => {
+    c.disabled = true;
+    if (!j.valores[k]) return; // vacía: se ve la solución, sin marcar
+    c.classList.add(bien[k] ? "sol-bien" : "sol-mal");
+    if (!bien[k]) c.append(h("span.kk-tuyo", String(j.valores[k])));
+  });
+  return h(
+    "div.final-kk.tarjeta",
+    h("small", j.ms != null ? "¡Resuelto! Así quedó el tablero" : "La solución"),
+    rejilla.el,
+    h("div.kk-leyenda", h("span", h("i", { style: { background: "#9be0bd" } }), "Lo tenías bien"), h("span", h("i", { style: { background: "#f6b1a8" } }), "Lo tenías mal (tachado, tu número)"))
   );
 }
 

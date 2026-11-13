@@ -1,5 +1,5 @@
 // Modo solo: los mismos juegos que en PARTY, ejecutados en el propio móvil, con récords personales.
-import { h, cambiarPantalla, banner, avatar, TIEMPOS, msDuracion, crearReloj, textoCuenta, piezaCuenta, detalleJugador, confeti, contarHasta, finalLlegar, palabraPendiente } from "../comun/ui.js";
+import { h, cambiarPantalla, banner, bannerFijo, avatar, TIEMPOS, msDuracion, crearReloj, textoCuenta, piezaCuenta, detalleJugador, confeti, contarHasta, finalLlegar, palabraPendiente } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { almacen } from "../comun/conexion.js";
 import { leerPaquete, diccionarioIncluido, desbloquearDiccionario, actualizarIncluido } from "./paquete.js";
@@ -9,7 +9,7 @@ import { leerFamilia, idMovil } from "../comun/familia.js";
 import { comprobarHazanas, tarjetaHazanas, ventanaHazanas, celebrarHazanas } from "./hazanas.js";
 import { elegirAmbito } from "../comun/ambitos.js";
 import { estudioGrupos } from "../juegos/conexiones/piezas.js";
-import { casillasFinal } from "./final.js";
+import { casillasFinal, extraFinal } from "./final.js";
 
 const SIN_SOLO = new Set(["pulsador"]); // necesita presentador y más jugadores
 
@@ -94,14 +94,17 @@ function apuntar(meta, r) {
 export function entrarSolo({ app, perfil, alSalir }) {
   const yo = { id: "yo", nombre: perfil.nombre, color: perfil.color, colorTexto: perfil.colorTexto, contorno: perfil.contorno ?? null, foto: perfil.foto, puntos: 0 };
   let actual = null;
+  // Un solo banner para todo el modo solo: se abre en la lista y en el resultado y se cierra al jugar.
+  const fijo = bannerFijo(yo);
 
   function mostrar(p) {
     actual?.desmontar?.();
     actual = p;
     cambiarPantalla(app, p.el);
+    fijo.colocar();
   }
 
-  const barra = (...extra) => h("div.barra-sup", banner(yo), ...extra);
+  const barra = (...extra) => h("div.barra-sup", fijo.hueco("abierto"), ...extra);
 
   function mensaje(titulo, texto) {
     mostrar({ el: h("section", barra(), h("div.espera", h("h1", titulo), texto ? h("p.suave", texto) : null)) });
@@ -124,7 +127,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
             "div.barra-botones",
             h("button.icono-btn.hazanas", { type: "button", onclick: () => ventanaHazanas(juegos, ICONOS), "aria-label": "Hazañas", title: "Hazañas" }, "🎖️"),
             h("button.icono-btn.records", { type: "button", onclick: () => verRecords(juegos), "aria-label": "Récords", title: "Récords" }, "🏆"),
-            h("button.icono-btn", { type: "button", onclick: alSalir, "aria-label": "Volver al inicio" }, "✕")
+            h("button.icono-btn", { type: "button", onclick: () => (fijo.quitar(), alSalir()), "aria-label": "Volver al inicio" }, "✕")
           )
         ),
         selectorJuegos({
@@ -346,7 +349,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
   function preparar(meta) {
     const caja = h("div.espera", h("h1", "Preparando…"));
     let t = 0;
-    mostrar({ el: h("section", h("div.barra-sup", banner(yo, ".plegar")), caja), desmontar: () => clearInterval(t) });
+    mostrar({ el: h("section", h("div.barra-sup", fijo.hueco("cerrado")), caja), desmontar: () => clearInterval(t) });
     // Dejamos pintar antes de calcular (la primera vez tarda un poco).
     setTimeout(async () => {
       if (meta.sinDiccionario) await motor.datosJuegos;
@@ -432,7 +435,8 @@ export function entrarSolo({ app, perfil, alSalir }) {
       } catch {}
       let datos = null;
       try {
-        datos = casillasFinal(meta, ronda, impl.estadoJugador(ronda, yo.id));
+        const jj = impl.estadoJugador(ronda, yo.id);
+        datos = [casillasFinal(meta, ronda, jj), extraFinal(meta, ronda, jj)];
       } catch {}
       resultado(meta, r, resumen, nuevas, datos);
     }
@@ -444,7 +448,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
         h(
           "div.barra-sup.barra-juego",
           // El mismo banner, ya cerrado en círculo: así no hay salto al empezar.
-          h("span.icono-yo", banner(yo, ".plegado")),
+          h("span.icono-yo", fijo.hueco("cerrado")),
           // Sin límite de tiempo: en vez del reloj, un botón para acabar cuando quieras (y ver el resultado).
           meta.duracion ? reloj.el : h("button.boton.suave.sin-limite", { type: "button", onclick: terminar }, "∞ · Terminar 🏁"),
           h("button.icono-btn", { type: "button", onclick: abandonar, "aria-label": "Dejar la partida" }, "✕")),
@@ -478,6 +482,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
   }
 
   function resultado(meta, r, resumen = null, hazanas = [], datos = null) {
+    setTimeout(() => document.querySelectorAll(".bloqueo-final button").forEach((b) => (b.disabled = false)), 1500);
     const anterior = apuntar(meta, r);
     const record = r.valor != null && (!anterior || r.valor > anterior.valor);
     if (record) navigator.vibrate?.([60, 60, 120]);
@@ -513,15 +518,16 @@ export function entrarSolo({ app, perfil, alSalir }) {
           palabraPendiente(r.pendiente),
           solucion(meta, resumen, r)
         ),
+        // Bloqueados un momento: si estabas tocando cuando se acabó el tiempo, no empiezas otra sin querer.
         h(
-          "div.pl-botones",
-          h("button.boton.suave", { type: "button", onclick: lista }, "Otro juego"),
-          h("button.boton.acento", { type: "button", onclick: () => preparar(meta) }, "Otra vez")
+          "div.pl-botones.bloqueo-final",
+          h("button.boton.suave", { type: "button", disabled: true, onclick: lista }, "Otro juego"),
+          h("button.boton.acento", { type: "button", disabled: true, onclick: () => preparar(meta) }, "Otra vez")
         )
       ),
     });
   }
 
   lista();
-  return { salir: () => actual?.desmontar?.() };
+  return { salir: () => (actual?.desmontar?.(), fijo.quitar()) };
 }

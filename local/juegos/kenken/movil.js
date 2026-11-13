@@ -15,6 +15,8 @@ function jaulaBien(j, v) {
   return j.op === "−" ? a - b === j.objetivo : a / b === j.objetivo;
 }
 
+const AYUDA = "Los números de cada zona, con su signo, dan su resultado";
+
 export function montar(cuerpo, e, ctx) {
   const d = e.datos;
   const n = d.n;
@@ -24,7 +26,7 @@ export function montar(cuerpo, e, ctx) {
   let acabado = Boolean(d.resuelto);
 
   const rejilla = crearRejilla(d);
-  const aviso = h("div.pl-aviso.suave", "Toca una casilla y luego un número");
+  const aviso = h("div.pl-aviso.suave", AYUDA);
   const teclas = [...Array.from({ length: n }, (_, i) => String(i + 1)), "⌫"];
   const teclado = h(
     "div.kk-teclado",
@@ -105,7 +107,7 @@ export function montar(cuerpo, e, ctx) {
     rejilla.el.classList.toggle("resuelto", acabado);
     if (acabado) rejilla.celdas.forEach((c) => c.classList.remove("sel"));
     aviso.className = `pl-aviso${acabado ? " ok" : choca.size ? " mal" : ""}`;
-    aviso.textContent = acabado ? "🎉 ¡Resuelto!" : choca.size ? "Hay números repetidos en una fila o columna" : lleno ? "Alguna jaula no cuadra" : "Toca una casilla y luego un número";
+    aviso.textContent = acabado ? "🎉 ¡Resuelto!" : choca.size ? "Hay números repetidos en una fila o columna" : lleno ? "Alguna zona no cuadra" : AYUDA;
   }
 
   pintar();
