@@ -139,6 +139,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
               almacen.guardar("nyp-tiempos", JSON.stringify(tiempos));
             },
           },
+          conAyuda: true,
           alJugar: (j) => preparar({ ...j, duracion: tiempos[j.id] ?? j.duracion, dificultad: niveles[j.id] ?? "normal" }),
           alDesbloquear: sinDiccionario,
         })

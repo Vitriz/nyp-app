@@ -10,6 +10,7 @@ export default {
   nombre: "Definición",
   categoria: "palabras",
   duracion: 60,
+  breve: "Adivina la palabra a partir de su definición.",
   descripcion: "Lee la definición y escribe la palabra. Cada pista desvela una letra pero resta. Gana quien sume más.",
 
   crear({ azar, config }) {

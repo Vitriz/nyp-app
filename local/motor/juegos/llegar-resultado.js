@@ -108,6 +108,7 @@ export default {
   nombre: "Llegar al resultado",
   categoria: "numeros",
   duracion: 60,
+  breve: "Combina los números para llegar al objetivo.",
   descripcion: "Combina los números con + − × ÷ para llegar al número objetivo. Cada número se usa una vez. Si nadie llega, gana quien se acerque más.",
 
   crear({ azar, config }) {

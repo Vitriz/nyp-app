@@ -9,6 +9,7 @@ export default {
   nombre: "Revuelto",
   categoria: "palabras",
   duracion: 90,
+  breve: "Separa las letras mezcladas en dos palabras.",
   descripcion: "Las 12 letras de dos palabras están mezcladas. Lee las dos definiciones, escribe una de las palabras y comprueba. Cada letra se usa una vez.",
 
   crear({ azar, config }) {

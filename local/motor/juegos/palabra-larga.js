@@ -47,6 +47,7 @@ export default {
   nombre: "Palabra más larga",
   categoria: "palabras",
   duracion: 45,
+  breve: "Forma la palabra más larga con las letras.",
   descripcion: "Forma la palabra más larga que puedas con las letras. Cada letra se usa una vez. Valen plurales, femeninos y verbos conjugados.",
 
   crear({ azar, config }) {

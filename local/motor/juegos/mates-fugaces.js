@@ -46,6 +46,7 @@ export default {
   nombre: "Mates fugaces",
   categoria: "numeros",
   duracion: 60,
+  breve: "Resuelve operaciones rápidas, una tras otra.",
   descripcion: "Van apareciendo operaciones. Escribe el resultado y pulsa OK. Si una se te atraganta, pásala. Gana quien acierte más.",
 
   crear({ azar, config }) {

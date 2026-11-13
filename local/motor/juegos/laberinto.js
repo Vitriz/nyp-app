@@ -153,6 +153,7 @@ export default {
   nombre: "Laberinto de cálculos",
   categoria: "numeros",
   duracion: 120,
+  breve: "Coloca los números para que cuadren las cuentas.",
   descripcion: "Completa las operaciones cruzadas con los números del banco. Cada operación se lee de izquierda a derecha o de arriba abajo.",
 
   crear({ azar, config, inicio = Date.now() }) {

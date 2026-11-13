@@ -2,6 +2,7 @@
 // y, al lado, la ficha del juego elegido. Se mueve con el dedo, la rueda del ratón o las flechas.
 import { h } from "../comun/ui.js";
 import { teclasFisicas } from "../comun/teclas.js";
+import { ventanaAyuda } from "./ayuda.js";
 
 export const ICONOS = {
   "palabra-larga": "🔠", definicion: "📖", sopa: "🔍", revuelto: "🔀", paraulogico: "🐝",
@@ -76,10 +77,11 @@ export const textoSegundos = (s) => (s < 60 || s % 60 ? `${s} s` : `${s / 60} mi
  * recordDe(juego, segundos, nivel) -> { texto } | null   (sin él no hay récords, p. ej. en la TV de PARTY)
  * tiempo: { lista: [s…], de(juego) -> s, fijar(juego, s) }   (para elegir la duración; ← → también)
  * nivel: { lista: [id…], nombres: { id: texto }, de(juego) -> id, fijar(juego, id) }   (1 2 3 en el teclado)
+ * conAyuda: botón ? con la ventana de ayuda del juego (en el móvil)
  * textoJugar: texto del botón grande
  * alJugar(juego) / alDesbloquear(juego)
  */
-export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel = null, textoJugar = "¡Jugar! ▶", alJugar, alDesbloquear }) {
+export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel = null, conAyuda = false, textoJugar = "¡Jugar! ▶", alJugar, alDesbloquear }) {
   const conRecords = recordDe != null;
   const segundosDe = (j) => tiempo?.de(j) ?? j.duracion;
   const listaDe = (j) => (typeof tiempo?.lista === "function" ? tiempo.lista(j) : tiempo?.lista ?? [j.duracion]);
@@ -145,9 +147,11 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       h(
         "div.sel-cabeza",
         h("span.sel-icono", ICONOS[j.id] ?? "🎲"),
-        h("div", h("span.sel-cat", { palabras: "Palabras", numeros: "Números", pulsador: "Pulsador" }[j.categoria] ?? ""), h("h2.sel-nombre", j.nombre))
+        h("div.sel-cabeza-textos", h("span.sel-cat", { palabras: "Palabras", numeros: "Números", pulsador: "Pulsador" }[j.categoria] ?? ""), h("h2.sel-nombre", j.nombre)),
+        conAyuda ? h("button.sel-ayuda-btn", { type: "button", onclick: () => ventanaAyuda(j, ICONOS[j.id]), "aria-label": `Cómo se juega a ${j.nombre}`, title: "Cómo se juega" }, "?") : null
       ),
-      h("p.sel-desc", j.descripcion),
+      // Siempre una frase corta: así la ficha mide lo mismo con todos los juegos (lo demás, en el ?).
+      h("p.sel-desc", typeof j.breve === "string" && j.breve ? j.breve : j.descripcion),
       ...(conRecords ? [recordEl] : []),
       h(
         "div.sel-ajustes",
@@ -291,6 +295,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       if (!j.bloqueado) nivel.fijar(j, nivel.lista[Number(t) - 1]);
       return pintarAjustes(true);
     }
+    if (conAyuda && (t === "?" || t === "h")) return ventanaAyuda(juegos[sel], ICONOS[juegos[sel].id]);
     if (t === "OK" || t === " ") return elegir();
     return false;
   });
@@ -307,7 +312,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       "div.sel-lista",
       h("div.sel-titulo", h("span", "Elige juego"), contador),
       rueda,
-      h("p.sel-ayuda", tiempo ? `↑ ↓ juego · ← → tiempo${nivel ? " · 1 2 3 nivel" : ""} · Enter para jugar` : "↑ ↓ para elegir · Enter para jugar")
+      h("p.sel-ayuda", tiempo ? `↑ ↓ juego · ← → tiempo${nivel ? " · 1 2 3 nivel" : ""}${conAyuda ? " · ? ayuda" : ""} · Enter para jugar` : "↑ ↓ para elegir · Enter para jugar")
     )
     )
   );

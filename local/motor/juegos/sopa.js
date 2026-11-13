@@ -40,6 +40,7 @@ export default {
   nombre: "Sopa de letras",
   categoria: "palabras",
   duracion: 120,
+  breve: "Encuentra las palabras escondidas en la sopa.",
   descripcion: "Busca las palabras escondidas en el tablero. Pueden ir en cualquier dirección. Arrastra el dedo de la primera letra a la última.",
 
   crear({ azar, config }) {

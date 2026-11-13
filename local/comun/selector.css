@@ -180,3 +180,44 @@
 .familia-marca { color: var(--oro); white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .familia-juego { animation: none; } }
 .sel-ficha { flex-shrink: 0; } .sel-ficha > * { flex-shrink: 0; }
+
+/* ---------- ficha de tamaño fijo: frase corta (2 líneas como mucho) y el botón ? ---------- */
+.sel-desc { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.7em; line-height: 1.35; }
+.sel-cabeza-textos { flex: 1; min-width: 0; }
+.sel-nombre { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sel-ayuda-btn {
+  appearance: none; flex: none; align-self: flex-start; width: 2.6rem; height: 2.6rem; border-radius: 50%; cursor: pointer;
+  font: inherit; font-family: var(--fuente-ficha); font-weight: 900; font-size: 1.35rem; color: var(--texto);
+  background: rgba(120, 160, 255, 0.16); border: 2px solid var(--borde-suave); transition: background 150ms, transform 120ms;
+}
+.sel-ayuda-btn:hover { background: rgba(120, 160, 255, 0.28); }
+.sel-ayuda-btn:active { transform: scale(0.92); }
+
+/* ---------- ventana de ayuda ---------- */
+.capa-ayuda { place-items: end center; }
+.capa-ayuda .caja { max-width: 30rem; max-height: 92dvh; overflow-y: auto; text-align: left; gap: 0.7rem; animation: hoja 320ms var(--curva); border-radius: 1.4rem 1.4rem 1rem 1rem; }
+.ayuda-cabeza { display: flex; align-items: center; gap: 0.6rem; }
+.ayuda-cabeza h2 { flex: 1; margin: 0; font-size: 1.4rem; }
+.ayuda-icono { font-size: 1.8rem; }
+.ayuda-video-caja { border-radius: 1rem; overflow: hidden; background: rgba(6, 18, 56, 0.6); aspect-ratio: 9 / 12; max-height: 42dvh; display: grid; place-items: center; }
+.ayuda-video { width: 100%; height: 100%; object-fit: contain; display: block; }
+.ayuda-sin-video { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; color: var(--texto-suave); font-weight: 800; padding: 1.5rem; }
+.ayuda-sin-video span { font-size: 2.4rem; }
+.ayuda-pasos { margin: 0; padding: 0; list-style: none; counter-reset: paso; display: flex; flex-direction: column; gap: 0.45rem; }
+.ayuda-pasos li { counter-increment: paso; display: grid; grid-template-columns: 1.8rem 1fr; gap: 0.5rem; align-items: start; font-weight: 700; line-height: 1.35; animation: sel-texto 320ms var(--curva) both; }
+.ayuda-pasos li::before {
+  content: counter(paso); display: grid; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 50%;
+  background: linear-gradient(180deg, #fff, var(--ficha-2)); color: var(--ficha-texto); font-family: var(--fuente-ficha); font-weight: 900;
+}
+.ayuda-linea { margin: 0; font-size: 0.95rem; color: var(--texto-suave); font-weight: 700; line-height: 1.35; }
+.ayuda-linea b { color: var(--texto); }
+
+/* ---------- rueda: iconos grandes pegados a la izquierda de cada juego ---------- */
+.sel-item { padding: 0 0.9rem 0 0; gap: 0.75rem; border-left-width: 0 !important; overflow: hidden; }
+.sel-item-icono {
+  align-self: stretch; width: 3.4rem; height: auto; border-radius: 0; font-size: 1.85rem;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cat, var(--acento)) 55%, #0b1f55), color-mix(in srgb, var(--cat, var(--acento)) 30%, #0b1f55));
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.12);
+}
+.sel-item.elegido .sel-item-icono { background: linear-gradient(180deg, color-mix(in srgb, var(--cat, var(--acento)) 45%, #fff), color-mix(in srgb, var(--cat, var(--acento)) 70%, #fff)); }
+.sel-item.pulsador { --cat: #f08fb5; }

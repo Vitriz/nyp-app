@@ -65,6 +65,7 @@ export default {
   categoria: "numeros",
   duracion: 75,
   tic: 400, // la sala nos refresca a menudo: el reloj de las cadenas es nuestro
+  breve: "Resuelve de cabeza la operación con paréntesis.",
   descripcion: "Resuelve de cabeza la operación entera, empezando por los paréntesis de dentro, y escribe el resultado. Un solo intento por operación; gana quien acierte más (y antes).",
 
   crear({ azar, config, duracion = 75000, inicio = Date.now() }) {

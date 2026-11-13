@@ -37,6 +37,7 @@ export default {
   nombre: "Tutifruti",
   categoria: "palabras",
   duracion: 120,
+  breve: "Forma todas las palabras que puedas con el panal.",
   descripcion: "Forma palabras de 3 o más letras con las del panal. La del centro es obligatoria y puedes repetir letras. Cuanto más larga, más puntos; usar las 7 letras da +10.",
 
   crear({ azar, config }) {

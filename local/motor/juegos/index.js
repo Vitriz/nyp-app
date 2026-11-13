@@ -44,6 +44,7 @@ export function listaJuegos() {
     ...j,
     duracion: implementados[j.id]?.duracion ?? j.duracion,
     descripcion: implementados[j.id]?.descripcion ?? "",
+    breve: implementados[j.id]?.breve ?? "",
     disponible: Boolean(implementados[j.id]),
   }));
 }
