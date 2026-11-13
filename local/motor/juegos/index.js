@@ -57,6 +57,7 @@ export function listaJuegos() {
     breve: implementados[j.id]?.breve ?? "",
     ambitos: implementados[j.id]?.ambitos ?? null, // crucigrama: temas para elegir
     disponible: Boolean(implementados[j.id]),
+    sinDiccionario: Boolean(implementados[j.id]?.sinDiccionario), // trae sus propios datos
   }));
 }
 

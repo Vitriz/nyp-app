@@ -60,7 +60,11 @@ export function montar(cuerpo, e, ctx) {
     if (d.fin) {
       cabeza.textContent = "";
       hallados.replaceChildren();
-      rejilla.replaceChildren(h("div.espera", h("h1", "🏁"), h("p", `¡Has terminado todos los tableros! ${d.grupos} grupos.`)));
+      rejilla.replaceChildren(
+        d.total
+          ? h("div.espera", h("h1", "🏁"), h("p", `¡Has terminado todos los tableros! ${d.grupos} ${d.grupos === 1 ? "grupo" : "grupos"}.`))
+          : h("div.espera", h("h1", "📚"), h("p", "No hay tableros de Conexiones."), h("p.suave", "Abre la app con internet para actualizarla."))
+      );
       [botones, siguiente, aviso].forEach((x) => x.classList.add("oculto"));
       return;
     }

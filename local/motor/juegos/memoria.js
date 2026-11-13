@@ -7,10 +7,11 @@
 import { cargarDefiniciones } from "../lexico.js";
 import { nivelDificultad } from "../util.js";
 
+// Siempre 6 tarjetas; la dificultad cambia el tiempo para memorizarlas (y los huecos de la rejilla).
 const NIVELES = [
-  { tarjetas: 4, ver: 4500, rejilla: 4 },
-  { tarjetas: 5, ver: 3800, rejilla: 6 },
-  { tarjetas: 6, ver: 3200, rejilla: 9 },
+  { tarjetas: 6, ver: 7000, rejilla: 6 },
+  { tarjetas: 6, ver: 5500, rejilla: 9 },
+  { tarjetas: 6, ver: 4500, rejilla: 9 },
 ];
 const TOTAL = 40;
 

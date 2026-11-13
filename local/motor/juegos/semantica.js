@@ -55,7 +55,8 @@ export default {
   id: "semantica",
   nombre: "Semántica",
   categoria: "palabras",
-  duracion: 240,
+  duracion: 0, // sin límite
+  sinDiccionario: true, // trae sus propios datos
   breve: "Adivina la palabra secreta por lo cerca que vas.",
   descripcion: "Hay una palabra secreta. Escribe cualquier palabra y verás lo cerca que está de su significado: el #1 es la secreta. Ve acercándote. Puedes pedir pistas.",
 

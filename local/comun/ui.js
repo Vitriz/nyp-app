@@ -109,6 +109,13 @@ function colorReloj(f) {
   return "rgb(255,82,82)";
 }
 
+/** Tiempos de las pruebas (s). 0 = sin límite (como en servidor/util.js). */
+export const TIEMPOS = [30, 45, 60, 90, 120, 0];
+export const SIN_LIMITE_MS = 12 * 3600 * 1000;
+export const msDuracion = (s) => (s > 0 ? s * 1000 : SIN_LIMITE_MS);
+/** «30 s», «2 min», «∞». */
+export const textoSegundos = (s) => (!s ? "∞" : s < 60 || s % 60 ? `${s} s` : `${s / 60} min`);
+
 export function crearReloj(ahoraServidor) {
   const R = 45, L = 2 * Math.PI * R;
   const el = h("div.reloj");
@@ -120,6 +127,19 @@ export function crearReloj(ahoraServidor) {
   let fin = 0, total = 1, vivo = true, ultimo = null;
   function pintar() {
     if (!vivo) return;
+    // Sin límite: el reloj se queda lleno con «∞».
+    if (total >= SIN_LIMITE_MS / 2) {
+      if (ultimo !== "∞") {
+        ultimo = "∞";
+        cifra.textContent = "∞";
+        arco.style.strokeDashoffset = "0";
+        el.style.setProperty("--reloj-c", colorReloj(1));
+        el.classList.add("sin-limite");
+        el.classList.remove("apuro", "ultimos", "tic");
+      }
+      return requestAnimationFrame(pintar);
+    }
+    el.classList.remove("sin-limite");
     const resta = Math.max(0, fin - ahoraServidor());
     const seg = Math.ceil(resta / 1000);
     const f = Math.min(1, resta / total);

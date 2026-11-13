@@ -2,7 +2,7 @@
 //   (((500 + 50) ÷ 2) + 15) ÷ 5 = ?
 // Se resuelve de cabeza y se da el resultado (un solo intento por operación).
 // Gana quien acierte más; si empatan, quien respondió más rápido en total.
-import { nivelDificultad } from "../util.js";
+import { nivelDificultad, SIN_LIMITE_MS } from "../util.js";
 
 const PREVIA = 1800; // ms de "prepárate" antes de cada operación
 const MAX = 150;
@@ -63,7 +63,7 @@ export default {
   id: "calculo-mental",
   nombre: "Cálculo mental",
   categoria: "numeros",
-  duracion: 75,
+  duracion: 60,
   tic: 400, // la sala nos refresca a menudo: el reloj de las cadenas es nuestro
   breve: "Resuelve de cabeza la operación con paréntesis.",
   descripcion: "Resuelve de cabeza la operación entera, empezando por los paréntesis de dentro, y escribe el resultado. Un solo intento por operación; gana quien acierte más (y antes).",
@@ -72,6 +72,8 @@ export default {
     const d = nivelDificultad(config);
     // Fácil: 3 operaciones y más tiempo para cada una; difícil: 5 y menos tiempo.
     const pasos = [4, 5, 6][d + 1];
+    // Sin límite de tiempo: 8 operaciones a su ritmo normal.
+    if (duracion >= SIN_LIMITE_MS) duracion = 8 * [25000, 18750, 15000][d + 1];
     const n = Math.max(1, Math.min(8, Math.round(duracion / [25000, 18750, 15000][d + 1])));
     const tramo = duracion / n;
     const cadenas = [];
@@ -133,7 +135,8 @@ export default {
 
   terminado(ronda, id) {
     const r = ronda.jugadores[id]?.respuestas ?? [];
-    return ronda.cadenas.every((_, k) => r[k]);
+    // También cuando ya han pasado todas las operaciones (se acabó, aunque falte responder alguna).
+    return ronda.cadenas.every((_, k) => r[k]) || Date.now() > ronda.cadenas.at(-1).fin + 1500;
   },
 
   resultados(ronda, ids) {

@@ -72,14 +72,17 @@ export default {
   id: "conexiones",
   nombre: "Conexiones",
   categoria: "palabras",
-  duracion: 180,
+  duracion: 120,
+  sinDiccionario: true, // trae sus propios datos
   breve: "Encuentra los 4 grupos de 4 palabras.",
   descripcion: "Hay 16 palabras que forman 4 grupos de 4 con algo en común. Elige 4 y comprueba. Con 4 fallos se acaba el tablero y sale otro. Gana quien encuentre más grupos.",
 
   crear({ azar, config }) {
     const d = nivelDificultad(config);
     const datos = cargarConexiones();
-    const comunes = cargarDefiniciones().filter((x) => x.nivel <= (d < 0 ? 1 : 2) && x.clave.length >= 3 && x.clave.length <= 10).map((x) => [x.clave, x.forma, x.nivel]);
+    // Las palabras comunes vienen con los datos (así no hace falta el diccionario).
+    const todas = datos.comunes ?? cargarDefiniciones().map((x) => [x.clave, x.forma, x.nivel]);
+    const comunes = todas.filter(([c, , niv]) => niv <= (d < 0 ? 1 : 2) && c.length >= 3 && c.length <= 10);
     const tableros = [];
     for (let i = 0; i < TABLEROS * 2 && tableros.length < TABLEROS; i++) {
       const t = tablero(azar, d, datos, comunes);

@@ -1,5 +1,5 @@
 // Modo solo: los mismos juegos que en PARTY, ejecutados en el propio móvil, con récords personales.
-import { h, cambiarPantalla, banner, avatar, crearReloj, textoCuenta, piezaCuenta, detalleJugador, confeti, contarHasta, finalLlegar, palabraPendiente } from "../comun/ui.js";
+import { h, cambiarPantalla, banner, avatar, TIEMPOS, msDuracion, crearReloj, textoCuenta, piezaCuenta, detalleJugador, confeti, contarHasta, finalLlegar, palabraPendiente } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { almacen } from "../comun/conexion.js";
 import { leerPaquete, diccionarioIncluido, desbloquearDiccionario, actualizarIncluido } from "./paquete.js";
@@ -16,6 +16,8 @@ async function cargarMotor() {
   if (motor) return motor;
   const [lexico, juegos, util] = await Promise.all([import("../motor/lexico.js"), import("../motor/juegos/index.js"), import("../motor/util.js")]);
   motor = { lexico, juegos, util, diccionario: lexico.listo() };
+  // Semántica y Conexiones traen sus datos con la app: se cargan en segundo plano.
+  motor.datosJuegos = lexico.cargarDatosJuegos?.() ?? Promise.resolve();
   return motor;
 }
 
@@ -42,7 +44,8 @@ function leerRecords() {
 
 // Los récords van con su tiempo y su nivel: "juego@segundos" (nivel medio) o "juego@segundos@facil|dificil".
 // Los antiguos (solo "juego") cuentan como récord del tiempo normal de ese juego, en nivel medio.
-const TIEMPOS = [30, 45, 60, 90, 120, 180];
+/** Un tiempo guardado que ya no está en la lista (los antiguos 3 o 4 min) pasa a 2 min. */
+const tiempoValido = (s) => (TIEMPOS.includes(s) ? s : 120);
 const NIVELES = ["facil", "normal", "dificil"];
 const NOMBRES_NIVEL = { facil: "Fácil", normal: "Medio", dificil: "Difícil" };
 
@@ -123,7 +126,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
           )
         ),
         selectorJuegos({
-          juegos: juegos.map((j) => ({ ...j, duracionBase: j.duracion, bloqueado: j.categoria === "palabras" && !conDiccionario })),
+          juegos: juegos.map((j) => ({ ...j, duracionBase: j.duracion, bloqueado: j.categoria === "palabras" && !j.sinDiccionario && !conDiccionario })),
           recordDe: (j, seg, nv) => recordDe(records, j, seg, nv),
           nivel: {
             lista: NIVELES,
@@ -135,8 +138,8 @@ export function entrarSolo({ app, perfil, alSalir }) {
             },
           },
           tiempo: {
-            lista: (j) => [...new Set([...TIEMPOS, j.duracion])].sort((a, b) => a - b),
-            de: (j) => tiempos[j.id] ?? j.duracion,
+            lista: TIEMPOS,
+            de: (j) => tiempoValido(tiempos[j.id] ?? j.duracion),
             fijar: (j, s) => {
               tiempos[j.id] = s;
               almacen.guardar("nyp-tiempos", JSON.stringify(tiempos));
@@ -144,7 +147,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
           },
           conAyuda: true,
           alJugar: async (j) => {
-            const meta = { ...j, duracion: tiempos[j.id] ?? j.duracion, dificultad: niveles[j.id] ?? "normal" };
+            const meta = { ...j, duracion: tiempoValido(tiempos[j.id] ?? j.duracion), dificultad: niveles[j.id] ?? "normal" };
             // Crucigrama: primero se elige el tema (o al azar).
             if (j.ambitos?.length) {
               const ambito = await elegirAmbito(j.ambitos);
@@ -336,36 +339,41 @@ export function entrarSolo({ app, perfil, alSalir }) {
     });
   }
 
+  /** Preparar y cuenta atrás en la misma pantalla: mientras, el banner se cierra y solo queda tu icono. */
   function preparar(meta) {
-    mensaje("Preparando…");
-    // Dejamos pintar el mensaje antes de calcular (la primera vez tarda un poco).
-    setTimeout(() => {
+    const caja = h("div.espera", h("h1", "Preparando…"));
+    let t = 0;
+    mostrar({ el: h("section", h("div.barra-sup", banner(yo, ".plegar")), caja), desmontar: () => clearInterval(t) });
+    // Dejamos pintar antes de calcular (la primera vez tarda un poco).
+    setTimeout(async () => {
+      if (meta.sinDiccionario) await motor.datosJuegos;
+      if (!caja.isConnected) return;
       const impl = motor.juegos.obtenerJuego(meta.id);
-      const inicio = Date.now() + 4000; // 3, 2, 1 y ¡YA!
-      const duracion = meta.duracion * 1000;
-      const ronda = impl.crear({ azar: motor.util.crearAzar(Date.now()), config: { pulsadorTipos: [], dificultad: meta.dificultad ?? "normal", ambito: meta.ambito }, duracion, inicio });
+      const duracion = msDuracion(meta.duracion);
+      const previsto = Date.now() + 4000;
+      const ronda = impl.crear({ azar: motor.util.crearAzar(Date.now()), config: { pulsadorTipos: [], dificultad: meta.dificultad ?? "normal", ambito: meta.ambito }, duracion, inicio: previsto });
       impl.vistaJugador(ronda, yo.id);
-      cuenta(meta, impl, ronda, inicio, inicio + duracion);
+      // La cuenta atrás empieza al acabar de preparar: así el 3 dura lo mismo que el 2 y el 1.
+      const retraso = Math.max(0, Date.now() - (previsto - 4000));
+      if (typeof ronda.inicio === "number") ronda.inicio += retraso; // los que miden el tiempo desde el inicio
+      const inicio = previsto + retraso;
+      let ultimo = null;
+      const paso = () => {
+        const falta = inicio - Date.now();
+        const txt = textoCuenta(falta);
+        if (txt !== ultimo) {
+          ultimo = txt;
+          caja.replaceChildren(piezaCuenta(txt));
+          navigator.vibrate?.(30);
+        }
+        if (falta <= 0) {
+          clearInterval(t);
+          jugar(meta, impl, ronda, inicio, inicio + duracion);
+        }
+      };
+      t = setInterval(paso, 100);
+      paso();
     }, 60);
-  }
-
-  function cuenta(meta, impl, ronda, inicio, fin) {
-    const caja = h("div.espera");
-    let ultimo = null;
-    const t = setInterval(() => {
-      const s = inicio - Date.now();
-      const txt = textoCuenta(s);
-      if (txt !== ultimo) {
-        ultimo = txt;
-        caja.replaceChildren(piezaCuenta(txt));
-        navigator.vibrate?.(30);
-      }
-      if (s <= 0) {
-        clearInterval(t);
-        jugar(meta, impl, ronda, inicio, fin);
-      }
-    }, 100);
-    mostrar({ el: h("section", barra(), caja), desmontar: () => clearInterval(t) });
   }
 
   function jugar(meta, impl, ronda, inicio, fin) {
@@ -391,7 +399,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
         }, 0);
       },
     };
-    const tic = impl.tic ? setInterval(refrescar, impl.tic) : 0;
+    const tic = impl.tic ? setInterval(() => (impl.terminado(ronda, yo.id) ? terminar() : refrescar()), impl.tic) : 0;
     const finRonda = setTimeout(terminar, fin - Date.now());
 
     function abandonar() {
@@ -426,7 +434,12 @@ export function entrarSolo({ app, perfil, alSalir }) {
     mostrar({
       el: h(
         "section",
-        h("div.barra-sup.barra-juego", h("span.icono-yo", avatar(yo)), reloj.el, h("button.icono-btn", { type: "button", onclick: abandonar, "aria-label": "Dejar la partida" }, "✕")),
+        h(
+          "div.barra-sup.barra-juego",
+          h("span.icono-yo", avatar(yo)),
+          // Sin límite de tiempo: en vez del reloj, un botón para acabar cuando quieras (y ver el resultado).
+          meta.duracion ? reloj.el : h("button.boton.suave.sin-limite", { type: "button", onclick: terminar }, "∞ · Terminar 🏁"),
+          h("button.icono-btn", { type: "button", onclick: abandonar, "aria-label": "Dejar la partida" }, "✕")),
         cuerpo
       ),
       desmontar: () => {

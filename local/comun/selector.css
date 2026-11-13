@@ -311,3 +311,52 @@
   .sel-desc { font-size: 1rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.7em; }
   .sel-jugar { margin-top: auto; min-height: 3.2rem; font-size: 1.35rem; }
 }
+
+/* ---------- ficha más compacta: el ? va en el icono y el nombre se ajusta para leerse entero ---------- */
+.sel-cabeza-textos { container-type: inline-size; }
+.sel-nombre { font-size: min(1.7rem, calc(100cqi / (var(--letras, 12) * 0.6))); white-space: nowrap; overflow: hidden; text-overflow: clip; }
+@container (min-width: 44rem) { .sel-nombre { font-size: min(2.3rem, calc(100cqi / (var(--letras, 12) * 0.6))); } }
+.sel-icono.con-ayuda { position: relative; appearance: none; padding: 0; cursor: pointer; font-family: inherit; color: inherit; transition: transform 140ms var(--curva); }
+.sel-icono.con-ayuda:active { transform: scale(0.92); }
+.sel-icono-ayuda {
+  position: absolute; right: -0.45rem; top: -0.45rem; display: grid; place-items: center; width: 1.45rem; height: 1.45rem; border-radius: 50%;
+  font-family: var(--fuente-ficha); font-size: 0.9rem; font-weight: 900; line-height: 1; color: #fff;
+  background: linear-gradient(180deg, #6fb4ff, #3a74d8); border: 0.12rem solid #fff; box-shadow: 0 0.12rem 0.3rem rgba(4, 12, 40, 0.5);
+}
+.sel-ayuda-btn { display: none; }
+
+/* El botón de jugar va dentro del juego elegido de la lista (y ▶ en la cuadrícula); la ficha no lo lleva. */
+.sel-item-jugar {
+  flex: none; display: none; align-items: center; padding: 0.35rem 0.75rem; border-radius: 999px; font-size: 0.95rem; font-weight: 900; white-space: nowrap;
+  background: linear-gradient(180deg, #8fe0f0, #5fb7d0); color: var(--ficha-texto); box-shadow: 0 0.15rem 0 rgba(4, 12, 40, 0.35);
+  position: relative; overflow: hidden; isolation: isolate;
+}
+.sel-item-jugar::after {
+  content: ""; position: absolute; inset: -20% auto -20% -40%; width: 35%; z-index: -1; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.7), transparent); transform: skewX(-18deg);
+  animation: brillo 3.6s ease-in-out 1.2s infinite;
+}
+.sel-item.bloqueado .sel-item-jugar { background: var(--superficie-2); color: var(--texto); }
+.sel-casilla { position: relative; }
+.sel-casilla-jugar {
+  display: none; position: absolute; right: -0.35rem; bottom: -0.35rem; width: 1.5rem; height: 1.5rem; border-radius: 50%; place-items: center;
+  font-size: 0.7rem; color: var(--ficha-texto); background: linear-gradient(180deg, #8fe0f0, #5fb7d0); border: 0.12rem solid #fff;
+}
+@container (max-width: 43.99rem) {
+  .sel-jugar { display: none; }
+  .sel-item.elegido .sel-item-jugar { display: inline-flex; }
+  .sel-casilla.elegido .sel-casilla-jugar { display: grid; }
+  .sel { gap: 0.6rem; }
+  .sel-ficha { padding: 0.75rem 0.85rem 0.85rem; gap: 0.55rem; }
+  .sel-cabeza { gap: 0.75rem; }
+  .sel-icono { width: 3.2rem; height: 3.2rem; font-size: 1.8rem; border-radius: 0.8rem; }
+  .sel-desc { font-size: 0.95rem; line-height: 1.3; min-height: 2.6em; }
+  .sel-record { height: 2.2rem; }
+  .sel-record-copa { width: 1.65rem; height: 1.65rem; font-size: 0.9rem; }
+  .sel-pil-flecha, .sel-pil-ventana { height: 2.45rem; }
+}
+@media (prefers-reduced-motion: reduce) { .sel-item-jugar::after { animation: none; } }
+@container (max-width: 43.99rem) {
+  /* El elegido lleva «▶ Jugar»: su nombre puede ir en dos líneas para no cortarse. */
+  .sel-item.elegido .sel-item-nombre { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.1; font-size: 1.02rem; }
+}

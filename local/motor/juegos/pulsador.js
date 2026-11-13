@@ -57,7 +57,7 @@ export default {
   id: "pulsador",
   nombre: "Pulsador",
   categoria: "pulsador",
-  duracion: 180,
+  duracion: 120,
   breve: "Pulsa el primero y responde en voz alta.",
   descripcion: "El primero que pulse responde en voz alta. El presentador dice si acierta. Si fallas, ya no puedes pulsar en esa pregunta.",
 

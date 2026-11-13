@@ -23,7 +23,8 @@ export function montar(cuerpo, e, ctx) {
   const tablero = h("div.mem-tablero", { style: { "--cols": cols } });
   const pregunta = h("div.mem-pregunta");
   const marcador = h("span.ficha", String(aciertos));
-  cuerpo.append(h("div.mem", h("div.mf-cont", "Aciertos", marcador), titulo, barra, tablero, pregunta));
+  // La pregunta va arriba, justo debajo del título (no al fondo de la pantalla).
+  cuerpo.append(h("div.mem", h("div.mf-cont", "Aciertos", marcador), titulo, barra, pregunta, tablero));
 
   let tarjetas = []; // por cada tarjeta: elemento
   let estado = null; // { p, fase, tocadas, t0 }

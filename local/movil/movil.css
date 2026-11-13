@@ -971,3 +971,40 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   .tecla-l { height: 2.5rem; }
   .barra-juego { min-height: 2.8rem; }
 }
+
+/* ---------- portada: título un poco más abajo y botones un poco más arriba ---------- */
+@media (orientation: portrait) {
+  .inicio { padding-top: calc(env(safe-area-inset-top) + 4.6rem); padding-bottom: calc(env(safe-area-inset-bottom) + 4.4rem); }
+}
+
+/* ---------- Conexiones: el mensaje final ocupa toda la rejilla ---------- */
+.cx-rejilla > .espera { grid-column: 1 / -1; }
+
+/* ---------- Memoria fotográfica: la pregunta arriba, bajo el título; las tarjetas no saltan ---------- */
+.mem-pregunta { min-height: 4.6rem; display: flex; align-items: center; justify-content: center; }
+.mem-pregunta:empty { visibility: hidden; }
+.mem-tablero { align-content: start; padding-top: 0.4rem; }
+
+/* ---------- sin límite de tiempo: botón para acabar en el centro de la barra ---------- */
+.barra-juego .sin-limite { padding: 0.45rem 1rem; font-size: 0.95rem; font-weight: 900; border-radius: 999px; min-height: 0; }
+.reloj.sin-limite .cifra { font-size: 1.9em; }
+
+/* ---------- al entrar a jugar, el banner se cierra y solo queda tu icono ---------- */
+.barra-sup .banner.plegar { animation: banner-plegar 620ms var(--curva) 180ms both; }
+.barra-sup .banner.plegar .banner-nombre { animation: nombre-plegar 520ms var(--curva) 180ms both; }
+.barra-sup .banner.plegar .avatar { animation: avatar-plegar 620ms var(--curva) 180ms both; }
+@keyframes banner-plegar {
+  to { background-color: transparent; border-color: transparent; box-shadow: none; padding: 0; gap: 0; }
+}
+@keyframes nombre-plegar {
+  from { max-width: 14em; }
+  to { max-width: 0; opacity: 0; padding: 0; }
+}
+@keyframes avatar-plegar {
+  to { font-size: 0.89rem; margin: 0 0 0 -0.14rem; }
+}
+@media (prefers-reduced-motion: reduce) { .barra-sup .banner.plegar, .barra-sup .banner.plegar * { animation-duration: 1ms !important; animation-delay: 0ms !important; } }
+.barra-sup .pts.plegar { animation: pts-plegar 300ms ease 180ms both; }
+@keyframes pts-plegar { to { opacity: 0; } }
+.sm-cabeza { gap: 0.6rem; }
+.sm-cabeza > .suave { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

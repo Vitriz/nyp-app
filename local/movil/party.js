@@ -1,6 +1,6 @@
 // Modo partida: conectado a PARTY (la TV). Esperar, jugar y ver resultados.
 import { conectar, almacen } from "../comun/conexion.js";
-import { h, cambiarPantalla, avatar, banner, crearReloj, textoPuesto, textoCuenta, piezaCuenta, servidor, detalleJugador, finalLlegar, palabraPendiente } from "../comun/ui.js";
+import { h, cambiarPantalla, avatar, banner, crearReloj, msDuracion, textoSegundos, textoPuesto, textoCuenta, piezaCuenta, servidor, detalleJugador, finalLlegar, palabraPendiente } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { actualizarPaquete } from "../solo/paquete.js";
 import { mensajeRecords, guardarFamilia } from "../comun/familia.js";
@@ -149,10 +149,10 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
     return { el, actualizar };
   }
 
-  function barraSuperior(e, { reloj } = {}) {
+  function barraSuperior(e, { reloj, plegar = false } = {}) {
     if (reloj) return barraJuego(e, reloj);
-    const pts = h("span.pts");
-    const ban = bannerVivo();
+    const pts = h(`span.pts${plegar ? ".plegar" : ""}`);
+    const ban = bannerVivo(plegar ? ".plegar" : "");
     ban.actualizar(e.yo);
     const el = h(
       "div.barra-sup",
@@ -252,14 +252,15 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
       const el = h(
         "section",
         barra.el,
-        h("div.espera", h("span.suave", "Siguiente prueba"), tituloEnFichas(e.juego.nombre), h("p", e.juego.descripcion), h("p.suave", `${e.juego.duracion} segundos · ¡prepárate!`))
+        h("div.espera", h("span.suave", "Siguiente prueba"), tituloEnFichas(e.juego.nombre), h("p", e.juego.descripcion), h("p.suave", `${e.juego.duracion ? textoSegundos(e.juego.duracion) : "Sin límite de tiempo"} · ¡prepárate!`))
       );
       return { el, actualizar: (e) => barra.actualizar(e) };
     },
 
     cuenta(e) {
       const caja = h("div.espera");
-      const el = h("section", barraSuperior(e).el, caja);
+      // Al entrar a jugar, el banner se cierra y solo queda tu icono.
+      const el = h("section", barraSuperior(e, { plegar: true }).el, caja);
       let ultimo = null;
       const reloj = setInterval(() => {
         const t = textoCuenta(estado.fin - con.ahora());
@@ -274,7 +275,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
 
     jugando(e) {
       const reloj = crearReloj(con.ahora);
-      const inicio = e.fin - e.juego.duracion * 1000;
+      const inicio = e.fin - msDuracion(e.juego.duracion);
       const barra = barraSuperior(e, { reloj });
       const cuerpo = h("div.cuerpo-juego");
       const el = h("section", barra.el, cuerpo);

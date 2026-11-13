@@ -114,7 +114,7 @@ export default {
   id: "crucigrama",
   nombre: "Crucigrama",
   categoria: "palabras",
-  duracion: 180,
+  duracion: 0, // sin límite
   breve: "Un crucigrama con palabras del tema que elijas.",
   descripcion: "Elige un tema (Medicina, Marina, Música…) o al azar y resuelve el crucigrama. Toca una casilla para elegir la palabra y escríbela. Gana quien resuelva más palabras.",
   ambitos: AMBITOS,

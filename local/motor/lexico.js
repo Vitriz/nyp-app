@@ -16,6 +16,22 @@ let pangramas = null;
 let crucigrama = {};
 let conexiones = { categorias: [], miembros: {} };
 let semantica = null;
+// Semántica y Conexiones traen sus propios datos (motor/datos/…): no necesitan el diccionario.
+let propios = null;
+let datosPropios = null;
+
+/** Carga los datos de Semántica y Conexiones que vienen con la app (una vez). */
+export function cargarDatosJuegos() {
+  return (propios ??= Promise.all(
+    ["semantica", "conexiones"].map((n) =>
+      fetch(new URL(`./datos/${n}.json`, import.meta.url))
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null)
+    )
+  ).then(([s, c]) => {
+    datosPropios = { semantica: s, conexiones: c };
+  }));
+}
 
 /** Carga el paquete (objeto ya descomprimido). */
 export function preparar(p) {
@@ -34,11 +50,11 @@ export function preparar(p) {
 }
 
 export function cargarSemantica() {
-  return semantica;
+  return datosPropios?.semantica ?? semantica;
 }
 
 export function cargarConexiones() {
-  return conexiones;
+  return datosPropios?.conexiones ?? conexiones;
 }
 
 export function cargarCrucigrama() {

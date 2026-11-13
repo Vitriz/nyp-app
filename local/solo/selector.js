@@ -1,6 +1,6 @@
 // Selector de juegos del modo solo, al estilo de las recreativas: una rueda con la lista a un lado
 // y, al lado, la ficha del juego elegido. Se mueve con el dedo, la rueda del ratón o las flechas.
-import { h } from "../comun/ui.js";
+import { h, textoSegundos } from "../comun/ui.js";
 import { teclasFisicas } from "../comun/teclas.js";
 import { ventanaAyuda } from "./ayuda.js";
 
@@ -74,7 +74,7 @@ function ruedaValor(icono, etiqueta, alPaso) {
 /** El récord en pocas palabras (los antiguos no tenían versión corta). */
 export const textoRecord = (r) => r?.corto ?? String(r?.texto ?? "").replace(/^Completo en /, "").replace(/^¡Exacto! en /, "");
 
-export const textoSegundos = (s) => (s < 60 || s % 60 ? `${s} s` : `${s / 60} min`);
+export { textoSegundos };
 
 /**
  * juegos: [{ id, nombre, categoria, descripcion, duracion, bloqueado }]
@@ -102,7 +102,9 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       `button.sel-item.${j.categoria}${j.bloqueado ? ".bloqueado" : ""}`,
       { type: "button", "data-i": i, tabindex: -1 },
       h("span.sel-item-icono", j.bloqueado ? "🔒" : ICONOS[j.id] ?? "🎲"),
-      h("span.sel-item-nombre", j.nombre)
+      h("span.sel-item-nombre", j.nombre),
+      // En el móvil, el botón de jugar va en el propio juego elegido (tocarlo otra vez también juega).
+      h("span.sel-item-jugar", { "aria-hidden": "true" }, j.bloqueado ? "🔓 Abrir" : "▶ Jugar")
     )
   );
   const rueda = h("div.sel-rueda", { role: "listbox", "aria-label": "Juegos" }, h("div.sel-guia"), items);
@@ -111,8 +113,9 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
   const casillas = juegos.map((j, i) =>
     h(
       `button.sel-casilla.${j.categoria}${j.bloqueado ? ".bloqueado" : ""}`,
-      { type: "button", "data-i": i, title: j.nombre, "aria-label": j.nombre, onclick: () => ir(i, false) },
-      h("span", j.bloqueado ? "🔒" : ICONOS[j.id] ?? "🎲")
+      { type: "button", "data-i": i, title: j.nombre, "aria-label": j.nombre, onclick: () => ir(i) },
+      h("span", j.bloqueado ? "🔒" : ICONOS[j.id] ?? "🎲"),
+      h("span.sel-casilla-jugar", { "aria-hidden": "true" }, "▶")
     )
   );
   const cuadricula = h("div.sel-cuadricula", { role: "listbox", "aria-label": "Juegos" }, casillas);
@@ -179,12 +182,25 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       { type: "button", onclick: () => elegir() },
       j.bloqueado ? "🔒 Desbloquear" : textoJugar
     );
+    // El icono del juego es también el botón de ayuda (con un ? en la esquina).
+    const icono = conAyuda
+      ? h(
+          "button.sel-icono.con-ayuda",
+          { type: "button", onclick: () => ventanaAyuda(j, ICONOS[j.id]), "aria-label": `Cómo se juega a ${j.nombre}`, title: "Cómo se juega" },
+          ICONOS[j.id] ?? "🎲",
+          h("span.sel-icono-ayuda", { "aria-hidden": "true" }, "?")
+        )
+      : h("span.sel-icono", ICONOS[j.id] ?? "🎲");
     ficha.replaceChildren(
       h(
         "div.sel-cabeza",
-        h("span.sel-icono", ICONOS[j.id] ?? "🎲"),
-        h("div.sel-cabeza-textos", h("span.sel-cat", { palabras: "Palabras", numeros: "Números", pulsador: "Pulsador" }[j.categoria] ?? ""), h("h2.sel-nombre", j.nombre)),
-        conAyuda ? h("button.sel-ayuda-btn", { type: "button", onclick: () => ventanaAyuda(j, ICONOS[j.id]), "aria-label": `Cómo se juega a ${j.nombre}`, title: "Cómo se juega" }, "?") : null
+        icono,
+        h(
+          "div.sel-cabeza-textos",
+          h("span.sel-cat", { palabras: "Palabras", numeros: "Números", pulsador: "Pulsador" }[j.categoria] ?? ""),
+          // El tamaño de letra se ajusta al largo del nombre: siempre se lee entero.
+          h("h2.sel-nombre", { style: { "--letras": Math.max(8, j.nombre.length) } }, j.nombre)
+        )
       ),
       // Siempre una frase corta: así la ficha mide lo mismo con todos los juegos (lo demás, en el ?).
       h("p.sel-desc", typeof j.breve === "string" && j.breve ? j.breve : j.descripcion),
