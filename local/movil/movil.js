@@ -1,6 +1,6 @@
 // App NYP del móvil: inicio (perfil · jugar en grupo con PARTY · jugar solo).
 import { iniciarFondo } from "../comun/fondo.js";
-import { h, cambiarPantalla, banner, servidor, vigilarEncaje } from "../comun/ui.js";
+import { h, cambiarPantalla, banner, servidor, vigilarEncaje, tituloJuego } from "../comun/ui.js";
 import { cargarPerfil, pantallaPerfil } from "./perfil.js";
 import { entrarParty } from "./party.js";
 import { pantallaGrupo, resolverSala } from "./grupo.js";
@@ -41,7 +41,7 @@ async function inicio() {
   mostrar(
     h(
       "section.inicio",
-      h("div.marca-movil", ["N", "Y", "P"].map((l) => h("span.ficha", l))),
+      tituloJuego(),
       h(
         "div.inicio-perfil",
         // Tocar el banner abre el perfil.
@@ -207,7 +207,7 @@ function pantallaInstalar() {
   mostrar(
     h(
       "section.inicio.instalar-pantalla",
-      h("div.marca-movil", ["N", "Y", "P"].map((l) => h("span.ficha", l))),
+      tituloJuego(),
       h("h1.instalar-titulo", "Descarga la app"),
       h("p.suave.instalar-sub", "Juegos de palabras y números para jugar en familia, en grupo o tú solo."),
       pasos,

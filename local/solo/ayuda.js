@@ -29,6 +29,11 @@ const AYUDA = {
     puntos: "Cuanto más larga, más puntos. Un «tuti» (usar las 7 letras) da +10.",
     niveles: "Fácil: panal con muchas palabras y te dice cuántas quedan · Difícil: panal con pocas.",
   },
+  crucigrama: {
+    pasos: ["Elige un tema (Medicina, Marina, Música…) o al azar.", "Toca una casilla para elegir su palabra; arriba sale la definición. Otro toque en la misma casilla cambia entre horizontal y vertical.", "Escribe la palabra: al llenarla se comprueba sola. ◀ ▶ pasan de una definición a otra."],
+    puntos: "Gana quien resuelva más palabras; si empatan, quien terminó antes.",
+    niveles: "Fácil: 8 palabras, más comunes y con definiciones más largas · Difícil: 12 palabras y definiciones más cortas.",
+  },
   "calculo-mental": {
     pasos: ["Aparece una operación con paréntesis: cada operación tiene su color.", "Resuélvela de cabeza, de dentro hacia fuera.", "Escribe el resultado y pulsa OK. Solo hay un intento por operación."],
     puntos: "Gana quien acierte más; si empatan, quien respondió antes.",

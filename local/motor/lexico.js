@@ -13,6 +13,7 @@ let formas = {};
 let definiciones = [];
 let candidatas = null;
 let pangramas = null;
+let crucigrama = {};
 
 /** Carga el paquete (objeto ya descomprimido). */
 export function preparar(p) {
@@ -25,6 +26,11 @@ export function preparar(p) {
   }));
   candidatas = null;
   pangramas = null;
+  crucigrama = p.crucigrama ?? {};
+}
+
+export function cargarCrucigrama() {
+  return crucigrama;
 }
 
 export function listo() {

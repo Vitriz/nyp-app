@@ -1,4 +1,5 @@
-// Fondo de puntos que respiran despacio y forman una onda donde se toca.
+// Fondo de puntos: varias olas lo recorren en distintas direcciones (los puntos crecen al pasar la ola)
+// y, donde se toca, sale una onda.
 // Durante una prueba se pone en "calma": más tenue y quieto, para no distraer al leer.
 
 let calma = false;
@@ -42,8 +43,8 @@ export function iniciarFondo({ espaciado = 34, color = "150, 185, 255" } = {}) {
       for (let c = 0; c < cols; c++) {
         const x = offX + c * esp + (f % 2 ? esp / 2 : 0);
         const y = offY + f * esp;
-        const fase = 0.42 * c + 0.31 * f + 1.6 * Math.sin((c + f) * 0.17) + 0.9 * Math.cos(c * 0.11 - f * 0.07);
-        puntos.push(x, y, fase);
+        // Posición en "puntos" (no en píxeles): las olas miden lo mismo en el móvil y en la TV.
+        puntos.push(x / esp, y / esp, 0.35 * Math.sin(c * 1.7 + f * 2.3));
       }
     }
   }
@@ -68,9 +69,21 @@ export function iniciarFondo({ espaciado = 34, color = "150, 185, 255" } = {}) {
 
     const normal = new Path2D();
     const brillo = new Path2D();
+    // Tres olas que avanzan en direcciones distintas (y a distinto ritmo) y se cruzan.
+    const OLAS = [
+      [0.52, 0.16, 1.35, 0.5], // [kx, ky, velocidad, peso]
+      [-0.2, 0.45, 1.05, 0.3],
+      [0.3, -0.36, 1.7, 0.2],
+    ];
     for (let i = 0; i < puntos.length; i += 3) {
-      const x = puntos[i], y = puntos[i + 1], fase = puntos[i + 2];
-      const s = reducido || calma ? 0.5 : 0.5 + 0.5 * Math.sin(t * 0.55 + fase);
+      const px = puntos[i], py = puntos[i + 1], jitter = puntos[i + 2];
+      const x = px * esp, y = py * esp;
+      let s = 0.5;
+      if (!reducido && !calma) {
+        let v = 0;
+        for (const [kx, ky, w, peso] of OLAS) v += peso * Math.sin(kx * px + ky * py - w * t + jitter);
+        s = 0.5 + 0.5 * v;
+      }
       let r = rMin + (rMax - rMin) * s * s;
       let extra = 0;
       for (const o of ondas) {

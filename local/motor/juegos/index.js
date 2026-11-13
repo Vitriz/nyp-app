@@ -9,6 +9,7 @@ import calculoMental from "./calculo-mental.js";
 import llegarResultado from "./llegar-resultado.js";
 import laberinto from "./laberinto.js";
 import pulsador from "./pulsador.js";
+import crucigrama from "./crucigrama.js";
 
 /*
  Interfaz de un juego (servidor):
@@ -23,7 +24,7 @@ import pulsador from "./pulsador.js";
 */
 
 const implementados = Object.fromEntries(
-  [matesFugaces, palabraLarga, definicion, sopa, revuelto, paraulogico, calculoMental, llegarResultado, laberinto, pulsador].map((j) => [j.id, j])
+  [matesFugaces, palabraLarga, definicion, sopa, revuelto, paraulogico, crucigrama, calculoMental, llegarResultado, laberinto, pulsador].map((j) => [j.id, j])
 );
 
 const catalogo = [
@@ -32,6 +33,7 @@ const catalogo = [
   { id: "sopa", nombre: "Sopa de letras", categoria: "palabras", duracion: 90 },
   { id: "revuelto", nombre: "Revuelto", categoria: "palabras", duracion: 60 },
   { id: "paraulogico", nombre: "Tutifruti", categoria: "palabras", duracion: 120 },
+  { id: "crucigrama", nombre: "Crucigrama", categoria: "palabras", duracion: 180 },
   { id: "calculo-mental", nombre: "Cálculo mental", categoria: "numeros", duracion: 30 },
   { id: "llegar-resultado", nombre: "Llegar al resultado", categoria: "numeros", duracion: 60 },
   { id: "mates-fugaces", nombre: "Mates fugaces", categoria: "numeros", duracion: 60 },
@@ -45,6 +47,7 @@ export function listaJuegos() {
     duracion: implementados[j.id]?.duracion ?? j.duracion,
     descripcion: implementados[j.id]?.descripcion ?? "",
     breve: implementados[j.id]?.breve ?? "",
+    ambitos: implementados[j.id]?.ambitos ?? null, // crucigrama: temas para elegir
     disponible: Boolean(implementados[j.id]),
   }));
 }

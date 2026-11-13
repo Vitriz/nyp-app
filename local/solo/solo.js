@@ -7,6 +7,7 @@ import { campoTexto } from "../comun/teclado.js";
 import { selectorJuegos, ICONOS, textoSegundos, textoRecord } from "./selector.js";
 import { leerFamilia, idMovil } from "../comun/familia.js";
 import { comprobarHazanas, tarjetaHazanas, ventanaHazanas, celebrarHazanas } from "./hazanas.js";
+import { elegirAmbito } from "../comun/ambitos.js";
 
 const SIN_SOLO = new Set(["pulsador"]); // necesita presentador y más jugadores
 
@@ -142,7 +143,16 @@ export function entrarSolo({ app, perfil, alSalir }) {
             },
           },
           conAyuda: true,
-          alJugar: (j) => preparar({ ...j, duracion: tiempos[j.id] ?? j.duracion, dificultad: niveles[j.id] ?? "normal" }),
+          alJugar: async (j) => {
+            const meta = { ...j, duracion: tiempos[j.id] ?? j.duracion, dificultad: niveles[j.id] ?? "normal" };
+            // Crucigrama: primero se elige el tema (o al azar).
+            if (j.ambitos?.length) {
+              const ambito = await elegirAmbito(j.ambitos);
+              if (!ambito) return;
+              meta.ambito = ambito;
+            }
+            preparar(meta);
+          },
           alDesbloquear: sinDiccionario,
         })
       ),
@@ -333,7 +343,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
       const impl = motor.juegos.obtenerJuego(meta.id);
       const inicio = Date.now() + 4000; // 3, 2, 1 y ¡YA!
       const duracion = meta.duracion * 1000;
-      const ronda = impl.crear({ azar: motor.util.crearAzar(Date.now()), config: { pulsadorTipos: [], dificultad: meta.dificultad ?? "normal" }, duracion, inicio });
+      const ronda = impl.crear({ azar: motor.util.crearAzar(Date.now()), config: { pulsadorTipos: [], dificultad: meta.dificultad ?? "normal", ambito: meta.ambito }, duracion, inicio });
       impl.vistaJugador(ronda, yo.id);
       cuenta(meta, impl, ronda, inicio, inicio + duracion);
     }, 60);

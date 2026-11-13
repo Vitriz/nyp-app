@@ -136,6 +136,22 @@ export function definicionBuena(c, desc) {
   return !clave(desc).includes(raiz(c));
 }
 
+/**
+ * Definición larga (para el crucigrama): hasta dos frases, sin remisiones ni paréntesis,
+ * y sin la propia palabra dentro. Devuelve el texto limpio o null si no sirve.
+ */
+export function definicionLarga(c, desc) {
+  let t = String(desc ?? "").replace(/\s+/g, " ").trim();
+  if (!/^[A-ZÁÉÍÓÚÑ¿¡]/.test(t) || /‖|V\.|\bU\. |=/.test(t)) return null;
+  t = t.replace(/\s*\([^)]*\)/g, "").trim(); // fuera los paréntesis
+  t = t.replace(/^[A-ZÁÉÍÓÚ][a-záéíóúñ]+ y (?=[A-ZÁÉÍÓÚ])/, ""); // restos de la RAE como "Danza y Diversa…"
+  const frases = t.split(/(?<=\.) (?=[A-ZÁÉÍÓÚÑ])/);
+  t = frases.slice(0, 2).join(" ").replace(/\.$/, "");
+  if (t.length < 12 || t.length > 260 || /[()\d]/.test(t)) return null;
+  if (clave(t).includes(raiz(c))) return null;
+  return t;
+}
+
 export function contarPalabras(texto) {
   return texto.split(/\s+/).filter(Boolean).length;
 }

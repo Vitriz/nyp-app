@@ -113,51 +113,110 @@ async function cargarDetector() {
   return detector;
 }
 
-/** Máscara de la cabeza (con el pelo): la persona que detecta, cortada un poco por debajo de la barbilla. */
-async function mascaraAutomatica(src) {
-  const { persona, cara } = await cargarDetector();
-  const caras = cara.detect(src).detections;
-  if (!caras.length) throw new Error("sin-cara");
-  // La cara más grande (por si sale alguien más al fondo).
-  const b = caras.map((d) => d.boundingBox).sort((x, y) => y.width * y.height - x.width * x.height)[0];
+/** Deja la máscara nítida: cada píxel, o se ve entero o no se ve (sin difuminado). */
+function nitida(m) {
+  const c = m.getContext("2d");
+  const img = c.getImageData(0, 0, m.width, m.height);
+  for (let i = 3; i < img.data.length; i += 4) img.data[i] = img.data[i] >= 128 ? 255 : 0;
+  c.putImageData(img, 0, 0);
+  return m;
+}
 
-  const seg = persona.segment(src);
+/**
+ * Máscara de la cabeza (con el pelo), nítida.
+ * - zona: si ya hay un recorte (a mano o anterior), el detector mira solo ahí dentro (así no se lleva
+ *   cosas del fondo) y el resultado nunca se sale de esa zona.
+ * - Se queda solo con la mancha unida a la cara (fuera trozos sueltos) y se corta bajo la barbilla.
+ */
+async function mascaraAutomatica(src, zona = null) {
+  const { persona, cara } = await cargarDetector();
+  // Qué parte de la foto se analiza: toda, o un cuadrado alrededor de la zona (con un margen).
+  let rx = 0, ry = 0, rl = LADO;
+  const rz = zona && recuadro(zona);
+  if (rz) {
+    rl = Math.min(LADO, Math.max(rz.bw, rz.bh) * 1.2);
+    rx = Math.max(0, Math.min(LADO - rl, rz.minX + rz.bw / 2 - rl / 2));
+    ry = Math.max(0, Math.min(LADO - rl, rz.minY + rz.bh / 2 - rl / 2));
+  }
+  const T = 512;
+  const trozo = lienzoNuevo(T);
+  trozo.getContext("2d").drawImage(src, rx, ry, rl, rl, 0, 0, T, T);
+
+  const caras = cara.detect(trozo).detections;
+  const b = caras.map((d) => d.boundingBox).sort((x, y) => y.width * y.height - x.width * x.height)[0] ?? null;
+  if (!b && !rz) throw new Error("sin-cara");
+
+  const seg = persona.segment(trozo);
   const conf = seg.confidenceMasks[0];
   const w = conf.width, hgt = conf.height;
   const datos = conf.getAsFloat32Array();
+  seg.close?.();
+  // Solo la mancha que toca la cara (o, sin cara, la del centro de la zona): fuera lo que esté suelto.
+  const dentro = (i) => datos[i] >= 0.5;
+  let inicio = -1;
+  const cx = Math.round(((b ? b.originX + b.width / 2 : T / 2) / T) * w), cy = Math.round(((b ? b.originY + b.height / 2 : T / 2) / T) * hgt);
+  for (let r = 0; r < Math.max(w, hgt) && inicio < 0; r++) {
+    for (let dy = -r; dy <= r && inicio < 0; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        const x = cx + dx, y = cy + dy;
+        if (x >= 0 && y >= 0 && x < w && y < hgt && dentro(y * w + x)) {
+          inicio = y * w + x;
+          break;
+        }
+      }
+    }
+  }
+  if (inicio < 0) throw new Error("sin-cara");
+  const queda = new Uint8Array(w * hgt);
+  const pila = [inicio];
+  queda[inicio] = 1;
+  while (pila.length) {
+    const i = pila.pop();
+    const x = i % w, y = (i - x) / w;
+    for (const n of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < hgt - 1 ? i + w : -1]) {
+      if (n >= 0 && !queda[n] && dentro(n)) {
+        queda[n] = 1;
+        pila.push(n);
+      }
+    }
+  }
   const peq = lienzoNuevo(w, hgt);
   const img = peq.getContext("2d").createImageData(w, hgt);
-  for (let i = 0; i < datos.length; i++) {
+  for (let i = 0; i < queda.length; i++) {
     img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = 255;
-    img.data[i * 4 + 3] = Math.round(Math.min(1, Math.max(0, (datos[i] - 0.15) / 0.7)) * 255);
+    img.data[i * 4 + 3] = queda[i] ? 255 : 0;
   }
   peq.getContext("2d").putImageData(img, 0, 0);
-  seg.close?.();
 
   const m = lienzoNuevo(LADO);
   const ctx = m.getContext("2d");
   ctx.imageSmoothingQuality = "high";
-  ctx.filter = "blur(1.5px)";
-  ctx.drawImage(peq, 0, 0, LADO, LADO);
-  ctx.filter = "none";
-  // Solo la cabeza: se borra (suavemente) lo que queda por debajo de la barbilla y muy a los lados.
-  const sx = LADO / src.width;
-  const barbilla = (b.originY + b.height * 1.12) * sx;
-  const cx = (b.originX + b.width / 2) * sx, ancho = b.width * sx * 1.35;
-  ctx.globalCompositeOperation = "destination-in";
-  const gv = ctx.createLinearGradient(0, barbilla - LADO * 0.03, 0, barbilla + LADO * 0.03);
-  gv.addColorStop(0, "#000");
-  gv.addColorStop(1, "transparent");
-  ctx.fillStyle = gv;
-  ctx.fillRect(0, 0, LADO, LADO);
-  const gh = ctx.createLinearGradient(cx - ancho, 0, cx + ancho, 0);
-  gh.addColorStop(0, "transparent");
-  gh.addColorStop(0.08, "#000");
-  gh.addColorStop(0.92, "#000");
-  gh.addColorStop(1, "transparent");
-  ctx.fillStyle = gh;
-  ctx.fillRect(0, 0, LADO, LADO);
+  ctx.drawImage(peq, 0, 0, w, hgt, rx, ry, rl, rl); // al ampliar, el borde sale curvo (no a escalones)…
+  nitida(m); // …y luego se deja nítido
+  if (b) {
+    // Solo la cabeza: nada por debajo de la barbilla ni muy a los lados (corte limpio).
+    const esc = rl / T;
+    const barbilla = ry + (b.originY + b.height * 1.12) * esc;
+    const centro = rx + (b.originX + b.width / 2) * esc, ancho = b.width * esc * 1.3;
+    ctx.clearRect(0, barbilla, LADO, LADO);
+    ctx.clearRect(0, 0, centro - ancho, LADO);
+    ctx.clearRect(centro + ancho, 0, LADO, LADO);
+  }
+  if (zona) {
+    ctx.globalCompositeOperation = "destination-in"; // nunca fuera de lo que dibujaste
+    ctx.drawImage(zona, 0, 0);
+  }
   if (!recuadro(m)) throw new Error("sin-cara");
+  return m;
+}
+
+/** Suma o resta un trazo a la máscara actual. */
+function combinar(base, trazo, modo) {
+  const m = lienzoNuevo(LADO);
+  const c = m.getContext("2d");
+  c.drawImage(base, 0, 0);
+  c.globalCompositeOperation = modo === "restar" ? "destination-out" : "source-over";
+  c.drawImage(trazo, 0, 0);
   return m;
 }
 
@@ -174,11 +233,24 @@ export function editarFoto(src, fraccion = 1) {
     let puntos = []; // trazo del dedo, en píxeles de src
     let dibujando = false;
     let mascara = null; // lo que se va a recortar
+    let modo = "nuevo"; // nuevo | sumar | restar: qué hace el siguiente trazo
 
     const aviso = h("p.cam-aviso", "Toca ✨ Detectar o rodea tu cabeza con el dedo");
     const muestra = h("div.rec-muestra");
     const usar = h("button.boton.acento", { type: "button", disabled: true, onclick: () => cerrar(fotoRecortada(src, mascara)) }, "✂️ Usar recorte");
     const detectar = h("button.boton.rec-detectar", { type: "button", onclick: () => auto() }, "✨ Detectar");
+    const sumar = h("button.boton.suave.rec-modo", { type: "button", disabled: true, onclick: () => cambiarModo("sumar") }, "➕ Añadir");
+    const restar = h("button.boton.suave.rec-modo", { type: "button", disabled: true, onclick: () => cambiarModo("restar") }, "➖ Quitar");
+
+    function cambiarModo(m) {
+      modo = modo === m ? "nuevo" : m;
+      sumar.classList.toggle("activo", modo === "sumar");
+      restar.classList.toggle("activo", modo === "restar");
+      aviso.textContent =
+        modo === "sumar" ? "Rodea con el dedo lo que quieras añadir al recorte"
+        : modo === "restar" ? "Rodea con el dedo lo que quieras quitar del recorte"
+        : "Rodea tu cabeza para empezar de nuevo, o toca ✨ Detectar";
+    }
 
     function tamaño() {
       const lado = Math.round(Math.min(innerWidth * 0.92, innerHeight * 0.5) * devicePixelRatio);
@@ -191,7 +263,7 @@ export function editarFoto(src, fraccion = 1) {
       ctx.clearRect(0, 0, L, L);
       ctx.drawImage(src, 0, 0, L, L);
       if (mascara && !dibujando) {
-        // Fuera del recorte, oscuro (con el mismo borde suave que tendrá la foto).
+        // Fuera del recorte, oscuro.
         const sombra = lienzoNuevo(L);
         const s = sombra.getContext("2d");
         s.fillStyle = "rgba(5, 13, 42, 0.66)";
@@ -206,7 +278,7 @@ export function editarFoto(src, fraccion = 1) {
         if (!dibujando) ctx.closePath();
         ctx.lineWidth = Math.max(3, L / 150);
         ctx.setLineDash(dibujando ? [] : [L / 50, L / 80]);
-        ctx.strokeStyle = "#ffd34d";
+        ctx.strokeStyle = modo === "sumar" ? "#6cc49a" : modo === "restar" ? "#ff6b6b" : "#ffd34d";
         ctx.stroke();
         ctx.setLineDash([]);
       }
@@ -215,6 +287,7 @@ export function editarFoto(src, fraccion = 1) {
     function listo(texto) {
       aviso.textContent = texto;
       usar.disabled = !mascara;
+      sumar.disabled = restar.disabled = !mascara;
       muestra.replaceChildren();
       const foto = mascara && fotoRecortada(src, mascara);
       if (foto) muestra.replaceChildren(h("span.avatar.con-recorte.rec-avatar", h("img", { src: foto, alt: "" })), h("small", "Así quedará"));
@@ -226,13 +299,15 @@ export function editarFoto(src, fraccion = 1) {
       const primera = !detector;
       aviso.textContent = primera ? "Preparando el detector (solo la primera vez)…" : "Buscando tu cara…";
       try {
-        mascara = await mascaraAutomatica(src);
+        // Si ya hay un recorte, el detector busca solo dentro de él (así no coge cosas del fondo).
+        mascara = await mascaraAutomatica(src, mascara);
         puntos = [];
-        listo("¿Te gusta? Si no, rodea tu cabeza con el dedo");
+        cambiarModo("nuevo");
+        listo("¿Te gusta? Puedes ➕ añadir o ➖ quitar trozos con el dedo");
       } catch (e) {
         aviso.textContent =
           e?.message === "sin-cara"
-            ? "No encuentro ninguna cara: rodea tu cabeza con el dedo"
+            ? "No encuentro ninguna cara: rodea tu cabeza con el dedo y vuelve a probar"
             : "No se pudo cargar el detector (¿sin internet?): rodea tu cabeza con el dedo";
       } finally {
         detectar.disabled = false;
@@ -274,8 +349,16 @@ export function editarFoto(src, fraccion = 1) {
         pintar();
         return;
       }
-      mascara = mascaraDeTrazo(puntos);
-      listo("¿Te gusta? Si no, vuelve a dibujar encima");
+      const trazo = mascaraDeTrazo(puntos);
+      mascara = mascara && modo !== "nuevo" ? combinar(mascara, trazo, modo) : trazo;
+      puntos = [];
+      if (!recuadro(mascara)) {
+        mascara = null;
+        cambiarModo("nuevo");
+        listo("Has quitado todo: rodea tu cabeza para empezar de nuevo");
+        return;
+      }
+      listo(modo === "nuevo" ? "¿Te gusta? Toca ✨ Detectar para afinarlo, o ➕ / ➖ para retocar" : "Hecho. Puedes seguir retocando");
     };
     lienzo.addEventListener("pointerup", soltar);
     lienzo.addEventListener("pointercancel", soltar);
@@ -288,7 +371,7 @@ export function editarFoto(src, fraccion = 1) {
     const capa = h(
       "div.capa-camara.capa-recorte",
       h("div.rec-visor", lienzo),
-      h("div.rec-herramientas", detectar),
+      h("div.rec-herramientas", detectar, sumar, restar),
       aviso,
       muestra,
       h(

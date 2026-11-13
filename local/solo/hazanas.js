@@ -39,6 +39,11 @@ export const HAZANAS = [
     comprobar: ({ j }) => (j?.aciertos ?? 0) >= 10,
   },
   {
+    id: "crucigrama-completo", juego: "crucigrama", icono: "📚", nombre: "Enciclopedia andante",
+    desc: "Completa un crucigrama entero en Difícil.",
+    comprobar: ({ meta, j, ronda }) => meta.dificultad === "dificil" && ronda?.palabras?.length > 0 && Object.keys(j?.resueltas ?? {}).length === ronda.palabras.length,
+  },
+  {
     id: "calculo-perfecto", juego: "calculo-mental", icono: "🧠", nombre: "Calculadora humana", premio: { animacion: "giro" },
     desc: "Acierta todas las operaciones en Difícil.",
     comprobar: ({ meta, j, ronda }) => meta.dificultad === "dificil" && ronda?.cadenas?.length > 0 && ronda.cadenas.every((_, k) => j?.respuestas?.[k]?.ok),

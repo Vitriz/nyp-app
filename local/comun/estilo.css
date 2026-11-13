@@ -400,3 +400,13 @@ html, body {
 @keyframes av-baile { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(9deg); } }
 @keyframes av-brillo { 0%, 100% { box-shadow: 0 0 0 0.08em rgba(255, 211, 77, 0.6), 0 0 0.4em rgba(255, 211, 77, 0.4); } 50% { box-shadow: 0 0 0 0.12em rgba(255, 230, 140, 0.95), 0 0 1em rgba(255, 211, 77, 0.85); } }
 @media (prefers-reduced-motion: reduce) { .avatar[class*="anim-"] { animation: none; } }
+
+/* ---------- crucigrama (rejilla, en móvil y TV) ---------- */
+.cg-rejilla { --cols: 11; --filas: 11; display: grid; grid-template-columns: repeat(var(--cols), 1fr); grid-template-rows: repeat(var(--filas), 1fr); gap: 0.12em; aspect-ratio: var(--cols) / var(--filas); }
+.cg-celda {
+  position: relative; display: grid; place-items: center; border-radius: 0.18em; background: linear-gradient(180deg, #fff, var(--ficha-2));
+  color: var(--ficha-texto); font-family: var(--fuente-ficha); font-weight: 900; line-height: 1; transition: background 150ms;
+}
+.cg-celda.negra { background: transparent; }
+.cg-num { position: absolute; top: 0.08em; left: 0.12em; font-size: 0.42em; font-family: inherit; color: #3a5a9a; }
+.cg-letra { font-size: 0.8em; }
