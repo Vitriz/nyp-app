@@ -262,7 +262,9 @@ export function editarFoto(src, fraccion = 1) {
       const L = lienzo.width, k = L / src.width;
       ctx.clearRect(0, 0, L, L);
       ctx.drawImage(src, 0, 0, L, L);
-      if (mascara && !dibujando) {
+      // Al retocar (➕ / ➖) el recorte sigue a la vista mientras dibujas; solo al empezar de nuevo se aparta.
+      const retocando = modo !== "nuevo";
+      if (mascara && (!dibujando || retocando)) {
         // Fuera del recorte, oscuro.
         const sombra = lienzoNuevo(L);
         const s = sombra.getContext("2d");
@@ -275,7 +277,12 @@ export function editarFoto(src, fraccion = 1) {
       if (puntos.length > 1) {
         ctx.beginPath();
         puntos.forEach(([x, y], i) => (i ? ctx.lineTo(x * k, y * k) : ctx.moveTo(x * k, y * k)));
-        if (!dibujando) ctx.closePath();
+        if (!dibujando || retocando) ctx.closePath();
+        // Al retocar, la zona que rodeas se tiñe de verde (añadir) o rojo (quitar).
+        if (retocando && mascara) {
+          ctx.fillStyle = modo === "sumar" ? "rgba(108, 196, 154, 0.35)" : "rgba(255, 107, 107, 0.35)";
+          ctx.fill();
+        }
         ctx.lineWidth = Math.max(3, L / 150);
         ctx.setLineDash(dibujando ? [] : [L / 50, L / 80]);
         ctx.strokeStyle = modo === "sumar" ? "#6cc49a" : modo === "restar" ? "#ff6b6b" : "#ffd34d";
@@ -342,10 +349,13 @@ export function editarFoto(src, fraccion = 1) {
       if (!dibujando) return;
       dibujando = false;
       const xs = puntos.map((p) => p[0]), ys = puntos.map((p) => p[1]);
-      const grande = Math.max(...xs) - Math.min(...xs) > src.width * 0.12 && Math.max(...ys) - Math.min(...ys) > src.height * 0.12;
-      if (puntos.length < 8 || !grande) {
+      // Para retocar valen trozos pequeños; para empezar, hay que rodear toda la cabeza.
+      const minimo = mascara && modo !== "nuevo" ? 0.03 : 0.12;
+      const grande = Math.max(...xs) - Math.min(...xs) > src.width * minimo && Math.max(...ys) - Math.min(...ys) > src.height * minimo;
+      if (puntos.length < (minimo < 0.1 ? 4 : 8) || !grande) {
         puntos = [];
-        aviso.textContent = "Haz el contorno más grande, alrededor de toda la cabeza";
+        aviso.textContent = minimo < 0.1 ? "Rodea un trozo un poco más grande" : "Haz el contorno más grande, alrededor de toda la cabeza";
+        listo(aviso.textContent);
         pintar();
         return;
       }

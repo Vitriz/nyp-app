@@ -9,7 +9,7 @@ export function montar(cuerpo, e, ctx) {
   cuerpo.append(
     h(
       "div.sopa-tv.mem-tv",
-      h("div.mem-tv-cartel", h("span.mem-tv-icono", "🧩"), h("b", "Buscad los 4 grupos de 4"), h("p.suave", "Cada uno en su móvil. ¡Ojo, que hay trampas!")),
+      h("div.mem-tv-cartel", h("span.mem-tv-icono", "🔗"), h("b", "Buscad los 4 grupos de 4"), h("p.suave", "Cada uno en su móvil. ¡Ojo, que hay trampas!")),
       lado
     )
   );

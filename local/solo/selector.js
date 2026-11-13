@@ -5,7 +5,7 @@ import { teclasFisicas } from "../comun/teclas.js";
 import { ventanaAyuda } from "./ayuda.js";
 
 export const ICONOS = {
-  "palabra-larga": "🔠", definicion: "📖", sopa: "🔍", revuelto: "🔀", paraulogico: "🐝", crucigrama: "✏️", conexiones: "🧩", semantica: "🔥", memoria: "🧠", kenken: "🔢",
+  "palabra-larga": "🔠", definicion: "📖", sopa: "🔍", revuelto: "🔀", paraulogico: "🐝", crucigrama: "✏️", conexiones: "🔗", semantica: "🔥", memoria: "📸", kenken: "🔢",
   "calculo-mental": "🧠", "llegar-resultado": "🎯", "mates-fugaces": "⚡", laberinto: "🧩", pulsador: "🔔",
 };
 const PASO = 3.9; // rem entre elementos de la rueda
@@ -106,6 +106,36 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     )
   );
   const rueda = h("div.sel-rueda", { role: "listbox", "aria-label": "Juegos" }, h("div.sel-guia"), items);
+
+  // ---- cuadrícula: solo los iconos, todos a la vista (se alterna con la rueda)
+  const casillas = juegos.map((j, i) =>
+    h(
+      `button.sel-casilla.${j.categoria}${j.bloqueado ? ".bloqueado" : ""}`,
+      { type: "button", "data-i": i, title: j.nombre, "aria-label": j.nombre, onclick: () => ir(i, false) },
+      h("span", j.bloqueado ? "🔒" : ICONOS[j.id] ?? "🎲")
+    )
+  );
+  const cuadricula = h("div.sel-cuadricula", { role: "listbox", "aria-label": "Juegos" }, casillas);
+  let vista = "rueda";
+  try {
+    if (localStorage.getItem("nyp-vista-juegos") === "cuadricula") vista = "cuadricula";
+  } catch {}
+  const botonVista = h("button.sel-vista-btn", { type: "button", onclick: () => cambiarVista() });
+  function cambiarVista(v = vista === "rueda" ? "cuadricula" : "rueda", guardar = true) {
+    vista = v;
+    rueda.classList.toggle("oculto", vista !== "rueda");
+    cuadricula.classList.toggle("oculto", vista !== "cuadricula");
+    botonVista.textContent = vista === "rueda" ? "▦" : "☰";
+    botonVista.title = vista === "rueda" ? "Ver todos en cuadrícula" : "Ver como ruleta";
+    botonVista.setAttribute("aria-label", botonVista.title);
+    if (guardar) {
+      try {
+        localStorage.setItem("nyp-vista-juegos", vista);
+      } catch {}
+      navigator.vibrate?.(5);
+      if (vista === "cuadricula") casillas[sel].scrollIntoView({ block: "nearest" });
+    }
+  }
 
   // ---- ficha del juego elegido
   const ficha = h("div.sel-ficha.tarjeta");
@@ -224,6 +254,10 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       el.classList.toggle("elegido", d === 0);
       el.setAttribute("aria-selected", String(d === 0));
     });
+    casillas.forEach((el, i) => {
+      el.classList.toggle("elegido", i === sel);
+      el.setAttribute("aria-selected", String(i === sel));
+    });
   }
 
   function mover(paso) {
@@ -235,8 +269,8 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     pintarFicha();
   }
 
-  function ir(i) {
-    if (i === sel) return elegir();
+  function ir(i, jugarSiElegido = true) {
+    if (i === sel) return jugarSiElegido ? elegir() : undefined;
     mover(i - sel);
   }
 
@@ -308,6 +342,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
 
   colocar();
   pintarFicha();
+  cambiarVista(vista, false);
 
   const el = h(
     "div.sel-caja",
@@ -316,8 +351,9 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     h("div.sel-lado", ficha),
     h(
       "div.sel-lista",
-      h("div.sel-titulo", h("span", "Elige juego"), contador),
+      h("div.sel-titulo", h("span", "Elige juego"), h("span.sel-titulo-der", contador, botonVista)),
       rueda,
+      cuadricula,
       h("p.sel-ayuda", tiempo ? `↑ ↓ juego · ← → tiempo${nivel ? " · 1 2 3 nivel" : ""}${conAyuda ? " · ? ayuda" : ""} · Enter para jugar` : "↑ ↓ para elegir · Enter para jugar")
     )
     )

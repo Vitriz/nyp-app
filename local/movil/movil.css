@@ -943,3 +943,6 @@ html, body { height: 100dvh; }
   100% { transform: translateY(0em) rotate(5.00deg); }
 }
 @media (prefers-reduced-motion: reduce) { .titulo-nyp .ficha, .titulo-nyp .ficha.titulo-y { animation: none; } }
+
+/* Portada: más aire arriba (título) y abajo (botones) */
+.inicio { padding-top: calc(env(safe-area-inset-top) + 3rem); padding-bottom: calc(env(safe-area-inset-bottom) + 2.6rem); }

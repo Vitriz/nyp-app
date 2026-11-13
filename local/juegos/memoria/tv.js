@@ -7,7 +7,7 @@ export function montar(cuerpo, e, ctx) {
   cuerpo.append(
     h(
       "div.sopa-tv.mem-tv",
-      h("div.mem-tv-cartel", h("span.mem-tv-icono", "🧠"), h("b", "¡Mirad bien vuestro móvil!"), h("p.suave", "Memoriza las tarjetas antes de que se tapen.")),
+      h("div.mem-tv-cartel", h("span.mem-tv-icono", "📸"), h("b", "¡Mirad bien vuestro móvil!"), h("p.suave", "Memoriza las tarjetas antes de que se tapen.")),
       lado
     )
   );
