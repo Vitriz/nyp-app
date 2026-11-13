@@ -108,7 +108,7 @@ export default {
       const detalle = [...(j.validas ?? [])]
         .sort((a, b) => b.length - a.length)
         .map((c) => ({ t: `${formaVisible(c)} · ${c.length}`, k: c === j.mejor.clave ? "mejor" : "bien" }));
-      return { id, valor: j.mejor.largo, texto: `${j.mejor.forma.toUpperCase()} · ${j.mejor.largo}`, detalle };
+      return { id, valor: j.mejor.largo, texto: `${j.mejor.forma.toUpperCase()} · ${j.mejor.largo}`, corto: `${j.mejor.forma.toUpperCase()} · ${j.mejor.largo}`, detalle };
     });
   },
 

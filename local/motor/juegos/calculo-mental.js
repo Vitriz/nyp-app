@@ -148,7 +148,7 @@ export default {
         const x = todas[k];
         return { t: x ? `${k + 1}. ${x.valor}${x.ok ? "" : ` (era ${c.r})`}` : `${k + 1}. —`, k: x?.ok ? "bien" : "mal" };
       });
-      return { id, valor: ok.length ? ok.length * 1e6 - ms : null, texto: `${ok.length} de ${ronda.cadenas.length}${seg}`, detalle };
+      return { id, valor: ok.length ? ok.length * 1e6 - ms : null, texto: `${ok.length} de ${ronda.cadenas.length}${seg}`, corto: `${ok.length}/${ronda.cadenas.length}${seg}`, detalle };
     });
   },
 

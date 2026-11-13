@@ -144,7 +144,7 @@ export default {
   resultados(ronda, ids) {
     return ids.map((id) => {
       const n = ronda.aciertos[id] ?? 0;
-      return { id, valor: n > 0 ? n : null, texto: `${n} ${n === 1 ? "acierto" : "aciertos"}` };
+      return { id, valor: n > 0 ? n : null, texto: `${n} ${n === 1 ? "acierto" : "aciertos"}`, corto: `${n} ${n === 1 ? "acierto" : "aciertos"}` };
     });
   },
 

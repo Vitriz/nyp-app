@@ -93,7 +93,7 @@ export default {
       const pendiente = w ? { forma: w.forma, definicion: w.definicion } : null;
       const detalle = [...(j.hechas ?? []), ...(pendiente ? [{ t: pendiente.forma, k: "mal" }] : [])];
       const p = j.pistas ? ` · ${j.pistas} ${j.pistas === 1 ? "pista" : "pistas"}` : "";
-      return { id, valor: j.puntos > 0 ? j.puntos : null, texto: `${j.aciertos} ${j.aciertos === 1 ? "acierto" : "aciertos"}${p}`, detalle, pendiente };
+      return { id, valor: j.puntos > 0 ? j.puntos : null, texto: `${j.aciertos} ${j.aciertos === 1 ? "acierto" : "aciertos"}${p}`, corto: `${j.puntos} ${j.puntos === 1 ? "punto" : "puntos"}`, detalle, pendiente };
     });
   },
 

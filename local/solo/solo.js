@@ -4,8 +4,9 @@ import { calmarFondo } from "../comun/fondo.js";
 import { almacen } from "../comun/conexion.js";
 import { leerPaquete, diccionarioIncluido, desbloquearDiccionario, actualizarIncluido } from "./paquete.js";
 import { campoTexto } from "../comun/teclado.js";
-import { selectorJuegos, ICONOS, textoSegundos } from "./selector.js";
+import { selectorJuegos, ICONOS, textoSegundos, textoRecord } from "./selector.js";
 import { leerFamilia, idMovil } from "../comun/familia.js";
+import { comprobarHazanas, tarjetaHazanas, ventanaHazanas } from "./hazanas.js";
 
 const SIN_SOLO = new Set(["pulsador"]); // necesita presentador y más jugadores
 
@@ -77,7 +78,7 @@ function apuntar(meta, r) {
   const records = leerRecords();
   const anterior = recordDe(records, meta, meta.duracion, meta.dificultad);
   if (r.valor != null && (!anterior || r.valor > anterior.valor)) {
-    records[claveRecord(meta.id, meta.duracion, meta.dificultad)] = { valor: r.valor, texto: r.texto, detalle: r.detalle?.slice(0, 30) ?? null, fecha: new Date().toISOString().slice(0, 10) };
+    records[claveRecord(meta.id, meta.duracion, meta.dificultad)] = { valor: r.valor, texto: r.texto, corto: r.corto ?? null, detalle: r.detalle?.slice(0, 30) ?? null, fecha: new Date().toISOString().slice(0, 10) };
     almacen.guardar("nyp-records", JSON.stringify(records));
   }
   return anterior;
@@ -115,7 +116,8 @@ export function entrarSolo({ app, perfil, alSalir }) {
         barra(
           h(
             "div.barra-botones",
-            h("button.icono-btn.records", { type: "button", onclick: () => verRecords(juegos), "aria-label": "Mis récords" }, "🏆"),
+            h("button.icono-btn.hazanas", { type: "button", onclick: () => ventanaHazanas(juegos, ICONOS), "aria-label": "Hazañas", title: "Hazañas" }, "🎖️"),
+            h("button.icono-btn.records", { type: "button", onclick: () => verRecords(juegos), "aria-label": "Récords", title: "Récords" }, "🏆"),
             h("button.icono-btn", { type: "button", onclick: alSalir, "aria-label": "Volver al inicio" }, "✕")
           )
         ),
@@ -173,10 +175,10 @@ export function entrarSolo({ app, perfil, alSalir }) {
           { style: { animationDelay: `${60 + i * 40}ms` } },
           h("span.ico", ICONOS[j.id] ?? "🎲"),
           h("b", j.nombre),
-          h("span.mejor", mejor ? mejor.r.texto : "—"),
+          h("span.mejor", mejor ? textoRecord(mejor.r) : "—"),
           h(
             "div.marcas",
-            marcas.length ? marcas.map((m) => h("span", `${textoSegundos(m.seg)} · ${NOMBRES_NIVEL[m.nv] ?? m.nv}: ${m.r.texto}`)) : h("span", "Aún sin récord")
+            marcas.length ? marcas.map((m) => h("span", `${textoSegundos(m.seg)} · ${NOMBRES_NIVEL[m.nv] ?? m.nv}: ${textoRecord(m.r)}`)) : h("span", "Aún sin récord")
           )
         )
       );
@@ -221,7 +223,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
                         `li${x.yo ? ".yo" : ""}`,
                         h("span.medalla", ["🥇", "🥈", "🥉"][puesto] ?? `${puesto + 1}º`),
                         h("span.familia-nombre", { style: { "--c": x.p.color ?? "#5fb7d0" } }, x.p.nombre),
-                        h("span.familia-marca", x.r.texto)
+                        h("span.familia-marca", textoRecord(x.r))
                       );
                     })
                 )
@@ -403,7 +405,11 @@ export function entrarSolo({ app, perfil, alSalir }) {
       try {
         resumen = impl.resumen?.(ronda) ?? null;
       } catch {}
-      resultado(meta, r, resumen);
+      let nuevas = [];
+      try {
+        nuevas = comprobarHazanas(meta, r, ronda, yo.id);
+      } catch {}
+      resultado(meta, r, resumen, nuevas);
     }
 
     calmarFondo(true); // fondo quieto y tenue mientras se juega
@@ -439,14 +445,16 @@ export function entrarSolo({ app, perfil, alSalir }) {
     );
   }
 
-  function resultado(meta, r, resumen = null) {
+  function resultado(meta, r, resumen = null, hazanas = []) {
     const anterior = apuntar(meta, r);
     const record = r.valor != null && (!anterior || r.valor > anterior.valor);
     if (record) navigator.vibrate?.([60, 60, 120]);
     const textoR = h("p.final-marca", r.texto);
-    if (record) {
-      // Récord nuevo: confeti dorado y la marca contando hasta su número.
+    if (record || hazanas.length) {
+      // Récord nuevo o hazaña: confeti dorado y la marca contando hasta su número.
       setTimeout(() => confeti(), 250);
+    }
+    if (record) {
       contarHasta(textoR, r.texto);
     }
     mostrar({
@@ -463,11 +471,12 @@ export function entrarSolo({ app, perfil, alSalir }) {
               "div.final-textos",
               h(`h1${record ? ".titulo-record" : ""}`, record ? (anterior ? "¡Nuevo récord!" : "¡Primer récord!") : r.valor != null ? "¡Bien jugado!" : "Esta vez no ha salido"),
               textoR,
-              anterior && !record ? h("small", `Tu récord: ${anterior.texto}`) : null,
-              anterior && record ? h("small", `Antes: ${anterior.texto}`) : null
+              anterior && !record ? h("small", `🏆 Récord: ${textoRecord(anterior)}`) : null,
+              anterior && record ? h("small", `Antes: ${textoRecord(anterior)}`) : null
             )
           ),
           // La palabra que faltó sale aparte (en su tarjeta), no repetida entre las respuestas.
+          tarjetaHazanas(hazanas),
           meta.id === "llegar-resultado" ? null : detalleJugador(r.pendiente ? r.detalle?.slice(0, -1) : r.detalle, { clase: ".mis-respuestas" }),
           palabraPendiente(r.pendiente),
           solucion(meta, resumen, r)

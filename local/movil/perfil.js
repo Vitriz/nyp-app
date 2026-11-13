@@ -3,6 +3,7 @@ import { h, banner } from "../comun/ui.js";
 import { almacen } from "../comun/conexion.js";
 import { campoTexto } from "../comun/teclado.js";
 import { selectorColor } from "../comun/color.js";
+import { editarFoto, cuadrado } from "./recorte.js";
 
 export const FONDOS = ["#5fb7d0", "#7c9cf0", "#6cc49a", "#e9c75a", "#e7a05c", "#e46a62", "#f08fb5", "#c58be0", "#ffffff", "#1d3f86", "#0b1d4f", "#2b2b2b"];
 export const TEXTOS = ["#0a1b4a", "#ffffff", "#000000", "#e9c75a", "#e46a62", "#6cc49a", "#5fb7d0", "#c58be0"];
@@ -22,17 +23,14 @@ export function guardarPerfil(p) {
   almacen.guardar("nyp-perfil", JSON.stringify(p));
 }
 
-/** Recorta la foto en cuadrado y la reduce (≈15-25 KB) para mandarla a la TV. */
+/** Foto de la galería: el cuadrado central, para el editor (recortar la cara o dejarla redonda). */
 function prepararFoto(archivo) {
   return new Promise((ok, mal) => {
     const img = new Image();
     const url = URL.createObjectURL(archivo);
     img.onload = () => {
-      const lado = Math.min(img.naturalWidth, img.naturalHeight);
-      const c = Object.assign(document.createElement("canvas"), { width: 192, height: 192 });
-      c.getContext("2d").drawImage(img, (img.naturalWidth - lado) / 2, (img.naturalHeight - lado) / 2, lado, lado, 0, 0, 192, 192);
       URL.revokeObjectURL(url);
-      ok(c.toDataURL("image/jpeg", 0.82));
+      ok(editarFoto(cuadrado(img, img.naturalWidth, img.naturalHeight), 1));
     };
     img.onerror = mal;
     img.src = url;
@@ -40,8 +38,8 @@ function prepararFoto(archivo) {
 }
 
 /**
- * Cámara propia con un círculo guía: lo que queda dentro del círculo es la foto de perfil.
- * Devuelve la foto (JPEG 192×192, data URL) o null si se cancela. Sin cámara disponible, lanza error.
+ * Cámara propia con un círculo guía. Después se abre el editor (recortar la cara o foto redonda).
+ * Devuelve la foto (data URL) o null si se cancela. Sin cámara disponible, lanza error.
  */
 function camaraCircular() {
   return new Promise(async (ok, mal) => {
@@ -69,18 +67,13 @@ function camaraCircular() {
     function disparar() {
       const vw = video.videoWidth, vh = video.videoHeight;
       if (!vw) return;
-      // El visor es cuadrado y el vídeo lo llena (object-fit: cover): se ve el cuadrado central.
-      // El círculo ocupa el 80 % del visor.
-      const lado = Math.min(vw, vh) * 0.8;
-      const c = Object.assign(document.createElement("canvas"), { width: 192, height: 192 });
-      const ctx = c.getContext("2d");
-      if (frontal) {
-        ctx.translate(192, 0);
-        ctx.scale(-1, 1); // la foto sale como te ves en el espejo
-      }
-      ctx.drawImage(video, (vw - lado) / 2, (vh - lado) / 2, lado, lado, 0, 0, 192, 192);
+      // El visor es cuadrado y el vídeo lo llena: se guarda ese cuadrado (como espejo con la cámara de delante).
+      const src = cuadrado(video, vw, vh, 640, frontal);
       navigator.vibrate?.(30);
-      cerrar(c.toDataURL("image/jpeg", 0.82));
+      flujo?.getTracks().forEach((t) => t.stop());
+      capa.remove();
+      // El círculo guía ocupa el 80 % del visor: eso es la foto redonda.
+      editarFoto(src, 0.8).then(ok);
     }
     const capa = h(
       "div.capa-camara",

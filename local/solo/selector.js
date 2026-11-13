@@ -70,6 +70,9 @@ function ruedaValor(icono, etiqueta, alPaso) {
   };
 }
 
+/** El récord en pocas palabras (los antiguos no tenían versión corta). */
+export const textoRecord = (r) => r?.corto ?? String(r?.texto ?? "").replace(/^Completo en /, "").replace(/^¡Exacto! en /, "");
+
 export const textoSegundos = (s) => (s < 60 || s % 60 ? `${s} s` : `${s / 60} min`);
 
 /**
@@ -121,11 +124,13 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     if (ruedaNivel) ruedaNivel.pintar(nivel.lista.map((x) => nivel.nombres[x]), Math.max(0, nivel.lista.indexOf(nv)), animar);
     if (conRecords) {
       const r = recordDe(j, seg, nv);
-      const donde = `${textoSegundos(seg)}${nivel ? ` · ${nivel.nombres[nv]}` : ""}`;
+      // Siempre una sola línea y lo mínimo: el tiempo y el nivel ya se ven elegidos debajo.
+      const fecha = r?.fecha ? r.fecha.slice(8, 10) + "/" + r.fecha.slice(5, 7) : "";
       recordEl.replaceChildren(
-        ...(r
-          ? [h("span.sel-record-copa", "🏆"), h("span", "Tu récord: "), h("b", r.texto), h("small", ` (${donde})`)]
-          : [h("span.suave", `Aún sin récord en ${donde}`)])
+        h("span.sel-record-copa", "🏆"),
+        h("span.sel-record-etiqueta", "Récord"),
+        h("b.sel-record-valor", r ? textoRecord(r) : "—"),
+        ...(fecha ? [h("small.sel-record-fecha", fecha)] : [])
       );
       recordEl.classList.toggle("con", Boolean(r));
     }

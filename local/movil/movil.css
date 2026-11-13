@@ -664,3 +664,14 @@ html, body { height: 100dvh; }
 .lr-res-hecho.lejos { background: linear-gradient(180deg, #ffd9d5, #f2a39c) !important; color: #5a1410; }
 .lr-aviso.lr-final { font-size: 1.1rem; font-weight: 900; padding: 0.4rem 0; }
 .lr2 .lr-hecha .lr-hueco { height: 2.9rem; }
+
+/* ---------- editor de la foto: rodear la cabeza con el dedo ---------- */
+.capa-recorte { gap: 0.9rem; padding: 1rem; }
+.rec-visor { width: min(92vw, 55vh); aspect-ratio: 1; border-radius: 1.2rem; overflow: hidden; background: #000; }
+.rec-lienzo { width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+.rec-muestra { display: flex; align-items: flex-end; gap: 0.8rem; min-height: 4.6rem; padding-top: 1.4rem; }
+.rec-muestra small { color: var(--texto-suave); font-weight: 800; padding-bottom: 0.4rem; }
+.rec-avatar { font-size: 2.1rem; --c: var(--acento); }
+.rec-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; width: min(92vw, 26rem); }
+.rec-botones .boton { min-height: 3.2rem; }
+.rec-cancelar { min-height: 2.6rem; padding: 0.3rem 1.4rem; }

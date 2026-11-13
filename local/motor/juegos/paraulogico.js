@@ -111,7 +111,7 @@ export default {
         .sort((a, b) => b.tuti - a.tuti || b.pts - a.pts)
         .map((e) => ({ t: `${e.tuti ? "🌈 " : ""}${e.forma} +${e.pts}`, k: e.tuti ? "tuti" : "bien" }));
       const extra = tutis ? ` · ${tutis} ${tutis === 1 ? "tuti" : "tutis"}` : "";
-      return { id, valor: j.puntos, texto: `${n} ${n === 1 ? "palabra" : "palabras"} · ${j.puntos} puntos${extra}`, detalle };
+      return { id, valor: j.puntos, texto: `${n} ${n === 1 ? "palabra" : "palabras"} · ${j.puntos} puntos${extra}`, corto: `${j.puntos} puntos`, detalle };
     });
   },
 

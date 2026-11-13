@@ -59,7 +59,9 @@ export function avatar(j, extra = "") {
   if (j.contorno) extra += ".con-contorno";
   if (j.foto) {
     const src = j.foto.startsWith("data:") ? j.foto : new URL(j.foto, servidor.base).href;
-    return h(`span.avatar.con-foto${extra}`, { style: estilo }, h("img", { src, alt: "", draggable: false }));
+    // Recorte (con fondo transparente): la cabeza sale por encima del círculo de color.
+    const recorte = /^data:image\/(png|webp)/.test(j.foto) || /[?&]r=1\b/.test(j.foto);
+    return h(`span.avatar.con-foto${recorte ? ".con-recorte" : ""}${extra}`, { style: estilo }, h("img", { src, alt: "", draggable: false }));
   }
   return h(`span.avatar${extra}`, { style: estilo }, iniciales(j.nombre));
 }

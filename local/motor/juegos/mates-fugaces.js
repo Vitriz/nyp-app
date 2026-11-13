@@ -104,6 +104,7 @@ export default {
       return {
         id,
         valor: j && j.aciertos > 0 ? j.aciertos : null,
+        corto: j ? `${j.aciertos} ${j.aciertos === 1 ? "acierto" : "aciertos"}` : "",
         texto: j ? `${j.aciertos} ${j.aciertos === 1 ? "acierto" : "aciertos"}${j.fallos ? ` · ${j.fallos} ${j.fallos === 1 ? "fallo" : "fallos"}` : ""}` : "No jugó",
       };
     });

@@ -110,7 +110,7 @@ export default {
       if (!j) return { id, valor: null, texto: "No jugó" };
       const n = j.encontradas.length;
       const detalle = j.encontradas.map((e) => ({ t: ronda.palabras[e.k].forma, k: "bien" }));
-      return { id, valor: n > 0 ? n : null, texto: `${n} de ${ronda.palabras.length} palabras`, detalle };
+      return { id, valor: n > 0 ? n : null, texto: `${n} de ${ronda.palabras.length} palabras`, corto: `${n}/${ronda.palabras.length} palabras`, detalle };
     });
   },
 

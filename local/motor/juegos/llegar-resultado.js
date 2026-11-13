@@ -111,10 +111,10 @@ export default {
   breve: "Combina los números para llegar al objetivo.",
   descripcion: "Combina los números con + − × ÷ para llegar al número objetivo. Cada número se usa una vez. Si nadie llega, gana quien se acerque más.",
 
-  crear({ azar, config }) {
+  crear({ azar, config, inicio = Date.now() }) {
     const g = generar(azar, nivelDificultad(config));
     // En difícil se puede pasar por números negativos.
-    return { numeros: g.numeros, objetivo: g.objetivo, solucion: g.sol, negativos: nivelDificultad(config) > 0, jugadores: {} };
+    return { numeros: g.numeros, objetivo: g.objetivo, solucion: g.sol, negativos: nivelDificultad(config) > 0, inicio, jugadores: {} };
   },
 
   estadoJugador(ronda, id) {
@@ -156,6 +156,8 @@ export default {
         const dist = Math.abs(x.v - ronda.objetivo);
         if (!j.mejor || dist < j.mejor.dist || (dist === j.mejor.dist && x.pasos.length < (j.mejor.pasos?.length ?? 0) && x.pasos.length)) j.mejor = { valor: x.v, dist, pasos: x.pasos };
       }
+      // La primera vez que llega exacto se apunta cuánto ha tardado.
+      if (j.mejor?.dist === 0 && j.ms == null) j.ms = Math.max(0, Date.now() - (ronda.inicio ?? Date.now()));
     }
     return true;
   },
@@ -169,7 +171,13 @@ export default {
       const m = ronda.jugadores[id]?.mejor;
       if (!m) return { id, valor: null, texto: "No jugó" };
       const detalle = (m.pasos ?? []).map((t) => ({ t, k: "paso" }));
-      return { id, valor: -m.dist, texto: m.dist === 0 ? `¡Exacto! ${m.valor}` : `${m.valor} (a ${m.dist})`, detalle };
+      if (m.dist === 0) {
+        // Exacto: lo que cuenta es el tiempo (siempre por delante de quien no llegó).
+        const ms = ronda.jugadores[id].ms ?? 0;
+        const t = `${(ms / 1000).toFixed(1).replace(".", ",")} s`;
+        return { id, valor: 1e7 - ms, texto: `¡Exacto! en ${t}`, corto: t, detalle, pasos: m.pasos?.length ?? 0 };
+      }
+      return { id, valor: -m.dist, texto: `${m.valor} (a ${m.dist})`, corto: `a ${m.dist}`, detalle, pasos: m.pasos?.length ?? 0 };
     });
   },
 

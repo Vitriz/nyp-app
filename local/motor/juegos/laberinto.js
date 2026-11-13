@@ -241,8 +241,11 @@ export default {
       const j = ronda.jugadores[id];
       if (!j || !Object.keys(j.puestos).length) return { id, valor: null, texto: "No jugó" };
       // Completo: cuanto antes, mejor (siempre por encima de quien no lo completó).
-      if (j.ms != null) return { id, valor: 1e7 - j.ms, texto: `Completo en ${(j.ms / 1000).toFixed(1).replace(".", ",")} s` };
-      return { id, valor: j.correctas > 0 ? j.correctas : null, texto: `${j.correctas} de ${total} operaciones` };
+      if (j.ms != null) {
+        const t = `${(j.ms / 1000).toFixed(1).replace(".", ",")} s`;
+        return { id, valor: 1e7 - j.ms, texto: `⏱ ${t}`, corto: t };
+      }
+      return { id, valor: j.correctas > 0 ? j.correctas : null, texto: `${j.correctas} de ${total} operaciones`, corto: `${j.correctas}/${total} cuentas` };
     });
   },
 
