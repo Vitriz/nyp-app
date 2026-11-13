@@ -353,9 +353,16 @@ export function vigilarEncaje() {
 
 /** Título del juego en fichas que flotan: NÚMEROS / y / PALABRAS. */
 export function tituloJuego() {
-  let i = 0;
-  const fila = (palabra) => h("div.titulo-fila", [...palabra].map((l) => h("span.ficha", { style: { "--i": i++ } }, l)));
-  return h("div.titulo-nyp", { role: "heading", "aria-level": "1", "aria-label": "Números y Palabras" }, fila("NÚMEROS"), h("span.ficha.titulo-y", { style: { "--i": i++ } }, "y"), fila("PALABRAS"));
+  // --x: la columna de cada letra respecto al centro; la ola avanza de izquierda a derecha como una bandera.
+  const fila = (palabra, clase) =>
+    h(`div.titulo-fila.${clase}`, [...palabra].map((l, k) => h("span.ficha", { style: { "--x": k - (palabra.length - 1) / 2 } }, l)));
+  return h(
+    "div.titulo-nyp",
+    { role: "heading", "aria-level": "1", "aria-label": "Números y Palabras" },
+    fila("NÚMEROS", "titulo-numeros"),
+    h("span.ficha.titulo-y", { style: { "--x": 0 } }, "Y"),
+    fila("PALABRAS", "titulo-palabras")
+  );
 }
 
 export function textoPuesto(p) {

@@ -21,7 +21,12 @@
     .marca { display: flex; flex-direction: column; align-items: center; gap: 0.25em; font-size: min(2.3rem, calc((100vw - 3rem) / 13.4)); margin-top: 3rem; }
     .marca .fila { display: flex; gap: 0.18em; }
     .marca .ficha { box-sizing: border-box; }
-    .marca .ficha.y { font-size: 0.75em; font-style: italic; color: #b8860b; background: linear-gradient(180deg, #fff6d6, #f3d77a); }
+    .marca .ficha { animation: bandera 2.4s linear infinite; animation-delay: calc(var(--x) * 0.28s - 2.4s); }
+    .marca .ficha.y { font-size: 0.8em; color: #5a3d00; background: linear-gradient(180deg, #fff6d6, #f6dc85 55%, #e9c75a); border-color: #5a3d00; }
+    .marca .num .ficha { background: linear-gradient(180deg, #fff, #c9ecf7 55%, #8ed3e6); color: #0b3a5c; }
+    .marca .pal .ficha { background: linear-gradient(180deg, #fff, #ffdcca 55%, #f5a983); color: #6a2310; }
+    @keyframes bandera { 0% { transform: translateY(0em) rotate(5.00deg); } 8.33% { transform: translateY(-0.080em) rotate(4.33deg); } 16.67% { transform: translateY(-0.139em) rotate(2.50deg); } 25% { transform: translateY(-0.160em) rotate(0.00deg); } 33.33% { transform: translateY(-0.139em) rotate(-2.50deg); } 41.67% { transform: translateY(-0.080em) rotate(-4.33deg); } 50% { transform: translateY(0em) rotate(-5.00deg); } 58.33% { transform: translateY(0.080em) rotate(-4.33deg); } 66.67% { transform: translateY(0.139em) rotate(-2.50deg); } 75% { transform: translateY(0.160em) rotate(0deg); } 83.33% { transform: translateY(0.139em) rotate(2.50deg); } 91.67% { transform: translateY(0.080em) rotate(4.33deg); } 100% { transform: translateY(0em) rotate(5.00deg); } }
+    @media (prefers-reduced-motion: reduce) { .marca .ficha { animation: none; } }
     .ficha { display: inline-grid; place-items: center; width: 1.45em; height: 1.45em; border-radius: 0.28em; background: linear-gradient(180deg, #fff, #f3f6ff 55%, #dde6fb);
       color: #0d2560; border: 0.07em solid #0a1b4a; font-family: "Segoe UI Black", "Arial Black", system-ui, sans-serif; font-weight: 900; }
     .boton { font: inherit; font-weight: 800; font-size: 1.2rem; color: #06283a; background: linear-gradient(180deg, #8ed3e6, #5fb7d0); border: 3px solid #0a1b4a;
@@ -45,9 +50,9 @@
 <body>
   <div id="carcasa">
     <div class="marca" role="heading" aria-level="1" aria-label="Números y Palabras">
-      <div class="fila"><span class="ficha">N</span><span class="ficha">Ú</span><span class="ficha">M</span><span class="ficha">E</span><span class="ficha">R</span><span class="ficha">O</span><span class="ficha">S</span></div>
-      <span class="ficha y">y</span>
-      <div class="fila"><span class="ficha">P</span><span class="ficha">A</span><span class="ficha">L</span><span class="ficha">A</span><span class="ficha">B</span><span class="ficha">R</span><span class="ficha">A</span><span class="ficha">S</span></div>
+      <div class="fila num"><span class="ficha" style="--x:-3">N</span><span class="ficha" style="--x:-2">Ú</span><span class="ficha" style="--x:-1">M</span><span class="ficha" style="--x:0">E</span><span class="ficha" style="--x:1">R</span><span class="ficha" style="--x:2">O</span><span class="ficha" style="--x:3">S</span></div>
+      <span class="ficha y" style="--x:0">Y</span>
+      <div class="fila pal"><span class="ficha" style="--x:-3.5">P</span><span class="ficha" style="--x:-2.5">A</span><span class="ficha" style="--x:-1.5">L</span><span class="ficha" style="--x:-0.5">A</span><span class="ficha" style="--x:0.5">B</span><span class="ficha" style="--x:1.5">R</span><span class="ficha" style="--x:2.5">A</span><span class="ficha" style="--x:3.5">S</span></div>
     </div>
     <p id="estado" class="suave">Cargando…</p>
   </div>

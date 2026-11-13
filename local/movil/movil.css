@@ -918,3 +918,28 @@ html, body { height: 100dvh; }
   font-size: 0.72em; font-style: italic; line-height: 1; color: #6b4a00; margin: 0.1em 0;
   background: linear-gradient(180deg, #fff6d6 0%, #f6dc85 55%, var(--oro) 100%); border-color: #5a3d00;
 }
+
+/* ---------- título: NÚMEROS en azul, PALABRAS en coral, la Y dorada; todo ondea como una bandera ---------- */
+.titulo-nyp .ficha, .titulo-nyp .ficha.titulo-y {
+  animation: bandera 2.4s linear infinite; animation-delay: calc(var(--x) * 0.28s - 2.4s);
+}
+.titulo-nyp .ficha.titulo-y { font-size: 0.8em; font-style: normal; color: #5a3d00; margin: 0.08em 0; }
+.titulo-numeros .ficha { background: linear-gradient(180deg, #ffffff 0%, #c9ecf7 55%, #8ed3e6 100%); color: #0b3a5c; border-color: #0a2a4a; }
+.titulo-palabras .ficha { background: linear-gradient(180deg, #ffffff 0%, #ffdcca 55%, #f5a983 100%); color: #6a2310; border-color: #4a1606; }
+/* Altura en seno y giro en coseno: cada ficha se inclina con la pendiente de la ola. */
+@keyframes bandera {
+  0% { transform: translateY(0em) rotate(5.00deg); }
+  8.33% { transform: translateY(-0.080em) rotate(4.33deg); }
+  16.67% { transform: translateY(-0.139em) rotate(2.50deg); }
+  25% { transform: translateY(-0.160em) rotate(0deg); }
+  33.33% { transform: translateY(-0.139em) rotate(-2.50deg); }
+  41.67% { transform: translateY(-0.080em) rotate(-4.33deg); }
+  50% { transform: translateY(0em) rotate(-5.00deg); }
+  58.33% { transform: translateY(0.080em) rotate(-4.33deg); }
+  66.67% { transform: translateY(0.139em) rotate(-2.50deg); }
+  75% { transform: translateY(0.160em) rotate(0deg); }
+  83.33% { transform: translateY(0.139em) rotate(2.50deg); }
+  91.67% { transform: translateY(0.080em) rotate(4.33deg); }
+  100% { transform: translateY(0em) rotate(5.00deg); }
+}
+@media (prefers-reduced-motion: reduce) { .titulo-nyp .ficha, .titulo-nyp .ficha.titulo-y { animation: none; } }
