@@ -63,7 +63,9 @@ export default {
   crear({ azar, config }) {
     const c = preparar();
     if (!c) return { sinDatos: true, jugadores: {} };
-    const objetivo = azar.elegir(c.datos.secretas);
+    // Fácil: la secreta es siempre una palabra muy común (de las 3000 más usadas).
+    const facil = nivelDificultad(config) < 0 && c.datos.faciles?.length;
+    const objetivo = azar.elegir(facil ? c.datos.faciles : c.datos.secretas);
     return { objetivo, pistas: PISTAS[nivelDificultad(config) + 1], jugadores: {}, tabla: null };
   },
 

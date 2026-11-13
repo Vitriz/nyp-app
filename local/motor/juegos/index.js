@@ -55,7 +55,8 @@ export function listaJuegos() {
     duracion: implementados[j.id]?.duracion ?? j.duracion,
     descripcion: implementados[j.id]?.descripcion ?? "",
     breve: implementados[j.id]?.breve ?? "",
-    ambitos: implementados[j.id]?.ambitos ?? null, // crucigrama: temas para elegir
+    ambitos: implementados[j.id]?.ambitos ?? null, // temas para elegir (Crucigrama, Definición, Sopa)
+    ambitoDefecto: implementados[j.id]?.ambitoDefecto ?? "azar",
     disponible: Boolean(implementados[j.id]),
     sinDiccionario: Boolean(implementados[j.id]?.sinDiccionario), // trae sus propios datos
   }));

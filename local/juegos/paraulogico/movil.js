@@ -4,6 +4,21 @@ import { reiniciarAnim, clave } from "../comun/util.js";
 import { teclasFisicas, sinTilde, ES_LETRA } from "../../comun/teclas.js";
 import { crearPanal } from "./panal.js";
 
+// Rangos según la parte de los puntos posibles (con las palabras comunes) que llevas.
+export const RANGOS = [
+  [0, "🌱", "Empezando"], [0.02, "🐣", "Buen comienzo"], [0.05, "🙂", "Bien"], [0.1, "😃", "Muy bien"],
+  [0.18, "🤩", "Genial"], [0.3, "🚀", "Asombroso"], [0.5, "🧠", "Genio"],
+];
+export function rangoDe(puntos, maximo) {
+  // Los panales tienen cientos de puntos posibles: los rangos se miden sobre un máximo razonable (250 como mucho).
+  const base = Math.min(maximo || 0, 250);
+  const f = base ? puntos / base : 0;
+  let i = 0;
+  while (i + 1 < RANGOS.length && f >= RANGOS[i + 1][0]) i++;
+  const sig = RANGOS[i + 1];
+  return { actual: RANGOS[i], siguiente: sig, faltan: sig ? Math.max(1, Math.ceil(sig[0] * base - puntos)) : 0, i };
+}
+
 export function montar(cuerpo, e, ctx) {
   let d = e.datos;
   let texto = "";
@@ -14,10 +29,16 @@ export function montar(cuerpo, e, ctx) {
   const cuantas = h("span.suave");
   const escrito = h("div.pg-escrito");
   const aviso = h("div.pl-aviso");
-  const panal = crearPanal(d.centro, letras, (l) => {
-    if (texto.length < 16) texto += l;
-    pintar();
-  });
+  const rango = h("div.pg-rango");
+  const panal = crearPanal(
+    d.centro,
+    letras,
+    (l) => {
+      if (texto.length < 16) texto += l;
+      pintar();
+    },
+    () => probar() // arrastrando el dedo por varias letras: al soltar se comprueba
+  );
   const borrar = h("button.boton.suave.pg-borrar", { type: "button", onclick: () => { texto = texto.slice(0, -1); pintar(); } }, "⌫ Borrar");
   const mezclar = h("button.boton.suave.pg-mezclar", { type: "button", onclick: () => {
     letras = letras.map((x) => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
@@ -33,6 +54,7 @@ export function montar(cuerpo, e, ctx) {
       h(
         "div.pg-izq",
         h("div.mf-cont", "Puntos", puntos, cuantas),
+        rango,
         h("div.pl-caja.tarjeta", escrito, aviso),
         h("div.pg-panal", panal.el),
         h("div.pg-botones", borrar, mezclar, comprobar)
@@ -62,6 +84,14 @@ export function montar(cuerpo, e, ctx) {
 
   function pintarLista() {
     puntos.textContent = d.puntos;
+    if (d.maximo) {
+      const r = rangoDe(d.puntos, d.maximo);
+      rango.replaceChildren(
+        h("span.pg-rango-actual", `${r.actual[1]} ${r.actual[2]}`),
+        h("span.pg-rango-barra", ...RANGOS.slice(1).map((x, k) => h(`i${k < r.i ? ".hecho" : ""}`, { title: x[2] }))),
+        h("small", r.siguiente ? `${r.faltan} para ${r.siguiente[1]} ${r.siguiente[2]}` : "¡Rango máximo!")
+      );
+    }
     const n = d.encontradas.length;
     cuantas.textContent = d.ayuda
       ? `· ${n} ${n === 1 ? "palabra" : "palabras"} · quedan ${Math.max(0, d.ayuda.total - d.ayuda.halladas)} comunes`

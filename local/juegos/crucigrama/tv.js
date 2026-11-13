@@ -26,7 +26,7 @@ function rejilla(d, conLetras = false) {
 export function montar(cuerpo, e, ctx) {
   const d = e.datos;
   const lado = h("div.sopa-lado");
-  cuerpo.append(h("div.sopa-tv.cg-escena", h("div.cg-tv-izq", h("div.etiqueta", `📚 ${d.ambito} · ${d.total} palabras`), rejilla(d)), lado));
+  cuerpo.append(h("div.sopa-tv.cg-escena", h("div.cg-tv-izq", h("div.etiqueta", `${d.ambito === "todos" ? "🌍 Todos los temas" : "📚 " + d.ambito} · ${d.total} palabras`), rejilla(d)), lado));
   const actualizar = tarjetasJugadores(lado, ctx, (e, id) => {
     const n = e.datos?.jugadores?.[id];
     if (n == null) return null;
@@ -41,7 +41,7 @@ export function resumen(r) {
   return h(
     "div.pl-resumen.tarjeta.aparece.cg-resumen",
     { style: { animationDelay: "900ms" } },
-    h("span.etiqueta", `📚 ${r.ambito}`),
+    h("span.etiqueta", r.ambito === "todos" ? "🌍 Todos los temas" : `📚 ${r.ambito}`),
     rejilla(r, true),
     h("div.cg-soluciones", r.palabras.map((p) => h("span.pl-sol", `${p.n}${p.dir === "h" ? "→" : "↓"} ${p.forma.toUpperCase()}`)))
   );

@@ -11,6 +11,24 @@ export const AMBITOS = [
   "Mecánica", "Medicina", "Milicia", "Música", "Pintura", "Psicología", "Química", "Religión", "Tauromaquia", "Zoología",
 ];
 
+/**
+ * Palabras de un tema para los juegos con tema (Crucigrama, Definición, Sopa).
+ *   "todos" = de cualquier tema · "azar" (o desconocido) = un tema al azar con bastantes palabras.
+ * Devuelve { ambito, lista: [{ clave, forma, nivel, definicion, palabras }] }.
+ */
+export function palabrasDeTema(azar, ambito, minimo = 80) {
+  const todo = cargarCrucigrama();
+  const conDatos = AMBITOS.filter((a) => (todo[a]?.length ?? 0) >= 30);
+  const entrada = ([c, forma, niv, definicion]) => ({ clave: c, forma, nivel: niv, definicion, palabras: definicion.split(/\s+/).length });
+  if (ambito === "todos") {
+    const vistas = new Map();
+    for (const a of conDatos) for (const f of todo[a]) if (!vistas.has(f[0])) vistas.set(f[0], entrada(f));
+    return { ambito: "todos", lista: [...vistas.values()] };
+  }
+  const elegido = conDatos.includes(ambito) ? ambito : azar.elegir(conDatos.filter((a) => todo[a].length >= minimo));
+  return { ambito: elegido, lista: (todo[elegido] ?? []).map(entrada) };
+}
+
 // Según el nivel: cuántas palabras, tamaño máximo, largo máximo de la definición (en palabras)
 // y si se prefieren palabras comunes. En fácil caben definiciones más largas (explican más).
 const NIVELES = [
@@ -110,6 +128,14 @@ function numerar(puestas, caja) {
   return palabras.sort((a, b) => a.n - b.n || (a.dir === "h" ? -1 : 1));
 }
 
+/** La letra de cada casilla ("r,c" → letra). */
+function solucionCasillas(ronda) {
+  if (ronda.sol) return ronda.sol;
+  const sol = {};
+  for (const p of ronda.palabras) for (let i = 0; i < p.clave.length; i++) sol[`${p.r + (p.dir === "v" ? i : 0)},${p.c + (p.dir === "h" ? i : 0)}`] = p.clave[i];
+  return (ronda.sol = sol);
+}
+
 export default {
   id: "crucigrama",
   nombre: "Crucigrama",
@@ -122,12 +148,8 @@ export default {
   crear({ azar, config, inicio = Date.now() }) {
     const d = nivelDificultad(config);
     const nivel = NIVELES[d + 1];
-    const todo = cargarCrucigrama();
-    const conDatos = AMBITOS.filter((a) => (todo[a]?.length ?? 0) >= 30);
-    const ambito = conDatos.includes(config?.ambito) ? config.ambito : azar.elegir(conDatos.filter((a) => todo[a].length >= 80));
-    let entradas = (todo[ambito] ?? [])
-      .map(([c, forma, niv, definicion]) => ({ clave: c, forma, nivel: niv, definicion, palabras: definicion.split(/\s+/).length }))
-      .filter((x) => x.clave.length <= nivel.tam && x.palabras <= nivel.maxPalabras);
+    const { ambito, lista } = palabrasDeTema(azar, config?.ambito);
+    let entradas = lista.filter((x) => x.clave.length <= nivel.tam && x.palabras <= nivel.maxPalabras);
     if (nivel.comunes) {
       const comunes = entradas.filter((x) => x.nivel <= 2);
       if (comunes.length >= nivel.n * 4) entradas = comunes;
@@ -137,6 +159,7 @@ export default {
     return {
       ambito,
       inicio,
+      ayudaLetras: d < 0, // en fácil cada letra se comprueba al escribirla
       filas: m ? m.caja.r1 - m.caja.r0 + 1 : 1,
       cols: m ? m.caja.c1 - m.caja.c0 + 1 : 1,
       palabras: palabras.map(({ n, dir, r, c, clave: cl, forma, definicion }) => ({ n, dir, r, c, clave: cl, forma, definicion })),
@@ -145,7 +168,7 @@ export default {
   },
 
   estadoJugador(ronda, id) {
-    return (ronda.jugadores[id] ??= { resueltas: {}, ultimo: 0 });
+    return (ronda.jugadores[id] ??= { resueltas: {}, ultimo: 0, pistas: 0, reveladas: {}, borrador: {} });
   },
 
   vistaJugador(ronda, id) {
@@ -157,6 +180,11 @@ export default {
       // Sin la solución: solo su huella, para comprobar al momento en el móvil.
       palabras: ronda.palabras.map((p) => ({ n: p.n, dir: p.dir, r: p.r, c: p.c, largo: p.clave.length, definicion: p.definicion, h: huella(p.clave) })),
       resueltas: Object.fromEntries(Object.keys(j.resueltas).map((k) => [k, ronda.palabras[k].clave])),
+      reveladas: j.reveladas ?? {}, // casillas desveladas con pista ("r,c" → letra)
+      borrador: j.borrador ?? {}, // lo que llevas escrito (para seguir otro día)
+      pistas: j.pistas ?? 0,
+      // Fácil: la letra de cada casilla, para avisar al momento si te equivocas.
+      solucion: ronda.ayudaLetras ? solucionCasillas(ronda) : null,
     };
   },
 
@@ -172,8 +200,21 @@ export default {
   },
 
   accion(ronda, id, msg) {
-    if (msg.a !== "respuesta") return false;
     const j = this.estadoJugador(ronda, id);
+    if (msg.a === "pista") {
+      // Desvela la letra de una casilla (cuesta 1 punto).
+      const sol = solucionCasillas(ronda);
+      const k = String(msg.casilla ?? "");
+      if (!sol[k] || j.reveladas[k]) return false;
+      j.reveladas[k] = sol[k];
+      j.pistas = (j.pistas ?? 0) + 1;
+      return true;
+    }
+    if (msg.a === "borrador") {
+      if (msg.letras && typeof msg.letras === "object") j.borrador = Object.fromEntries(Object.entries(msg.letras).filter(([k, v]) => /^\d+,\d+$/.test(k) && /^[a-zñ]$/.test(v)).slice(0, 400));
+      return false; // no cambia nada que haya que enseñar
+    }
+    if (msg.a !== "respuesta") return false;
     const k = Number(msg.k);
     const p = ronda.palabras[k];
     if (!p || j.resueltas[k] || clave(String(msg.texto ?? "")) !== p.clave) return false;
@@ -195,7 +236,11 @@ export default {
       const n = Object.keys(j.resueltas).length;
       const detalle = ronda.palabras.map((p, k) => ({ t: p.forma, k: j.resueltas[k] ? "bien" : "mal" }));
       const tiempo = n === total ? ` · ${(j.ultimo / 1000).toFixed(1).replace(".", ",")} s` : "";
-      return { id, valor: n ? n * 1e7 - j.ultimo : null, texto: `${n} de ${total} palabras${tiempo}`, corto: `${n}/${total}${tiempo}`, detalle };
+      // Puntos: 3 por palabra, −1 por cada letra pedida; a igualdad, quien acabó antes.
+      const pistas = j.pistas ?? 0;
+      const puntos = n * 3 - pistas;
+      const p = pistas ? ` · ${pistas} ${pistas === 1 ? "pista" : "pistas"}` : "";
+      return { id, valor: n ? puntos * 1e7 - Math.min(j.ultimo, 9.99e6) : null, texto: `${n} de ${total} palabras${tiempo}${p}`, corto: `${n}/${total}${tiempo}${p}`, detalle };
     });
   },
 

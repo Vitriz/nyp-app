@@ -1,6 +1,7 @@
 // Pantalla final del modo solo: casillas con los datos de la partida, distintas para cada juego.
 import { h } from "../comun/ui.js";
 import { crearRejilla } from "../juegos/kenken/rejilla.js";
+import { rangoDe } from "../juegos/paraulogico/movil.js";
 
 /** KenKen: ¿cada casilla tiene el número de la solución? (si lo resolvió, todo vale) */
 const kkBien = (j, ronda) => ronda.solucion.map((v, k) => j.ms != null || j.valores[k] === v);
@@ -140,6 +141,7 @@ export function casillasFinal(meta, ronda, j) {
 
 /** Algo más que enseñar al final (de momento, la solución del KenKen marcando lo que tenías bien). */
 export function extraFinal(meta, ronda, j) {
+  if (meta.id === "paraulogico") return finalTutifruti(ronda, j);
   if (meta.id !== "kenken" || !ronda?.solucion) return null;
   const rejilla = crearRejilla(ronda);
   rejilla.poner(ronda.solucion);
@@ -155,6 +157,24 @@ export function extraFinal(meta, ronda, j) {
     h("small", j.ms != null ? "¡Resuelto! Así quedó el tablero" : "La solución"),
     rejilla.el,
     h("div.kk-leyenda", h("span", h("i", { style: { background: "#9be0bd" } }), "Lo tenías bien"), h("span", h("i", { style: { background: "#f6b1a8" } }), "Lo tenías mal (tachado, tu número)"))
+  );
+}
+
+/** Tutifruti: rango alcanzado, las palabras acertadas y las comunes que faltaron. */
+function finalTutifruti(ronda, j) {
+  if (!ronda?.comunes) return null;
+  const tuyas = new Set(j.encontradas.map((e) => e.clave));
+  const r = rangoDe(j.puntos, ronda.maximo);
+  const faltan = ronda.comunes.filter((c) => !tuyas.has(c)).sort((a, b) => b.length - a.length || a.localeCompare(b, "es"));
+  const chip = (c, k) => h(`span.pg-chip${k}`, c.toUpperCase());
+  const esTuti = (c) => new Set(c).size === 7;
+  return h(
+    "div.final-palabras.tarjeta",
+    h("div.final-rango", h("span.pg-rango-actual", `${r.actual[1]} ${r.actual[2]}`), h("small", `${j.puntos} de ${ronda.maximo} puntos posibles`)),
+    h("small", `✔ Acertadas (${j.encontradas.length})`),
+    h("div.final-chips", j.encontradas.map((e) => chip(e.forma, e.tuti ? ".tuti" : ".bien"))),
+    h("small", `Te faltaron (${faltan.length})`),
+    h("div.final-chips.faltan", faltan.map((c) => chip(c, esTuti(c) ? ".tuti.falta" : ".falta")))
   );
 }
 

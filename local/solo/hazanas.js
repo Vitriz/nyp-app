@@ -39,7 +39,7 @@ export const HAZANAS = [
     comprobar: ({ j }) => (j?.aciertos ?? 0) >= 10,
   },
   {
-    id: "crucigrama-completo", juego: "crucigrama", icono: "📚", nombre: "Enciclopedia andante",
+    id: "crucigrama-completo", juego: "crucigrama", icono: "📚", nombre: "Enciclopedia andante", premio: { sombrero: "estrella" },
     desc: "Completa un crucigrama entero en Difícil.",
     comprobar: ({ meta, j, ronda }) => meta.dificultad === "dificil" && ronda?.palabras?.length > 0 && Object.keys(j?.resueltas ?? {}).length === ronda.palabras.length,
   },
@@ -57,6 +57,31 @@ export const HAZANAS = [
     id: "laberinto-rapido", juego: "laberinto", icono: "⏱️", nombre: "Contrarreloj", premio: { sombrero: "lazo" },
     desc: "Completa el laberinto en Difícil en menos de 60 segundos.",
     comprobar: ({ meta, j }) => meta.dificultad === "dificil" && j?.ms != null && j.ms < 60000,
+  },
+  {
+    id: "conexiones-limpio", juego: "conexiones", icono: "🔗", nombre: "Mente conectada", premio: { sombrero: "pamela" },
+    desc: "Encuentra 12 grupos en una partida sin ningún fallo.",
+    comprobar: ({ j }) => (j?.grupos ?? 0) >= 12 && (j?.fallosTotal ?? 1) === 0,
+  },
+  {
+    id: "semantica-mente", juego: "semantica", icono: "🔮", nombre: "Lector de mentes", premio: { sombrero: "flor" },
+    desc: "Encuentra la palabra secreta en 15 intentos o menos, sin pistas.",
+    comprobar: ({ j }) => Boolean(j?.encontrada) && !j.pistas && j.encontrada.intentos <= 15,
+  },
+  {
+    id: "memoria-elefante", juego: "memoria", icono: "🐘", nombre: "Memoria de elefante", premio: { sombrero: "gafas" },
+    desc: "Acierta 15 pruebas seguidas en Difícil.",
+    comprobar: ({ meta, j }) => {
+      if (meta.dificultad !== "dificil") return false;
+      let seguidas = 0, max = 0;
+      for (const ok of j?.hechas ?? []) max = Math.max(max, (seguidas = ok ? seguidas + 1 : 0));
+      return max >= 15;
+    },
+  },
+  {
+    id: "kenken-maestro", juego: "kenken", icono: "🔢", nombre: "Maestro del KenKen", premio: { sombrero: "casco" },
+    desc: "Resuelve un KenKen 6 × 6 (Difícil) en menos de 2 minutos.",
+    comprobar: ({ meta, j }) => meta.dificultad === "dificil" && j?.ms != null && j.ms < 120000,
   },
 ];
 

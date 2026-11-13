@@ -7,14 +7,16 @@ export function montar(cuerpo, e, ctx) {
   const d = e.datos;
   const tablero = crearTablero(d.tablero);
   const marcadas = new Set();
-  const chips = d.palabras.map((p) => h("span.sopa-chip", p.toUpperCase()));
+  // En difícil no se ven las palabras: solo sus definiciones (al encontrarla, aparece la palabra).
+  const conDefs = Array.isArray(d.definiciones);
+  const chips = d.palabras.map((p, k) => (conDefs ? h("span.sopa-chip.sopa-def", h("b", "?"), h("span", d.definiciones[k])) : h("span.sopa-chip", p.toUpperCase())));
   const contador = h("span.ficha", "0");
 
   cuerpo.append(
     h(
       "div.sopa-movil",
       h("div.mf-cont", "Encontradas", contador, h("span.suave", `de ${d.palabras.length}`)),
-      h("div.sopa-lista", chips),
+      h(`div.sopa-lista${conDefs ? ".con-defs" : ""}`, chips),
       h("div.sopa-caja.sin-onda", tablero.el)
     )
   );
@@ -24,6 +26,7 @@ export function montar(cuerpo, e, ctx) {
     marcadas.add(k);
     tablero.marcar(r0, c0, r1, c1, COLORES_SOPA[k % COLORES_SOPA.length]);
     chips[k].classList.add("hecha");
+    if (conDefs) chips[k].firstChild.textContent = d.palabras[k].toUpperCase();
     chips[k].style.setProperty("--c", COLORES_SOPA[k % COLORES_SOPA.length]);
     contador.textContent = marcadas.size;
     reiniciarAnim(contador, "rebote");

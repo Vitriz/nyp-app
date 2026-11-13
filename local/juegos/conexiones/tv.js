@@ -25,6 +25,6 @@ export function resumen(r) {
     "div.pl-resumen.tarjeta.aparece",
     { style: { animationDelay: "900ms" } },
     h("span.etiqueta", "El primer tablero"),
-    r.grupos.map((g, i) => franjaGrupo(g.nombre, g.palabras, i))
+    r.grupos.map((g, i) => franjaGrupo(g.nombre, g.palabras, g.color ?? i))
   );
 }

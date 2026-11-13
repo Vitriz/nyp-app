@@ -9,6 +9,14 @@ const CONSONANTES = {
   g: 1.0, v: 0.9, y: 0.6, q: 0.4, h: 0.7, f: 0.7, z: 0.5, j: 0.4, "ñ": 0.3, x: 0.2,
 };
 const MINIMO = 3;
+// Consonantes «raras»: hacen más difícil encajar las letras.
+const RARAS = ["q", "x", "z", "j", "ñ", "h", "f", "v", "y", "g", "b"];
+// Por nivel: letras, vocales y cuántas consonantes raras (fácil: ninguna; difícil: al menos 2).
+const NIVELES = [
+  { n: 11, vocales: [5, 5, 6], raras: [0, 0] },
+  { n: 10, vocales: [4, 4, 5], raras: [0, 1] },
+  { n: 9, vocales: [3, 3, 4], raras: [2, 3] },
+];
 
 function sacar(azar, tabla, ya) {
   for (;;) {
@@ -25,14 +33,18 @@ function sacar(azar, tabla, ya) {
   }
 }
 
-function generarLetras(azar, n) {
+function generarLetras(azar, nivel) {
+  const { n } = nivel;
   const objetivo = Math.min(n - 1, n >= 10 ? 8 : 7); // la mejor palabra común debe tener al menos esto
+  const comunes = Object.fromEntries(Object.entries(CONSONANTES).filter(([l]) => !RARAS.includes(l)));
   let mejor = null;
-  for (let intento = 0; intento < 60; intento++) {
-    const nv = n >= 10 ? azar.elegir([4, 4, 5]) : azar.elegir([3, 4, 4]);
+  for (let intento = 0; intento < 80; intento++) {
+    const nv = azar.elegir(nivel.vocales);
+    const nr = azar.entero(...nivel.raras);
     const letras = [];
     for (let i = 0; i < nv; i++) letras.push(sacar(azar, VOCALES, letras));
-    for (let i = nv; i < n; i++) letras.push(sacar(azar, CONSONANTES, letras));
+    for (let i = 0; i < nr; i++) letras.push(sacar(azar, Object.fromEntries(RARAS.map((l) => [l, CONSONANTES[l]])), letras));
+    for (let i = nv + nr; i < n; i++) letras.push(sacar(azar, nivel.raras[1] ? CONSONANTES : comunes, letras));
     if (letras.includes("q") && !letras.includes("u")) continue;
     const buenas = palabrasPosibles(letras.join(""), { soloBuenas: true });
     const largo = buenas[0]?.clave.length ?? 0;
@@ -50,9 +62,10 @@ export default {
   breve: "Forma la palabra más larga con las letras.",
   descripcion: "Forma la palabra más larga que puedas con las letras. Cada letra se usa una vez. Valen plurales, femeninos y verbos conjugados.",
 
-  crear({ azar, config }) {
-    const n = config?.letrasPalabraLarga ?? [11, 10, 9][nivelDificultad(config) + 1]; // más letras = más fácil
-    return { letras: generarLetras(azar, n), jugadores: {} };
+  crear({ azar, config, inicio = Date.now() }) {
+    const nivel = { ...NIVELES[nivelDificultad(config) + 1] };
+    if (config?.letrasPalabraLarga) nivel.n = config.letrasPalabraLarga;
+    return { letras: generarLetras(azar, nivel), inicio, jugadores: {} };
   },
 
   estadoJugador(ronda, id) {
@@ -91,7 +104,8 @@ export default {
     else ok = true;
     j.ultimo = { n: j.intentos, palabra: c, ok, motivo, forma: ok ? formaVisible(c) : null };
     if (ok && !j.validas.includes(c)) j.validas.push(c);
-    if (ok && (!j.mejor || c.length > j.mejor.largo)) j.mejor = { clave: c, forma: formaVisible(c), largo: c.length };
+    // Se apunta cuándo la encontró: a igual largo, gana quien llegó antes.
+    if (ok && (!j.mejor || c.length > j.mejor.largo)) j.mejor = { clave: c, forma: formaVisible(c), largo: c.length, ms: Math.max(0, Date.now() - (ronda.inicio ?? Date.now())) };
     if (ok) j.ultimo.mejora = j.mejor.clave === c;
     return true;
   },
@@ -108,7 +122,9 @@ export default {
       const detalle = [...(j.validas ?? [])]
         .sort((a, b) => b.length - a.length)
         .map((c) => ({ t: `${formaVisible(c)} · ${c.length}`, k: c === j.mejor.clave ? "mejor" : "bien" }));
-      return { id, valor: j.mejor.largo, texto: `${j.mejor.forma.toUpperCase()} · ${j.mejor.largo}`, corto: `${j.mejor.forma.toUpperCase()} · ${j.mejor.largo}`, detalle };
+      // Valor: el largo, y en los decimales lo pronto que la encontró (desempate).
+      const valor = j.mejor.largo + 0.99 * (1 - Math.min(j.mejor.ms ?? 3.6e6, 3.6e6) / 3.6e6);
+      return { id, valor, texto: `${j.mejor.forma.toUpperCase()} · ${j.mejor.largo}`, corto: `${j.mejor.forma.toUpperCase()} · ${j.mejor.largo}`, detalle };
     });
   },
 

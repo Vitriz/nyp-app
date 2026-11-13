@@ -154,7 +154,14 @@ export function entrarSolo({ app, perfil, alSalir }) {
           conAyuda: true,
           alJugar: async (j) => {
             const meta = { ...j, duracion: tiempoValido(tiempos["*"] ?? 60), dificultad: niveles["*"] ?? "normal" };
-            // Crucigrama: primero se elige el tema (o al azar).
+            // Crucigrama sin límite a medias: ¿seguirlo?
+            const g = j.id === "crucigrama" && !meta.duracion ? leerGuardado() : null;
+            if (g) {
+              const r = await preguntarGuardado(g);
+              if (r === false) return;
+              if (r) return preparar({ ...meta, ambito: g.ronda.ambito, dificultad: g.meta.dificultad }, r);
+            }
+            // Juegos con tema: primero se elige el tema (todos, al azar o uno).
             if (j.ambitos?.length) {
               const ambito = await elegirAmbito(j.ambitos);
               if (!ambito) return;
@@ -346,7 +353,38 @@ export function entrarSolo({ app, perfil, alSalir }) {
   }
 
   /** Preparar y cuenta atrás en la misma pantalla: mientras, el banner se cierra y solo queda tu icono. */
-  function preparar(meta) {
+  // Crucigrama sin límite de tiempo: si lo dejas a medias, se guarda para seguirlo otro día.
+  const GUARDADO = "nyp-crucigrama-guardado";
+  const leerGuardado = () => {
+    try {
+      return JSON.parse(almacen.leer(GUARDADO) ?? "null");
+    } catch {
+      return null;
+    }
+  };
+  /** ¿Seguir el crucigrama guardado? Devuelve la partida guardada, null (uno nuevo) o false (cancelar). */
+  function preguntarGuardado(g) {
+    return new Promise((ok) => {
+      const j = g.ronda.jugadores?.[yo.id];
+      const hechas = Object.keys(j?.resueltas ?? {}).length;
+      const tema = g.ronda.ambito === "todos" ? "todos los temas" : g.ronda.ambito;
+      const cerrar = (v) => (capa.remove(), ok(v));
+      const capa = h(
+        "div.capa-movil",
+        { onclick: (ev) => ev.target === capa && cerrar(false) },
+        h(
+          "div.caja.tarjeta",
+          h("h2", "✏️ Tienes un crucigrama a medias"),
+          h("p.suave", `${tema} · ${hechas} de ${g.ronda.palabras.length} palabras · ${g.fecha.split("-").reverse().join("/")}`),
+          h("button.boton.acento.grande", { type: "button", onclick: () => cerrar(g) }, "Seguirlo"),
+          h("button.boton.suave.grande", { type: "button", onclick: () => cerrar(null) }, "Empezar uno nuevo")
+        )
+      );
+      document.body.append(capa);
+    });
+  }
+
+  function preparar(meta, guardada = null) {
     const caja = h("div.espera", h("h1", "Preparando…"));
     let t = 0;
     mostrar({ el: h("section", h("div.barra-sup", fijo.hueco("cerrado")), caja), desmontar: () => clearInterval(t) });
@@ -357,7 +395,9 @@ export function entrarSolo({ app, perfil, alSalir }) {
       const impl = motor.juegos.obtenerJuego(meta.id);
       const duracion = msDuracion(meta.duracion);
       const previsto = Date.now() + 4000;
-      const ronda = impl.crear({ azar: motor.util.crearAzar(Date.now()), config: { pulsadorTipos: [], dificultad: meta.dificultad ?? "normal", ambito: meta.ambito }, duracion, inicio: previsto });
+      const ronda = guardada
+        ? { ...guardada.ronda, inicio: previsto - (guardada.ronda.transcurrido ?? 0) }
+        : impl.crear({ azar: motor.util.crearAzar(Date.now()), config: { pulsadorTipos: [], dificultad: meta.dificultad ?? "normal", ambito: meta.ambito, solo: true }, duracion, inicio: previsto });
       impl.vistaJugador(ronda, yo.id);
       // La cuenta atrás empieza al acabar de preparar: así el 3 dura lo mismo que el 2 y el 1.
       const retraso = Math.max(0, Date.now() - (previsto - 4000));
@@ -411,6 +451,10 @@ export function entrarSolo({ app, perfil, alSalir }) {
     function abandonar() {
       acabado = true;
       limpiar();
+      // Crucigrama con tiempo ∞ a medias: se guarda tal cual para seguirlo otro día.
+      if (meta.id === "crucigrama" && !meta.duracion && !impl.terminado(ronda, yo.id)) {
+        almacen.guardar(GUARDADO, JSON.stringify({ meta, ronda: { ...ronda, transcurrido: Date.now() - ronda.inicio }, fecha: new Date().toISOString().slice(0, 10) }));
+      }
       lista();
     }
     function limpiar() {
@@ -424,6 +468,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
       if (acabado) return;
       acabado = true;
       limpiar();
+      if (meta.id === "crucigrama") almacen.guardar(GUARDADO, null); // ya no está a medias
       const r = impl.resultados(ronda, [yo.id])[0];
       let resumen = null;
       try {

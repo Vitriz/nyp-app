@@ -18,7 +18,9 @@ export function montar(cuerpo, e, ctx) {
   // Cabecera: una sola casilla con las palabras que llevas de todas las que hay (0 / 40).
   const cuenta = h("b");
   const marcas = h("div.rv-marcas", h("span.rv-chip.ok", h("small", "Palabras"), cuenta));
-  const pasar = botonMantener("⏭ Pasar", () => ctx.enviar({ a: "pasar", i: d.i }), { clase: ".suave.rv-pasar", ms: 800 });
+  const pasar = botonMantener(d.penalizaPasar ? "⏭ Pasar (−1)" : "⏭ Pasar", () => ctx.enviar({ a: "pasar", i: d.i }), { clase: ".suave.rv-pasar", ms: 800 });
+  // Pista: dice cuántas letras tiene una de las palabras (esa vale 1 punto en vez de 2).
+  const largo = h("button.boton.suave.rv-pasar.rv-pista", { type: "button", onclick: () => ctx.enviar({ a: "pista", i: d.i }), title: "Dice cuántas letras tiene una palabra (vale 1 punto en vez de 2)" }, "📏 Largo");
   pasar.setAttribute("title", "Mantén pulsado para pasar a otro revuelto");
   const tarjetas = h("div.rv-defs");
   const linea = h("div.rv-linea");
@@ -33,7 +35,7 @@ export function montar(cuerpo, e, ctx) {
   cuerpo.append(
     h(
       "div.rv2.rv3",
-      h("div.rv-arriba", h("div.rv-cabecera", marcas, pasar), tarjetas),
+      h("div.rv-arriba", h("div.rv-cabecera", marcas, h("div.rv-cabecera-botones", largo, pasar)), tarjetas),
       h("div.rv-medio", linea, aviso),
       h("div.rv-abajo", tablero, h("div.fila-acciones", deshacer, borrar, ordenar, comprobarBtn))
     )
@@ -130,6 +132,9 @@ export function montar(cuerpo, e, ctx) {
   }
 
   function pintarMarcas() {
+    const a = d.actual;
+    largo.disabled = !a || a.palabras.every((p, k) => p.largo || resueltas[k]);
+    if (a) tablero.style.setProperty("--cols", Math.ceil(a.letras.length / 2));
     cuenta.textContent = `${d.aciertos} / ${d.totalPalabras ?? (d.total ?? 20) * 2}`;
   }
 
@@ -150,7 +155,7 @@ export function montar(cuerpo, e, ctx) {
           `div.rv-tarjeta.tarjeta${sol ? ".resuelta" : ""}${animar ? ".aparece" : ""}${p.definicion.length > 110 ? ".muy-larga" : p.definicion.length > 70 ? ".larga" : ""}`,
           { "data-k": k, style: { "--c": COLORES[k], animationDelay: `${k * 120}ms` } },
           h("span.rv-num", sol ? "✔" : String(k + 1)),
-          h("div.rv-texto", h("p.rv-def", p.definicion), sol ? h("b.rv-sol", sol.toUpperCase()) : null)
+          h("div.rv-texto", h("p.rv-def", p.definicion), sol ? h("b.rv-sol", sol.toUpperCase()) : p.largo ? h("small.rv-largo", `📏 ${p.largo} letras`) : null)
         );
       })
     );
@@ -201,6 +206,7 @@ export function montar(cuerpo, e, ctx) {
         d.actual.palabras.forEach((p, k) => p.resuelta && (resueltas[k] = p.resuelta));
         pintarMarcas();
         pintarTarjetas();
+        pintarFichas();
       }
     },
   };

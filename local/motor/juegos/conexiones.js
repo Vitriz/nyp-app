@@ -2,7 +2,7 @@
 // Música, palabras que esconden un animal…). Se eligen 4 y se comprueba; con 4 fallos se acaba el tablero.
 // Al terminar uno sale otro. Todos reciben los mismos tableros. Gana quien encuentre más grupos.
 // Ninguna palabra del tablero encaja en otro de sus grupos (se mira con TODOS sus significados).
-import { cargarConexiones, cargarDefiniciones } from "../lexico.js";
+import { cargarConexiones, cargarDefiniciones, clave } from "../lexico.js";
 import { nivelDificultad } from "../util.js";
 
 const TABLEROS = 6;
@@ -11,6 +11,9 @@ const FALLOS = 4;
 // Grupos que salen de cómo se escribe la palabra (se comprueban con código).
 const ANIMALES = ["gato", "perro", "oso", "toro", "pato", "rata", "mono", "leon", "vaca", "lobo", "foca", "gallo", "cabra", "pavo", "cerdo", "mula", "loro", "puma", "ganso", "pez"];
 const NUMEROS = ["uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez", "once", "doce", "cien", "mil"];
+const COLORES_ESC = ["rojo", "azul", "verde", "gris", "rosa", "negro", "blanco", "morado"];
+const CUERPO = ["mano", "pie", "ojo", "codo", "boca", "cara", "pelo", "dedo", "oreja", "nariz", "brazo", "pierna", "cuello", "diente"];
+const NOTAS = ["do", "re", "mi", "fa", "sol", "la", "si"];
 const sinTilde = (c) => c.normalize("NFD").replace(/[̀-ͯ]/g, "");
 const escondida = (lista) => (c) => {
   const s = sinTilde(c);
@@ -23,20 +26,50 @@ const FORMAS = [
   { nombre: "Solo tienen la vocal A", es: (c) => sinTilde(c).length >= 5 && /a/.test(c) && !/[eiouáéíóúü]/.test(c) },
   { nombre: "Se leen igual al revés", es: (c) => c.length >= 3 && c === [...c].reverse().join("") },
   { nombre: "Empiezan y acaban igual", es: (c) => c.length >= 5 && sinTilde(c)[0] === sinTilde(c).at(-1) && !/^(.)\\1/.test(c) },
+  { nombre: "Esconden un color", es: escondida(COLORES_ESC) },
+  { nombre: "Esconden una parte del cuerpo", es: escondida(CUERPO) },
+  { nombre: "Empiezan por una nota musical", es: (c) => c.length >= 5 && NOTAS.some((n) => sinTilde(c).startsWith(n)) && !NOTAS.includes(sinTilde(c)) },
+  { nombre: "Llevan dos vocales iguales seguidas", es: (c) => /(aa|ee|ii|oo|uu)/.test(sinTilde(c)) && !/[wk]/.test(c) },
 ];
+
+// Grupos de tema hechos a mano (más reconocibles que los de los ámbitos del diccionario).
+const A_MANO = {
+  "Cosas de la cocina": ["sartén", "cazo", "olla", "cuchara", "tenedor", "cuchillo", "colador", "rallador", "batidora", "cazuela"],
+  "Partes de una casa": ["cocina", "salón", "baño", "tejado", "ventana", "pasillo", "terraza", "sótano", "desván", "balcón"],
+  "Deportes": ["fútbol", "tenis", "golf", "rugby", "judo", "boxeo", "esquí", "ciclismo", "natación", "atletismo"],
+  "Colores": ["rojo", "azul", "verde", "amarillo", "naranja", "morado", "marrón", "negro", "blanco", "gris"],
+  "Juegos de mesa": ["ajedrez", "parchís", "damas", "dominó", "oca", "mus", "bingo", "dados", "naipes"],
+  "Cosas del colegio": ["pizarra", "tiza", "mochila", "estuche", "lápiz", "goma", "regla", "cuaderno", "recreo", "pupitre"],
+  "Se ven en el cielo": ["nube", "luna", "estrella", "cometa", "rayo", "arcoíris", "avión", "pájaro", "globo"],
+  "Profesiones": ["médico", "bombero", "cartero", "pintor", "cocinero", "panadero", "maestro", "juez", "abogado", "carpintero"],
+  "En la playa": ["arena", "toalla", "sombrilla", "ola", "concha", "castillo", "cubo", "pala", "bañador", "crema"],
+  "Instrumentos de música": ["guitarra", "piano", "violín", "flauta", "tambor", "trompeta", "arpa", "batería", "saxofón", "acordeón"],
+  "Medios de transporte": ["coche", "tren", "barco", "avión", "bicicleta", "moto", "autobús", "metro", "taxi", "tranvía"],
+  "El tiempo que hace": ["lluvia", "nieve", "viento", "niebla", "granizo", "tormenta", "rayo", "calor", "frío"],
+};
+const TEMAS_A_MANO = Object.entries(A_MANO).map(([nombre, formas]) => {
+  const palabras = formas.map((f) => [clave(f), f, 1]);
+  return { nombre, tipo: "tema", mano: true, claves: new Set(palabras.map((p) => p[0])), palabras };
+});
 
 // Palabras cuyo primer significado sorprende demasiado (no se ponen en el tablero).
 const RARAS = new Set(["mistico", "conejito", "champan", "maya", "enviada", "escondido", "vito", "celia", "cristina", "enrique", "napoleon", "rara", "pillo", "ganga", "reclamo", "corea", "medianoche"]);
 
 /** ¿La palabra encaja en la categoría? (por cualquiera de sus significados, o por cómo se escribe) */
-function encaja(cat, clave, miembros) {
-  return cat.es ? cat.es(clave) : (miembros[clave] ?? []).includes(cat.nombre);
+function encaja(cat, c, miembros) {
+  if (cat.es) return cat.es(c);
+  if (cat.mano) return cat.claves.has(c);
+  return (miembros[c] ?? []).includes(cat.nombre);
 }
+
+/** Cómo de difícil es un grupo (para su color: amarillo el más fácil … lila el más difícil). */
+const dificultadDe = (cat, niveles) => ({ clase: 0, tema: cat.mano ? 0.6 : 1.2, forma: 2.2 }[cat.tipo] ?? 1) + (niveles.reduce((s, n) => s + (n ?? 1), 0) / niveles.length) * 0.3;
 
 function tablero(azar, d, datos, comunes) {
   const { categorias, miembros } = datos;
   const clases = categorias.filter((c) => c.tipo === "clase");
-  const temas = categorias.filter((c) => c.tipo === "tema");
+  // Los temas hechos a mano salen más a menudo que los del diccionario.
+  const temas = [...categorias.filter((c) => c.tipo === "tema"), ...TEMAS_A_MANO, ...TEMAS_A_MANO];
   // Formas: sus palabras salen de las comunes que cumplen la regla.
   const formas = FORMAS.map((f) => ({ ...f, tipo: "forma", palabras: comunes.filter((x) => f.es(x[0])) })).filter((f) => f.palabras.length >= 8);
   // Fácil: 4 clases. Medio: 3 clases y 1 tema o forma. Difícil: 2 clases, 1 tema y 1 forma.
@@ -59,9 +92,11 @@ function tablero(azar, d, datos, comunes) {
       if (d <= 0) candidatas.sort((a, b) => a[2] - b[2]);
       const cuatro = candidatas.slice(0, 4);
       cuatro.forEach(([c]) => usadas.add(c));
-      grupos.push({ nombre: cat.nombre, palabras: cuatro.map(([c, forma]) => ({ clave: c, forma })) });
+      grupos.push({ nombre: cat.nombre, palabras: cuatro.map(([c, forma]) => ({ clave: c, forma })), dif: dificultadDe(cat, cuatro.map((x) => x[2])) });
     }
     if (grupos.length < 4) continue;
+    // Color por dificultad: 0 amarillo (el más fácil), 1 verde, 2 azul, 3 lila (el más difícil).
+    [...grupos].sort((a, b) => a.dif - b.dif).forEach((g, k) => (g.color = k));
     const palabras = azar.barajar(grupos.flatMap((g, i) => g.palabras.map((p) => ({ ...p, g: i }))));
     return { grupos, palabras };
   }
@@ -104,9 +139,9 @@ export default {
       t: j.t,
       total: ronda.tableros.length,
       palabras: t.palabras.map(({ clave, forma }) => ({ clave, forma })),
-      hallados: j.hallados.map((g) => ({ g, nombre: t.grupos[g].nombre, claves: t.grupos[g].palabras.map((p) => p.clave) })),
+      hallados: j.hallados.map((g) => ({ g, color: t.grupos[g].color ?? g, nombre: t.grupos[g].nombre, claves: t.grupos[g].palabras.map((p) => p.clave) })),
       // Si se acabó el tablero sin encontrarlos todos, se enseñan los que faltaban.
-      solucion: acabado ? t.grupos.map((g, i) => ({ g: i, nombre: g.nombre, claves: g.palabras.map((p) => p.clave) })) : null,
+      solucion: acabado ? t.grupos.map((g, i) => ({ g: i, color: g.color ?? i, nombre: g.nombre, claves: g.palabras.map((p) => p.clave) })) : null,
       fallos: j.fallos,
       maxFallos: FALLOS,
       ultimo: j.ultimo,
@@ -178,11 +213,12 @@ export default {
     const jugados = Math.max(1, ...js.map(([, j]) => Math.min(ronda.tableros.length, j.t + (j.hallados.length || j.fallos ? 1 : 0))));
     const tableros = ronda.tableros.slice(0, jugados).map((tb, k) => ({
       grupos: tb.grupos.map((g, gi) => ({
+        color: g.color ?? gi,
         nombre: g.nombre,
         palabras: g.palabras.map((p) => p.forma),
         por: js.filter(([, j]) => halladosEn(j, k).includes(gi)).map(([id]) => id),
       })),
     }));
-    return { grupos: t.grupos.map((g) => ({ nombre: g.nombre, palabras: g.palabras.map((p) => p.forma) })), tableros };
+    return { grupos: t.grupos.map((g, i) => ({ color: g.color ?? i, nombre: g.nombre, palabras: g.palabras.map((p) => p.forma) })), tableros };
   },
 };

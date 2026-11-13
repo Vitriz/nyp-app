@@ -50,6 +50,8 @@ export default {
       mascara: g.mascara,
       validas: new Set(g.todas),
       comunes: g.comunes,
+      // Puntos posibles con las palabras comunes: de ahí salen los rangos («Buen comienzo»… «Genio»).
+      maximo: g.comunes.reduce((s, c) => s + puntosDe(c, mascaraDe(c) === g.mascara), 0),
       jugadores: {},
     };
   },
@@ -62,7 +64,7 @@ export default {
     const j = this.estadoJugador(ronda, id);
     const comunes = ronda.ayuda ? new Set(ronda.comunes) : null;
     const ayuda = comunes && { total: comunes.size, halladas: j.encontradas.filter((e) => comunes.has(e.clave)).length };
-    return { centro: ronda.centro, letras: ronda.letras, encontradas: j.encontradas, puntos: j.puntos, ultimo: j.ultimo, ayuda };
+    return { centro: ronda.centro, letras: ronda.letras, encontradas: j.encontradas, puntos: j.puntos, ultimo: j.ultimo, ayuda, maximo: ronda.maximo };
   },
 
   vistaTV(ronda) {
@@ -124,6 +126,8 @@ export default {
       total: ronda.comunes.length,
       tutis: tutis.slice(0, 6).map(formaVisible),
       largas: largas.slice(0, 6).map(formaVisible),
+      // Todas las comunes (para enseñar al acabar las que faltaron).
+      comunes: [...ronda.comunes].sort((a, b) => b.length - a.length || a.localeCompare(b, "es")).map((c) => ({ clave: c, forma: formaVisible(c), tuti: mascaraDe(c) === ronda.mascara })),
     };
   },
 };

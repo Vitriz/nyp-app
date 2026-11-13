@@ -69,7 +69,7 @@ export function estudioGrupos(resumen, yo) {
       h(
         "div.cx-estudio-tablero",
         h("span.cx-estudio-titulo", `Tablero ${k + 1}`),
-        t.grupos.map((g, gi) => franjaGrupo(g.nombre, g.palabras, gi, { perdido: !g.por.includes(yo) }))
+        t.grupos.map((g, gi) => franjaGrupo(g.nombre, g.palabras, g.color ?? gi, { perdido: !g.por.includes(yo) }))
       )
     )
   );

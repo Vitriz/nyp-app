@@ -72,7 +72,7 @@ export function montar(cuerpo, e, ctx) {
     const forma = Object.fromEntries(d.palabras.map((p) => [p.clave, p.forma]));
     const lista = d.acabado ? d.solucion : d.hallados;
     hallados.replaceChildren(
-      ...lista.map((g) => franjaGrupo(g.nombre, g.claves.map((c) => forma[c]), g.g, { perdido: !d.hallados.some((x) => x.g === g.g) }))
+      ...lista.map((g) => franjaGrupo(g.nombre, g.claves.map((c) => forma[c]), g.color ?? g.g, { perdido: !d.hallados.some((x) => x.g === g.g) }))
     );
     const resto = d.acabado ? [] : quedan();
     rejilla.replaceChildren(

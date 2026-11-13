@@ -10,7 +10,7 @@ export const ICONOS_AMBITO = {
   Música: "🎵", Pintura: "🎨", Psicología: "🧠", Química: "⚗️", Religión: "⛪", Tauromaquia: "🐂", Zoología: "🦁",
 };
 
-/** Ventana para elegir tema (o al azar). Devuelve el tema, "azar" o null si se cierra. */
+/** Ventana para elegir tema, al azar o de todos los temas. Devuelve el tema, "azar", "todos" o null si se cierra. */
 export function elegirAmbito(lista) {
   return new Promise((ok) => {
     const ultimo = almacen.leer("nyp-ambito");
@@ -25,7 +25,11 @@ export function elegirAmbito(lista) {
       h(
         "div.caja.tarjeta",
         h("div.records-cabeza", h("h2", "📚 Elige el tema"), h("button.icono-btn", { type: "button", onclick: () => cerrar(null), "aria-label": "Cerrar" }, "✕")),
-        h("button.boton.acento.ambito-azar", { type: "button", onclick: () => cerrar("azar") }, "🎲 Al azar"),
+        h(
+          "div.ambito-generales",
+          h("button.boton.acento.ambito-azar", { type: "button", onclick: () => cerrar("todos") }, "🌍 Todos los temas"),
+          h("button.boton.suave.ambito-azar", { type: "button", onclick: () => cerrar("azar") }, "🎲 Un tema al azar")
+        ),
         h(
           "div.ambitos",
           lista.map((a) =>

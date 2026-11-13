@@ -23,13 +23,18 @@ export function montar(cuerpo, e, ctx) {
   P.forEach((p, k) => celdasDe(p).forEach((c) => palabrasEn.set(c, [...(palabrasEn.get(c) ?? []), k])));
   const numeros = new Map(P.map((p) => [`${p.r},${p.c}`, p.n]));
 
-  // Resueltas que trae el servidor (al volver a entrar).
+  // Resueltas, letras desveladas y lo escrito que trae el servidor (al volver a entrar o seguir otro día).
   for (const [k, cl] of Object.entries(d.resueltas ?? {})) marcarResuelta(Number(k), cl);
+  const reveladas = new Set();
+  for (const [c, l] of Object.entries(d.reveladas ?? {})) revelar(c, l);
+  for (const [c, l] of Object.entries(d.borrador ?? {})) if (!bloqueadas.has(c)) letras.set(c, l);
 
   const pista = h("div.cg-pista-texto");
   const anterior = h("button.icono-btn.cg-flecha", { type: "button", "aria-label": "Palabra anterior", onclick: () => saltar(-1) }, "◀");
   const siguiente = h("button.icono-btn.cg-flecha", { type: "button", "aria-label": "Palabra siguiente", onclick: () => saltar(1) }, "▶");
   const cuenta = h("span.cg-cuenta");
+  // Pista: desvela la letra de la casilla elegida (cuesta 1 punto).
+  const botonPista = h("button.boton.suave.cg-pista-btn", { type: "button", onclick: pedirPista, title: "Desvela la letra de la casilla elegida (−1 punto)" }, "💡 Letra (−1)");
   const rejilla = h("div.cg-rejilla", { style: { "--filas": d.filas, "--cols": d.cols } });
   const casillas = new Map();
   for (let r = 0; r < d.filas; r++) {
@@ -45,7 +50,7 @@ export function montar(cuerpo, e, ctx) {
   cuerpo.append(
     h(
       "div.cg",
-      h("div.cg-cabeza", h("span.cg-ambito", `📚 ${d.ambito}`), cuenta),
+      h("div.cg-cabeza", h("span.cg-ambito", d.ambito === "todos" ? "🌍 Todos los temas" : `📚 ${d.ambito}`), h("span.cg-cabeza-der", botonPista, cuenta)),
       h("div.cg-pista", anterior, pista, siguiente),
       h("div.cg-zona", rejilla),
       teclado
@@ -58,6 +63,28 @@ export function montar(cuerpo, e, ctx) {
       letras.set(c, cl[i]);
       bloqueadas.add(c);
     });
+  }
+
+  function revelar(c, l) {
+    letras.set(c, l);
+    bloqueadas.add(c);
+    reveladas.add(c);
+  }
+
+  function pedirPista() {
+    const c = celdasDe(P[sel])[pos];
+    if (!c || bloqueadas.has(c)) return;
+    ctx.enviar({ a: "pista", casilla: c });
+  }
+
+  // Lo escrito se guarda (sin prisa) para poder seguir otro día.
+  let borradorPendiente = 0;
+  function guardarBorrador() {
+    clearTimeout(borradorPendiente);
+    borradorPendiente = setTimeout(() => {
+      const libres = Object.fromEntries([...letras].filter(([c]) => !bloqueadas.has(c)));
+      ctx.enviar({ a: "borrador", letras: libres });
+    }, 500);
   }
 
   function elegir(k, p = 0) {
@@ -109,6 +136,7 @@ export function montar(cuerpo, e, ctx) {
     let i = pos + 1;
     while (i < cs.length && bloqueadas.has(cs[i])) i++;
     if (i < cs.length) pos = i;
+    guardarBorrador();
     comprobar(sel);
     // Al escribir también se pueden completar las palabras que se cruzan.
     for (const k of palabrasEn.get(cs[Math.min(pos, cs.length - 1)]) ?? []) if (k !== sel) comprobar(k, true);
@@ -143,11 +171,15 @@ export function montar(cuerpo, e, ctx) {
       if (el.classList.contains("negra")) continue;
       el.classList.toggle("en-palabra", cs.has(k));
       el.classList.toggle("actual", k === actual);
-      el.classList.toggle("resuelta", bloqueadas.has(k));
+      el.classList.toggle("resuelta", bloqueadas.has(k) && !reveladas.has(k));
+      el.classList.toggle("revelada", reveladas.has(k));
+      // Fácil: una letra que no es la de la solución se marca en rojo al momento.
+      el.classList.toggle("mal-letra", Boolean(d.solucion && letras.get(k) && !bloqueadas.has(k) && d.solucion[k] !== letras.get(k)));
       el.lastChild.textContent = (letras.get(k) ?? "").toUpperCase();
     }
     pista.replaceChildren(h("b", `${p.n} ${p.dir === "h" ? "→" : "↓"}`), h("span", ` ${p.definicion}`), h("small", ` (${p.largo})`));
     cuenta.textContent = `${resueltas.size}/${P.length}`;
+    botonPista.disabled = bloqueadas.has(celdasDe(p)[pos]) || resueltas.has(sel);
   }
 
   elegir(P.findIndex((_, k) => !resueltas.has(k)) >= 0 ? P.findIndex((_, k) => !resueltas.has(k)) : 0);
@@ -155,6 +187,19 @@ export function montar(cuerpo, e, ctx) {
     actualizar(e) {
       // El servidor confirma con las palabras resueltas (por si se perdió algo).
       for (const [k, cl] of Object.entries(e.datos?.resueltas ?? {})) if (!resueltas.has(Number(k))) marcarResuelta(Number(k), cl);
+      // Letras nuevas de las pistas: se ponen y se comprueban las palabras que pasan por ahí.
+      for (const [c, l] of Object.entries(e.datos?.reveladas ?? {})) {
+        if (reveladas.has(c)) continue;
+        revelar(c, l);
+        reiniciarAnim(casillas.get(c), "bien");
+        for (const k of palabrasEn.get(c) ?? []) comprobar(k, true);
+        const cs = celdasDe(P[sel]);
+        if (cs[pos] === c) {
+          let i = pos + 1;
+          while (i < cs.length && bloqueadas.has(cs[i])) i++;
+          if (i < cs.length) pos = i;
+        }
+      }
       pintar();
     },
   };

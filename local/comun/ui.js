@@ -57,7 +57,7 @@ export const servidor = { base: new URL("../", import.meta.url).href };
 
 /** Icono redondo del jugador: su foto o sus iniciales, con sus colores. */
 // Premios de las hazañas para el avatar: un sombrero encima y/o una animación.
-export const SOMBREROS = { corona: "👑", chistera: "🎩", birrete: "🎓", gorra: "🧢", lazo: "🎀" };
+export const SOMBREROS = { corona: "👑", chistera: "🎩", birrete: "🎓", gorra: "🧢", lazo: "🎀", estrella: "⭐", pamela: "👒", flor: "🌸", gafas: "🕶️", casco: "🪖" };
 export const ANIMACIONES = { salto: "Salto", giro: "Giro", baile: "Baile", brillo: "Brillo" };
 
 /** Pone el sombrero y la animación (si tiene) a un avatar ya creado. */

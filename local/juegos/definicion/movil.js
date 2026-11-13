@@ -109,7 +109,9 @@ export function montar(cuerpo, e, ctx) {
 
   function mostrarAnterior(an) {
     aviso.className = `df-aviso ${an.ok ? "ok" : ""}`;
-    aviso.textContent = an.ok ? `✔ ${an.forma.toUpperCase()}` : `Era: ${an.forma.toUpperCase()}`;
+    // Racha de aciertos sin pistas: desde el 3.º, +1 cada uno.
+    const racha = an.ok && an.racha >= 3 ? ` · 🔥 racha de ${an.racha} (+1)` : an.ok && an.racha === 2 ? " · 🔥 ¡una más y +1!" : "";
+    aviso.textContent = an.ok ? `✔ ${an.forma.toUpperCase()}${racha}` : `Era: ${an.forma.toUpperCase()}`;
     reiniciarAnim(aviso, "aparece");
   }
 
