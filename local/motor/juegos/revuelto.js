@@ -40,6 +40,7 @@ export default {
     const r = ronda.revueltos[j.i];
     return {
       i: j.i,
+      total: ronda.revueltos.length,
       aciertos: j.aciertos,
       anterior: j.anterior,
       actual: r && {

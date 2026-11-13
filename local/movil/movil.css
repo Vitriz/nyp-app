@@ -994,17 +994,49 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .barra-sup .banner.plegar .banner-nombre { animation: nombre-plegar 520ms var(--curva) 180ms both; }
 .barra-sup .banner.plegar .avatar { animation: avatar-plegar 620ms var(--curva) 180ms both; }
 @keyframes banner-plegar {
-  to { background-color: transparent; border-color: transparent; box-shadow: none; padding: 0; gap: 0; }
+  to { padding: 0; gap: 0; }
 }
 @keyframes nombre-plegar {
   from { max-width: 14em; }
   to { max-width: 0; opacity: 0; padding: 0; }
 }
 @keyframes avatar-plegar {
-  to { font-size: 0.89rem; margin: 0 0 0 -0.14rem; }
+  to { font-size: 0.85rem; margin: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .barra-sup .banner.plegar, .barra-sup .banner.plegar * { animation-duration: 1ms !important; animation-delay: 0ms !important; } }
 .barra-sup .pts.plegar { animation: pts-plegar 300ms ease 180ms both; }
 @keyframes pts-plegar { to { opacity: 0; } }
 .sm-cabeza { gap: 0.6rem; }
 .sm-cabeza > .suave { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Revuelto: cabecera en casillas, Pasar pequeño y definiciones que nunca se cortan ---------- */
+.rv-cabecera { align-items: stretch; }
+.rv-marcas { display: flex; gap: 0.4rem; min-width: 0; }
+.rv-chip {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.05rem; min-width: 4.4rem; padding: 0.25rem 0.6rem;
+  border-radius: 0.8rem; background: linear-gradient(180deg, #fff, var(--ficha-2)); color: var(--ficha-texto);
+  border: 0.12rem solid var(--ficha-borde); box-shadow: 0 0.18rem 0 rgba(4, 12, 40, 0.45);
+}
+.rv-chip small { font-size: 0.62rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; }
+.rv-chip b { font-family: var(--fuente-ficha); font-size: 1.2rem; line-height: 1; }
+.rv-chip.ok { background: linear-gradient(180deg, #e3f8ec, #a9e6c6); border-color: #6cc49a; }
+.rv3 .rv-pasar { min-height: 0; align-self: center; padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 999px; }
+.rv3 .rv-tarjeta {
+  border: none; border-radius: 1rem; padding: 0.65rem 0.85rem; align-items: center;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--c) 26%, #17346f), #17346f 70%);
+  box-shadow: inset 0.3rem 0 0 var(--c), 0 0.25rem 0.8rem rgba(4, 12, 40, 0.35);
+}
+.rv3 .rv-num { width: 1.9rem; height: 1.9rem; margin-top: 0; font-family: var(--fuente-ficha); font-size: 1.05rem; box-shadow: 0 0.12rem 0 rgba(4, 12, 40, 0.4); }
+.rv3 .rv-def, .cuerpo-juego .rv3 .rv-def { display: block; -webkit-line-clamp: unset; overflow: visible; font-size: 1.12rem; line-height: 1.3; font-weight: 700; }
+.rv3 .rv-tarjeta.larga .rv-def { font-size: 1rem; }
+.rv3 .rv-tarjeta.muy-larga .rv-def { font-size: 0.9rem; }
+.rv3 .rv-tarjeta.resuelta { background: linear-gradient(100deg, rgba(108, 196, 154, 0.3), #17346f 75%); box-shadow: inset 0.3rem 0 0 var(--bien), 0 0.25rem 0.8rem rgba(4, 12, 40, 0.35); }
+.rv3 .rv-tarjeta.resuelta .rv-num { background: var(--bien); }
+.rv3 .rv-tarjeta.resuelta .rv-def { font-size: 0.9rem; }
+.rv-medio { min-height: 4rem; }
+
+/* ---------- Conexiones: palabras que caben en su casilla (o partidas por sílabas) ---------- */
+.cx-palabra .cx-texto, .cx-palabra span.cx-texto {
+  font-family: var(--fuente-ficha); font-weight: 900; line-height: 1.05; text-align: center; white-space: nowrap; word-break: normal;
+  font-size: min(1.05rem, calc(90cqw / (var(--n) * 0.72)));
+}

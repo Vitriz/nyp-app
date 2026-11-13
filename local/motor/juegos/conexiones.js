@@ -126,7 +126,7 @@ export default {
     const acabado = j.hallados.length === 4 || j.fallos >= FALLOS;
     if (msg.a === "siguiente") {
       if (!acabado) return false;
-      j.historial.push({ hallados: j.hallados.length });
+      j.historial.push({ t: j.t, hallados: [...j.hallados] });
       j.t++;
       j.hallados = [];
       j.fallos = 0;
@@ -171,6 +171,18 @@ export default {
 
   resumen(ronda) {
     const t = ronda.tableros[0];
-    return t ? { grupos: t.grupos.map((g) => ({ nombre: g.nombre, palabras: g.palabras.map((p) => p.forma) })) } : null;
+    if (!t) return null;
+    // Todos los tableros que alguien llegó a jugar, con quién encontró cada grupo (para estudiarlos al final).
+    const js = Object.entries(ronda.jugadores);
+    const halladosEn = (j, k) => (j.t === k ? j.hallados : j.historial.find((x) => x.t === k)?.hallados ?? []);
+    const jugados = Math.max(1, ...js.map(([, j]) => Math.min(ronda.tableros.length, j.t + (j.hallados.length || j.fallos ? 1 : 0))));
+    const tableros = ronda.tableros.slice(0, jugados).map((tb, k) => ({
+      grupos: tb.grupos.map((g, gi) => ({
+        nombre: g.nombre,
+        palabras: g.palabras.map((p) => p.forma),
+        por: js.filter(([, j]) => halladosEn(j, k).includes(gi)).map(([id]) => id),
+      })),
+    }));
+    return { grupos: t.grupos.map((g) => ({ nombre: g.nombre, palabras: g.palabras.map((p) => p.forma) })), tableros };
   },
 };

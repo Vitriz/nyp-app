@@ -8,6 +8,7 @@ import { selectorJuegos, ICONOS, textoSegundos, textoRecord } from "./selector.j
 import { leerFamilia, idMovil } from "../comun/familia.js";
 import { comprobarHazanas, tarjetaHazanas, ventanaHazanas, celebrarHazanas } from "./hazanas.js";
 import { elegirAmbito } from "../comun/ambitos.js";
+import { estudioGrupos } from "../juegos/conexiones/piezas.js";
 
 const SIN_SOLO = new Set(["pulsador"]); // necesita presentador y más jugadores
 
@@ -458,6 +459,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
   /** Lo que se podía haber hecho (de momento, las palabras más largas). */
   function solucion(meta, resumen, r = null) {
     if (meta.id === "llegar-resultado") return finalLlegar(resumen, r?.detalle);
+    if (meta.id === "conexiones") return estudioGrupos(resumen, yo.id);
     if (meta.id !== "palabra-larga" || !resumen?.mejores?.length) return null;
     const lista = [...resumen.mejores];
     if (resumen.rara) lista.unshift({ ...resumen.rara, rara: true });

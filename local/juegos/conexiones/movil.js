@@ -2,8 +2,7 @@
 // quedan (4 por fila) y abajo Mezclar / Quitar / Comprobar. Los fallos que quedan, en corazones.
 import { h } from "../../comun/ui.js";
 import { reiniciarAnim } from "../comun/util.js";
-
-const COLORES = ["#f0d455", "#6cc49a", "#5aaaf2", "#ae8ef5"];
+import { textoCasilla, franjaGrupo } from "./piezas.js";
 
 export function montar(cuerpo, e, ctx) {
   let d = e.datos;
@@ -73,18 +72,11 @@ export function montar(cuerpo, e, ctx) {
     const forma = Object.fromEntries(d.palabras.map((p) => [p.clave, p.forma]));
     const lista = d.acabado ? d.solucion : d.hallados;
     hallados.replaceChildren(
-      ...lista.map((g) =>
-        h(
-          `div.cx-grupo${d.hallados.some((x) => x.g === g.g) ? "" : ".perdido"}`,
-          { style: { "--c": COLORES[g.g % 4] } },
-          h("b", g.nombre),
-          h("span", g.claves.map((c) => forma[c].toUpperCase()).join(" · "))
-        )
-      )
+      ...lista.map((g) => franjaGrupo(g.nombre, g.claves.map((c) => forma[c]), g.g, { perdido: !d.hallados.some((x) => x.g === g.g) }))
     );
     const resto = d.acabado ? [] : quedan();
     rejilla.replaceChildren(
-      ...resto.map((p) => h(`button.cx-palabra${elegidas.has(p.clave) ? ".elegida" : ""}`, { type: "button", "data-c": p.clave }, h("span", p.forma.toUpperCase())))
+      ...resto.map((p) => h(`button.cx-palabra${elegidas.has(p.clave) ? ".elegida" : ""}`, { type: "button", "data-c": p.clave }, textoCasilla(p.forma)))
     );
     comprobar.disabled = elegidas.size !== 4;
     botones.classList.toggle("oculto", d.acabado);

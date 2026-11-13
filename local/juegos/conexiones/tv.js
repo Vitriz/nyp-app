@@ -1,8 +1,7 @@
 // Conexiones · TV: cuántos grupos lleva cada uno; al final, los grupos del primer tablero.
 import { h } from "../../comun/ui.js";
 import { tarjetasJugadores } from "../comun/util.js";
-
-const COLORES = ["#f0d455", "#6cc49a", "#5aaaf2", "#ae8ef5"];
+import { franjaGrupo } from "./piezas.js";
 
 export function montar(cuerpo, e, ctx) {
   const lado = h("div.sopa-lado");
@@ -26,6 +25,6 @@ export function resumen(r) {
     "div.pl-resumen.tarjeta.aparece",
     { style: { animationDelay: "900ms" } },
     h("span.etiqueta", "El primer tablero"),
-    r.grupos.map((g, i) => h("div.cx-grupo", { style: { "--c": COLORES[i] } }, h("b", g.nombre), h("span", g.palabras.map((p) => p.toUpperCase()).join(" · "))))
+    r.grupos.map((g, i) => franjaGrupo(g.nombre, g.palabras, i))
   );
 }

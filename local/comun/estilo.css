@@ -445,3 +445,22 @@ html, body {
 .kk-celda.b-der { border-right-width: 0.04em; }
 .kk-cuenta { font-size: 0.2em; top: 0.25em; left: 0.3em; }
 .kk-num { font-size: 0.5em; margin-top: 0.18em; }
+
+/* ---------- conexiones: grupo = franja de color con el título y sus 4 casillas ---------- */
+.cx-franja { align-items: stretch; gap: 0.35em; padding: 0.45em 0.45em 0.5em; border-radius: 0.8em; box-shadow: 0 0.2em 0 rgba(4, 12, 40, 0.4); }
+.cx-franja .cx-grupo-nombre { font-size: 1em; font-weight: 900; letter-spacing: 0.01em; line-height: 1.15; text-align: center; }
+.cx-grupo-casillas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.3em; }
+.cx-mini {
+  display: grid; place-items: center; min-height: 2.1em; padding: 0.15em; border-radius: 0.45em; container-type: inline-size;
+  background: rgba(255, 255, 255, 0.82); color: #0a1b4a; box-shadow: 0 0.1em 0 rgba(4, 12, 40, 0.25);
+}
+.cx-mini .cx-texto { font-family: var(--fuente-ficha); font-weight: 900; line-height: 1.05; text-align: center; white-space: nowrap; font-size: min(0.82em, calc(92cqw / (var(--n) * 0.72))); }
+.cx-franja.perdido { opacity: 1; background: color-mix(in srgb, var(--c) 35%, #2a3f70); }
+.cx-franja.perdido .cx-mini { background: rgba(255, 255, 255, 0.55); }
+/* Resumen para estudiar (modo solo) */
+.cx-estudio { width: 100%; display: flex; flex-direction: column; gap: 0.6rem; padding: 0.7rem; max-height: 46dvh; overflow-y: auto; text-align: left; }
+.cx-estudio > small { color: var(--texto-suave); font-weight: 800; text-align: center; }
+.cx-estudio-tablero { display: flex; flex-direction: column; gap: 0.4rem; }
+.cx-estudio-titulo { font-size: 0.75rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texto-suave); }
+.cx-estudio .cx-franja.perdido::after { content: "No lo encontraste"; font-size: 0.7em; font-weight: 800; text-align: center; color: rgba(255, 255, 255, 0.75); }
+.cx-franja .cx-mini { font-size: 1em; }

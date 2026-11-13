@@ -15,7 +15,14 @@ export function montar(cuerpo, e, ctx) {
   let gastadas = new Set();
   let ordenadas = false;
 
-  const numero = h("span.rv-numero");
+  // Cabecera en casillas: qué revuelto es (n / total) y cuántas palabras llevas.
+  const numero = h("b");
+  const cuenta = h("b");
+  const marcas = h(
+    "div.rv-marcas",
+    h("span.rv-chip", h("small", "Revuelto"), numero),
+    h("span.rv-chip.ok", h("small", "Palabras"), cuenta)
+  );
   const pasar = botonMantener("⏭ Pasar", () => ctx.enviar({ a: "pasar", i: d.i }), { clase: ".suave.rv-pasar", ms: 800 });
   pasar.setAttribute("title", "Mantén pulsado para pasar a otro revuelto");
   const tarjetas = h("div.rv-defs");
@@ -31,7 +38,7 @@ export function montar(cuerpo, e, ctx) {
   cuerpo.append(
     h(
       "div.rv2.rv3",
-      h("div.rv-arriba", h("div.rv-cabecera", numero, pasar), tarjetas),
+      h("div.rv-arriba", h("div.rv-cabecera", marcas, pasar), tarjetas),
       h("div.rv-medio", linea, aviso),
       h("div.rv-abajo", tablero, h("div.fila-acciones", deshacer, borrar, ordenar, comprobarBtn))
     )
@@ -113,7 +120,7 @@ export function montar(cuerpo, e, ctx) {
       pasar.disabled = true;
       return;
     }
-    numero.textContent = `Revuelto ${d.i + 1} · ${d.aciertos} ${d.aciertos === 1 ? "palabra" : "palabras"}`;
+    pintarMarcas();
     // Si volvemos a entrar con una palabra ya resuelta, apartamos sus letras.
     a.palabras.forEach((p, k) => {
       if (!p.resuelta) return;
@@ -125,6 +132,11 @@ export function montar(cuerpo, e, ctx) {
       }
     });
     pintar(true);
+  }
+
+  function pintarMarcas() {
+    numero.textContent = `${d.i + 1} / ${d.total ?? 20}`;
+    cuenta.textContent = String(d.aciertos);
   }
 
   function pintar(animar = false) {
@@ -140,7 +152,8 @@ export function montar(cuerpo, e, ctx) {
       ...a.palabras.map((p, k) => {
         const sol = resueltas[k];
         return h(
-          `div.rv-tarjeta.tarjeta${sol ? ".resuelta" : ""}${animar ? ".aparece" : ""}`,
+          // Letra más pequeña cuanto más larga es la definición: así se lee entera, sin cortarse.
+          `div.rv-tarjeta.tarjeta${sol ? ".resuelta" : ""}${animar ? ".aparece" : ""}${p.definicion.length > 110 ? ".muy-larga" : p.definicion.length > 70 ? ".larga" : ""}`,
           { "data-k": k, style: { "--c": COLORES[k], animationDelay: `${k * 120}ms` } },
           h("span.rv-num", sol ? "✔" : String(k + 1)),
           h("div.rv-texto", h("p.rv-def", p.definicion), sol ? h("b.rv-sol", sol.toUpperCase()) : null)
@@ -192,7 +205,7 @@ export function montar(cuerpo, e, ctx) {
       else if (d.actual) {
         // El servidor confirma con la palabra con tildes.
         d.actual.palabras.forEach((p, k) => p.resuelta && (resueltas[k] = p.resuelta));
-        numero.textContent = `Revuelto ${d.i + 1} · ${d.aciertos} ${d.aciertos === 1 ? "palabra" : "palabras"}`;
+        pintarMarcas();
         pintarTarjetas();
       }
     },

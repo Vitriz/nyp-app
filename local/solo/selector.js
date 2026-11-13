@@ -310,8 +310,44 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
   // ---- dedo / ratón: la rueda sigue al dedo; al soltar sigue girando un poco (inercia) y encaja.
   let arrastre = null;
   const pasoPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) * PASO;
+  // Inercia: al soltar deprisa, la rueda sigue girando de uno en uno y va frenando hasta pararse.
+  let inercia = null;
+  function pararInercia() {
+    if (!inercia) return false;
+    cancelAnimationFrame(inercia);
+    inercia = null;
+    rueda.classList.remove("arrastrando");
+    return true;
+  }
+  function lanzar(vel, pos) {
+    pararInercia();
+    vel = Math.max(-0.045, Math.min(0.045, vel)); // pasos por ms (como mucho, unos 45 juegos por segundo)
+    let t = performance.now();
+    rueda.classList.add("arrastrando");
+    const fin = () => {
+      inercia = null;
+      rueda.classList.remove("arrastrando");
+      colocar(0); // encaja en el más cercano, con su rebote
+      fichaLuego(0);
+    };
+    const paso = (ahora) => {
+      const dt = Math.min(40, ahora - t);
+      t = ahora;
+      vel *= Math.pow(0.996, dt); // rozamiento: cada vez más despacio
+      pos += vel * dt;
+      const entero = Math.round(pos);
+      pos -= entero;
+      if (entero) mover(entero, { desfase: pos, espera: 160 });
+      else colocar(pos);
+      if (Math.abs(vel) < 0.0025) return fin();
+      inercia = requestAnimationFrame(paso);
+    };
+    inercia = requestAnimationFrame(paso);
+  }
+
   rueda.addEventListener("pointerdown", (ev) => {
-    arrastre = { y0: ev.clientY, base: 0, movido: false, id: ev.pointerId, px: pasoPx(), muestras: [[ev.timeStamp, ev.clientY]] };
+    const atrapada = pararInercia(); // tocar mientras gira la frena (y no elige nada)
+    arrastre = { y0: ev.clientY, base: 0, movido: atrapada, id: ev.pointerId, px: pasoPx(), muestras: [[ev.timeStamp, ev.clientY]], desfase: 0 };
     rueda.setPointerCapture(ev.pointerId);
   });
   rueda.addEventListener("pointermove", (ev) => {
@@ -326,11 +362,12 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     const pasos = (arrastre.y0 - ev.clientY) / arrastre.px - arrastre.base; // dedo hacia arriba: los siguientes
     const entero = Math.round(pasos);
     arrastre.base += entero;
+    arrastre.desfase = pasos - entero;
     mover(entero, { desfase: pasos - entero, espera: 140 });
   });
   const soltar = (ev) => {
     if (!arrastre) return;
-    const { movido, muestras, px } = arrastre;
+    const { movido, muestras, px, desfase } = arrastre;
     arrastre = null;
     rueda.classList.remove("arrastrando");
     if (!movido) {
@@ -343,9 +380,10 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     // Inercia: según la velocidad de los últimos movimientos, unos pasos más.
     const [t0, y0] = muestras[0], [t1, y1] = muestras.at(-1);
     const v = t1 - t0 > 12 && ev.timeStamp - t1 < 100 ? (y0 - y1) / px / (t1 - t0) : 0; // pasos por ms
-    const extra = Math.max(-6, Math.min(6, Math.round(v * 220)));
-    mover(extra, { espera: 0 });
-    if (!extra) fichaLuego(0);
+    if (Math.abs(v) > 0.004) return lanzar(v, desfase);
+    rueda.classList.remove("arrastrando");
+    colocar(0);
+    fichaLuego(0);
   };
   rueda.addEventListener("pointerup", soltar);
   rueda.addEventListener("pointercancel", soltar);
@@ -355,6 +393,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     "wheel",
     (ev) => {
       ev.preventDefault();
+      pararInercia();
       acumulado += ev.deltaY;
       if (Math.abs(acumulado) >= 40) {
         mover(Math.sign(acumulado));
@@ -366,6 +405,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
 
   // ---- teclado del ordenador
   teclasFisicas(rueda, (t) => {
+    pararInercia();
     if (t === "ArrowUp") return mover(-1);
     if (t === "ArrowDown") return mover(1);
     if (t === "ArrowLeft") return tiempo ? pasoTiempo(-1) : mover(-1);
