@@ -5,12 +5,13 @@ import { nivelDificultad } from "../util.js";
 
 const SIMBOLO = { "+": "+", "-": "−", "*": "×", "/": "÷" };
 
-export function operar(a, op, b) {
+/** negativos: en difícil la resta puede dar negativo (pero nunca 0). */
+export function operar(a, op, b, negativos = false) {
   switch (op) {
     case "+": return a + b;
-    case "-": return a > b ? a - b : null;
+    case "-": return a > b || (negativos && a !== b) ? a - b : null;
     case "*": return a * b;
-    case "/": return b > 0 && a % b === 0 ? a / b : null;
+    case "/": return b !== 0 && a % b === 0 && a / b !== 0 ? a / b : null;
   }
   return null;
 }
@@ -111,7 +112,8 @@ export default {
 
   crear({ azar, config }) {
     const g = generar(azar, nivelDificultad(config));
-    return { numeros: g.numeros, objetivo: g.objetivo, solucion: g.sol, jugadores: {} };
+    // En difícil se puede pasar por números negativos.
+    return { numeros: g.numeros, objetivo: g.objetivo, solucion: g.sol, negativos: nivelDificultad(config) > 0, jugadores: {} };
   },
 
   estadoJugador(ronda, id) {
@@ -120,7 +122,7 @@ export default {
 
   vistaJugador(ronda, id) {
     const j = this.estadoJugador(ronda, id);
-    return { numeros: ronda.numeros, objetivo: ronda.objetivo, ops: j.ops, mejor: j.mejor };
+    return { numeros: ronda.numeros, objetivo: ronda.objetivo, ops: j.ops, mejor: j.mejor, negativos: Boolean(ronda.negativos) };
   },
 
   vistaTV(ronda) {
@@ -141,8 +143,8 @@ export default {
     for (const o of msg.ops) {
       const { a, b, op } = o ?? {};
       if (!Number.isInteger(a) || !Number.isInteger(b) || a === b || a >= lista.length || b >= lista.length) return false;
-      const r = operar(lista[a].v, op, lista[b].v);
-      if (r == null || r <= 0) return false;
+      const r = operar(lista[a].v, op, lista[b].v, ronda.negativos);
+      if (r == null || r === 0 || (r < 0 && !ronda.negativos)) return false;
       const nuevo = { v: r, pasos: [...lista[a].pasos, ...lista[b].pasos, `${lista[a].v} ${SIMBOLO[op]} ${lista[b].v} = ${r}`] };
       lista = [...lista.filter((_, k) => k !== a && k !== b), nuevo];
       vistos.push(nuevo);

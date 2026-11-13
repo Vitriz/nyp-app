@@ -1,5 +1,5 @@
 // Modo solo: los mismos juegos que en PARTY, ejecutados en el propio móvil, con récords personales.
-import { h, cambiarPantalla, banner, avatar, crearReloj, textoCuenta, piezaCuenta, detalleJugador, confeti, contarHasta } from "../comun/ui.js";
+import { h, cambiarPantalla, banner, avatar, crearReloj, textoCuenta, piezaCuenta, detalleJugador, confeti, contarHasta, finalLlegar } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { almacen } from "../comun/conexion.js";
 import { leerPaquete, diccionarioIncluido, desbloquearDiccionario, actualizarIncluido } from "./paquete.js";
@@ -426,7 +426,8 @@ export function entrarSolo({ app, perfil, alSalir }) {
   }
 
   /** Lo que se podía haber hecho (de momento, las palabras más largas). */
-  function solucion(meta, resumen) {
+  function solucion(meta, resumen, r = null) {
+    if (meta.id === "llegar-resultado") return finalLlegar(resumen, r?.detalle);
     if (meta.id !== "palabra-larga" || !resumen?.mejores?.length) return null;
     const lista = [...resumen.mejores];
     if (resumen.rara) lista.unshift({ ...resumen.rara, rara: true });
@@ -457,11 +458,11 @@ export function entrarSolo({ app, perfil, alSalir }) {
           h(`div.puesto-grande.aparece${record ? ".copa-record" : ""}`, record ? "🏆" : r.valor != null ? "👏" : "🙂"),
           h(`h1${record ? ".titulo-record" : ""}`, record ? (anterior ? "¡Nuevo récord!" : "¡Primer récord!") : r.valor != null ? "¡Bien jugado!" : "Esta vez no ha salido"),
           textoR,
-          detalleJugador(r.detalle, { clase: ".mis-respuestas" }),
+          meta.id === "llegar-resultado" ? null : detalleJugador(r.detalle, { clase: ".mis-respuestas" }),
           anterior && !record ? h("p.suave", `Tu récord: ${anterior.texto}`) : null,
           anterior && !record && meta.id === "llegar-resultado" ? detalleJugador(anterior.detalle, { clase: ".mis-respuestas.record" }) : null,
           anterior && record ? h("p.suave", `Antes: ${anterior.texto}`) : null,
-          solucion(meta, resumen)
+          solucion(meta, resumen, r)
         ),
         h(
           "div.pl-botones",

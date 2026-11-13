@@ -75,6 +75,24 @@ export function banner(j, extra = "") {
 }
 
 /** Reloj circular que se actualiza solo con requestAnimationFrame. */
+// Color del reloj según lo que queda: blanco → dorado → rojo.
+const COLOR_RELOJ = [
+  [1, [232, 241, 255]],
+  [0.5, [232, 241, 255]],
+  [0.25, [255, 205, 80]],
+  [0, [255, 82, 82]],
+];
+function colorReloj(f) {
+  for (let i = 1; i < COLOR_RELOJ.length; i++) {
+    const [fa, ca] = COLOR_RELOJ[i - 1], [fb, cb] = COLOR_RELOJ[i];
+    if (f >= fb) {
+      const k = fa === fb ? 0 : (fa - f) / (fa - fb);
+      return `rgb(${ca.map((v, j) => Math.round(v + (cb[j] - v) * k)).join(",")})`;
+    }
+  }
+  return "rgb(255,82,82)";
+}
+
 export function crearReloj(ahoraServidor) {
   const R = 45, L = 2 * Math.PI * R;
   const el = h("div.reloj");
@@ -88,11 +106,21 @@ export function crearReloj(ahoraServidor) {
     if (!vivo) return;
     const resta = Math.max(0, fin - ahoraServidor());
     const seg = Math.ceil(resta / 1000);
-    arco.style.strokeDashoffset = String(L * (1 - Math.min(1, resta / total)));
+    const f = Math.min(1, resta / total);
+    arco.style.strokeDashoffset = String(L * (1 - f));
+    el.style.setProperty("--reloj-c", colorReloj(f));
     if (seg !== ultimo) {
       ultimo = seg;
       cifra.textContent = seg;
+      // Apuro: los últimos 10 s (o el último 15 % en pruebas cortas) late; los 5 últimos, además, tiembla.
+      const apuro = seg > 0 && (seg <= 10 || f <= 0.15);
+      el.classList.toggle("apuro", apuro);
       el.classList.toggle("ultimos", seg <= 5 && seg > 0);
+      if (apuro) {
+        el.classList.remove("tic");
+        void el.offsetWidth;
+        el.classList.add("tic");
+      }
     }
     requestAnimationFrame(pintar);
   }
@@ -219,6 +247,44 @@ export function contarHasta(el, texto) {
     if (k < 1 && el.isConnected !== false) requestAnimationFrame(paso);
   };
   requestAnimationFrame(paso);
+}
+
+/**
+ * Pasos de Llegar al resultado ("9 × 7 = 63") como filas de fichas pequeñas.
+ * titulo: encima; objetivo: para marcar en verde cuando se llega.
+ */
+export function pasosEnFichas(titulo, pasos, objetivo = null) {
+  if (!pasos?.length) return null;
+  return h(
+    "div.pasos-fichas.tarjeta",
+    h("small", titulo),
+    pasos.map((t) => {
+      const [a, op, b, , r] = String(t).split(" ");
+      return h(
+        "div.lr-paso.ultimo",
+        h("span.ficha.mini", a),
+        h("span.lr-paso-op", op),
+        h("span.ficha.mini", b),
+        h("span.lr-paso-op", "="),
+        h(`span.ficha.mini.res${objetivo != null && Number(r) === objetivo ? ".exacto" : ""}`, String(r).replace("-", "−"))
+      );
+    })
+  );
+}
+
+/** Al acabar Llegar al resultado: tus pasos hasta lo más cerca y, si no llegaste, una forma de llegar. */
+export function finalLlegar(resumen, detalle) {
+  if (!resumen) return null;
+  const mios = (detalle ?? []).map((x) => x.t);
+  const ultimo = mios.at(-1)?.split(" = ")[1];
+  const exacto = ultimo != null && Number(ultimo) === resumen.objetivo;
+  return h(
+    "div.final-llegar",
+    pasosEnFichas(exacto ? `Así llegaste a ${resumen.objetivo}` : "Tus pasos (lo más cerca)", mios, resumen.objetivo),
+    !exacto && resumen.pasos?.length
+      ? pasosEnFichas(resumen.exacta ? `Una forma de llegar a ${resumen.objetivo}` : `Lo más cerca posible: ${resumen.valor}`, resumen.pasos, resumen.objetivo)
+      : null
+  );
 }
 
 export function textoPuesto(p) {

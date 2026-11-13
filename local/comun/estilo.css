@@ -337,3 +337,15 @@ html, body {
 }
 @keyframes titulo-brillo { to { background-position: 300% 0; } }
 @media (prefers-reduced-motion: reduce) { .copa-record, .titulo-record { animation: none; } }
+
+/* ---------- reloj: más visible, cambia de color y avisa cuando queda poco ---------- */
+.reloj .arco { stroke: var(--reloj-c, var(--texto)); transition: none; }
+.reloj .cifra { color: var(--reloj-c, var(--texto)); }
+.reloj.apuro { filter: drop-shadow(0 0 0.5rem rgba(255, 82, 82, 0.55)); }
+.reloj.apuro.tic { animation: reloj-tic 1s ease-out; }
+.reloj.ultimos.tic { animation: reloj-tic 1s ease-out, reloj-tiembla 0.35s ease-in-out; }
+.reloj.apuro .pista { stroke: rgba(255, 82, 82, 0.25); }
+.reloj.ultimos .cifra { animation: none; }
+@keyframes reloj-tic { 0% { transform: scale(1.22); } 35% { transform: scale(0.97); } 100% { transform: scale(1); } }
+@keyframes reloj-tiembla { 20%, 60% { translate: -0.12rem 0; } 40%, 80% { translate: 0.12rem 0; } }
+@media (prefers-reduced-motion: reduce) { .reloj.apuro.tic, .reloj.ultimos.tic { animation: none; } }
