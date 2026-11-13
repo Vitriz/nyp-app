@@ -237,7 +237,9 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
         )
       : h("span.sel-icono", ICONOS[j.id] ?? "🎲");
     icono.classList.add(j.categoria); // la casilla del icono, con el color de su categoría
+    // (sin huecos «null»: replaceChildren escribiría la palabra)
     ficha.replaceChildren(
+      ...[
       h(
         "div.sel-cabeza",
         icono,
@@ -259,7 +261,8 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
         ruedaNivel ? ruedaNivel.el : null
       ),
       segmentos,
-      jugar
+      jugar,
+      ].filter(Boolean)
     );
     // La caja pasa de su altura anterior a la nueva con suavidad; el contenido no parpadea.
     const despues = ficha.getBoundingClientRect().height;

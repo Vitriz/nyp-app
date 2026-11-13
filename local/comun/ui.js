@@ -97,7 +97,9 @@ export function banner(j, extra = "") {
  *   const fijo = bannerFijo(yo);  h("div.barra-sup", fijo.hueco("abierto" | "cerrado"))  …  fijo.colocar()
  */
 export function bannerFijo(j) {
-  const ban = banner(j);
+  let ban = banner(j);
+  const claveDe = (x) => [x.nombre, x.color, x.colorTexto, x.contorno, x.foto, x.sombrero, x.animacion].join("|");
+  let clave = claveDe(j);
   const capa = h("div.barra-sup.banner-fijo.sin-transicion.oculto-fijo", { "aria-hidden": "true" }, ban);
   document.body.append(capa);
   let medidas = null;
@@ -146,6 +148,21 @@ export function bannerFijo(j) {
       return h("span.hueco-banner", { "data-estado": e, style: { width: `${w}px`, height: `${hh}px` } });
     },
     colocar,
+    /** Si cambia el perfil (nombre, colores, foto…), se rehace el banner (solo entonces) y se recolocan los huecos. */
+    actualizar(nuevo) {
+      const k = claveDe(nuevo);
+      if (k === clave) return;
+      clave = k;
+      const otro = banner(nuevo);
+      ban.replaceWith(otro);
+      ban = otro;
+      medidas = medir();
+      for (const hu of document.querySelectorAll(".hueco-banner")) {
+        const [w, hh] = medidas[hu.dataset.estado] ?? medidas.abierto;
+        Object.assign(hu.style, { width: `${w}px`, height: `${hh}px` });
+      }
+      colocar();
+    },
     quitar() {
       window.removeEventListener("resize", alCambiarTamano);
       capa.remove();

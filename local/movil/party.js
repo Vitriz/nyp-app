@@ -1,6 +1,6 @@
 // Modo partida: conectado a PARTY (la TV). Esperar, jugar y ver resultados.
 import { conectar, almacen } from "../comun/conexion.js";
-import { h, cambiarPantalla, avatar, banner, crearReloj, msDuracion, textoSegundos, textoPuesto, textoCuenta, piezaCuenta, servidor, detalleJugador, finalLlegar, palabraPendiente } from "../comun/ui.js";
+import { h, cambiarPantalla, avatar, banner, bannerFijo, crearReloj, msDuracion, textoSegundos, textoPuesto, textoCuenta, piezaCuenta, servidor, detalleJugador, finalLlegar, palabraPendiente } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { actualizarPaquete } from "../solo/paquete.js";
 import { mensajeRecords, guardarFamilia } from "../comun/familia.js";
@@ -16,6 +16,13 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
   let actual = null;
   let avisoLargo = 0;
   let paquetePedido = false;
+  // Un solo banner para toda la partida (se abre y se cierra; su animación nunca vuelve a empezar).
+  let fijo = null;
+  const banFijo = (yo) => {
+    fijo ??= bannerFijo(yo);
+    fijo.actualizar(yo);
+    return fijo;
+  };
 
   const con = conectar({
     base,
@@ -32,6 +39,8 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
   const ctxJuego = { ahora: con.ahora, onda: () => {}, enviar: (m) => con.enviar({ t: "juego", ...m }) };
 
   function salir() {
+    fijo?.quitar();
+    fijo = null;
     calmarFondo(false);
     con.cerrar();
     actual?.desmontar?.();
@@ -96,6 +105,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
     actual = construir();
     actual.clave = clave;
     cambiarPantalla(app, actual.el);
+    fijo?.colocar();
     return actual;
   }
 
@@ -130,33 +140,23 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
 
   /** Durante una prueba: solo tu icono, el tiempo y salir. */
   function barraJuego(e, reloj) {
-    let clave = null;
-    const icono = h("span.icono-yo");
+    const icono = h("span.icono-yo", banFijo(e.yo).hueco("cerrado"));
     const el = h(
       "div.barra-sup.barra-juego",
       icono,
       reloj.el,
       h("button.icono-btn", { type: "button", onclick: preguntarSalir, "aria-label": "Salir de la partida" }, "✕")
     );
-    const actualizar = (e) => {
-      const k = [e.yo.nombre, e.yo.color, e.yo.colorTexto, e.yo.contorno, e.yo.foto].join("|");
-      if (k !== clave) {
-        clave = k;
-        icono.replaceChildren(banner(e.yo, ".plegado")); // el mismo banner, cerrado en círculo
-      }
-    };
-    actualizar(e);
-    return { el, actualizar };
+    return { el, actualizar: (e) => banFijo(e.yo) };
   }
 
   function barraSuperior(e, { reloj, plegar = false } = {}) {
     if (reloj) return barraJuego(e, reloj);
     const pts = h(`span.pts${plegar ? ".plegar" : ""}`);
-    const ban = bannerVivo(plegar ? ".plegar" : "");
-    ban.actualizar(e.yo);
+    // El hueco del banner fijo: abierto, o cerrado en círculo en la cuenta atrás (se va a jugar).
     const el = h(
       "div.barra-sup",
-      ban.el,
+      banFijo(e.yo).hueco(plegar ? "cerrado" : "abierto"),
       pts,
       reloj?.el,
       h("button.icono-btn", { type: "button", onclick: preguntarSalir, "aria-label": "Salir de la partida" }, "✕")
@@ -164,7 +164,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
     return {
       el,
       actualizar: (e) => {
-        ban.actualizar(e.yo);
+        banFijo(e.yo);
         pts.textContent = `${e.yo.puntos} pts`;
       },
     };
