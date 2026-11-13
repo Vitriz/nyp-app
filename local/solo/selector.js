@@ -130,6 +130,16 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     )
   );
   const rueda = h("div.sel-rueda", { role: "listbox", "aria-label": "Juegos" }, h("div.sel-guia"), items);
+  // Cuántos juegos caben por encima y por debajo del elegido (la lista llega tan abajo como haya sitio).
+  let alcance = 3.5;
+  new ResizeObserver(() => {
+    const px = parseFloat(getComputedStyle(document.documentElement).fontSize) * PASO;
+    const nuevo = rueda.clientHeight ? Math.max(2.5, Math.min(n / 2, rueda.clientHeight / 2 / px)) : 3.5;
+    if (Math.abs(nuevo - alcance) > 0.05) {
+      alcance = nuevo;
+      colocar();
+    }
+  }).observe(rueda);
 
   // ---- cuadrícula: solo los iconos, todos a la vista (se alterna con la rueda)
   const casillas = juegos.map((j, i) =>
@@ -307,9 +317,11 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       const d = d0 - desfase;
       const a = Math.abs(d);
       el.style.transition = salto ? "none" : "";
-      el.style.transform = `translate(${(a * a * 0.55).toFixed(2)}rem, calc(-50% + ${d * PASO}rem)) scale(${1 - Math.min(a, 4) * 0.05})`;
-      // Los lejanos se leen (como poco ~60 %) y solo se desvanecen al salir por los bordes.
-      el.style.opacity = String(a <= 3 ? 1 - a * 0.13 : Math.max(0, (0.61 * (3.6 - a)) / 0.6));
+      const ac = Math.min(a, 3.2);
+      el.style.transform = `translate(${(ac * ac * 0.5).toFixed(2)}rem, calc(-50% + ${d * PASO}rem)) scale(${1 - Math.min(a, 4) * 0.045})`;
+      // Los lejanos se leen (como poco ~55 %) y solo se desvanecen al salir por los bordes de la lista.
+      const borde = alcance - 0.5;
+      el.style.opacity = String(a <= borde ? Math.max(0.55, 1 - a * 0.12) : Math.max(0, (0.55 * (alcance + 0.1 - a)) / 0.6));
       el.style.zIndex = String(10 - a);
       el.classList.toggle("elegido", d0 === 0);
       el.setAttribute("aria-selected", String(d0 === 0));
@@ -430,17 +442,45 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
   rueda.addEventListener("pointerup", soltar);
   rueda.addEventListener("pointercancel", soltar);
 
-  let acumulado = 0;
+  // Rueda del ratón: cada «clic» de la rueda (≈100 px) es un juego, pero la lista no salta: se desliza
+  // suavemente hacia donde vas (también con el trackpad, que manda muchos movimientos pequeños).
+  let objetivo = 0, actual = 0, animRueda = null, ajuste = null;
+  function empujar(pasos) {
+    pararInercia();
+    objetivo = Math.max(-8, Math.min(8, objetivo + pasos));
+    clearTimeout(ajuste);
+    ajuste = setTimeout(() => (objetivo = Math.round(objetivo)), 130); // al parar, encaja en un juego
+    if (animRueda) return;
+    rueda.classList.add("arrastrando");
+    let t = performance.now();
+    const paso = (ahora) => {
+      const dt = Math.min(50, ahora - t);
+      t = ahora;
+      actual += (objetivo - actual) * (1 - Math.exp(-dt / 75));
+      const entero = Math.round(actual);
+      if (entero) {
+        actual -= entero;
+        objetivo -= entero;
+        mover(entero, { desfase: actual, espera: 160 });
+      } else colocar(actual);
+      if (Math.abs(objetivo - actual) < 0.004 && objetivo === Math.round(objetivo)) {
+        animRueda = null;
+        actual = objetivo = 0;
+        rueda.classList.remove("arrastrando");
+        colocar(0);
+        fichaLuego(0);
+        return;
+      }
+      animRueda = requestAnimationFrame(paso);
+    };
+    animRueda = requestAnimationFrame(paso);
+  }
   rueda.addEventListener(
     "wheel",
     (ev) => {
       ev.preventDefault();
-      pararInercia();
-      acumulado += ev.deltaY;
-      if (Math.abs(acumulado) >= 40) {
-        mover(Math.sign(acumulado));
-        acumulado = 0;
-      }
+      const dy = ev.deltaMode === 1 ? ev.deltaY * 33 : ev.deltaMode === 2 ? ev.deltaY * 300 : ev.deltaY;
+      empujar(dy / 100);
     },
     { passive: false }
   );
@@ -468,28 +508,29 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
   pintarFicha();
   cambiarVista(vista, false);
 
+  // Atajos del teclado (solo con ratón y pantalla ancha): cada tecla dibujada como una ficha, en casillas iguales.
+  const atajos = h(
+    "div.sel-ayuda",
+    [
+      [["↑", "↓"], "Juego"],
+      ...(tiempo ? [[["←", "→"], "Tiempo"]] : []),
+      ...(nivel ? [[["1", "2", "3"], "Nivel"]] : []),
+      ...(conAyuda ? [[["?"], "Ayuda"]] : []),
+      [["Enter"], "Jugar"],
+    ].map(([teclas, texto]) => h("span.sel-atajo", h("span.sel-atajo-teclas", ...teclas.map((t) => h("kbd", t))), h("small", texto)))
+  );
+
   const el = h(
     "div.sel-caja",
     h(
     "div.sel",
-    h("div.sel-lado", ficha),
+    h("div.sel-lado", ficha, atajos),
     h(
       "div.sel-lista",
       h("div.sel-titulo", h("span.sel-titulo-texto", "Elige juego"), h("span.sel-titulo-der", contador, botonVista)),
       rueda,
       cuadricula,
       jugarAbajo,
-      // Atajos del teclado (solo con ratón): cada tecla dibujada como una ficha.
-      h(
-        "div.sel-ayuda",
-        [
-          [["↑", "↓"], "juego"],
-          ...(tiempo ? [[["←", "→"], "tiempo"]] : []),
-          ...(nivel ? [[["1", "2", "3"], "nivel"]] : []),
-          ...(conAyuda ? [[["?"], "ayuda"]] : []),
-          [["Enter"], "jugar"],
-        ].map(([teclas, texto]) => h("span.sel-atajo", ...teclas.map((t) => h("kbd", t)), h("span", texto)))
-      )
     )
     )
   );
