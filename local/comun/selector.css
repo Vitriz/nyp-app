@@ -476,3 +476,5 @@
   .sel-casilla.elegido { transform: scale(1.04); }
 }
 .sel-ayuda { gap: 0.35rem 0.75rem; }
+/* El número del juego, oscuro sobre su casilla blanca (gana a «.sel-titulo span:first-child») */
+.sel-titulo .sel-titulo-der .sel-contador { color: #0a1b4a; font-size: 1.1rem; letter-spacing: 0.02em; }

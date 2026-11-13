@@ -1066,3 +1066,47 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   .rv3 .pl-comprobar:disabled { filter: grayscale(0.85); opacity: 0.55; box-shadow: none; }
 }
 .rv3 .pl-comprobar:disabled { filter: grayscale(0.7); opacity: 0.6; }
+
+/* ---------- pantalla final: cabecera en panel y casillas de datos de cada juego ---------- */
+.final-solo { justify-content: flex-start; overflow-y: auto; padding-block: 0.4rem 0.8rem; scrollbar-width: none; }
+.final-solo::-webkit-scrollbar { display: none; }
+.final-cabeza {
+  padding: 0.9rem 1rem; border-radius: 1.2rem;
+  background: linear-gradient(165deg, #2f5bb4, #1d4290 60%, #193a82); border: 1px solid rgba(170, 200, 255, 0.28); border-top-color: rgba(220, 235, 255, 0.5);
+  box-shadow: 0 0.8rem 2rem rgba(3, 10, 36, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.final-datos { width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(7.2rem, 1fr)); gap: 0.55rem; }
+.final-dato {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; min-height: 5.6rem; padding: 0.6rem 0.4rem;
+  border-radius: 1rem; text-align: center; animation: sel-texto 380ms var(--curva) both;
+  background: linear-gradient(180deg, #2a52a6, #1c3f8c); border: 1px solid rgba(170, 200, 255, 0.24); border-top-color: rgba(220, 235, 255, 0.42);
+  box-shadow: 0 0.3rem 0 rgba(4, 12, 40, 0.4);
+}
+.final-dato-ico { font-size: 1.35rem; line-height: 1; }
+.final-dato-valor { font-family: var(--fuente-ficha); font-size: 1.45rem; font-weight: 900; line-height: 1.1; color: #fff; max-width: 100%; overflow-wrap: anywhere; }
+.final-dato small { font-size: 0.7rem; font-weight: 900; letter-spacing: 0.07em; text-transform: uppercase; color: #bcd0f5; }
+.final-dato.oro { background: linear-gradient(180deg, #fff6d8, #f0c64a); border-color: #ffe9a6; }
+.final-dato.oro .final-dato-valor, .final-dato.oro small { color: #4a3300; }
+.final-dato.bien .final-dato-valor { color: #8ff0bd; }
+.final-dato.mal .final-dato-valor { color: #ff9c90; }
+@keyframes sel-texto { from { opacity: 0.4; transform: translateY(0.4rem); } }
+@media (prefers-reduced-motion: reduce) { .final-dato { animation: none; } }
+
+/* El banner cerrado (dentro del juego): idéntico a como acaba la animación de cierre */
+.barra-sup .banner.plegado { padding: 0; gap: 0; }
+.barra-sup .banner.plegado .banner-nombre { max-width: 0; opacity: 0; padding: 0; }
+.barra-sup .icono-yo .banner.plegado .avatar, .barra-sup .banner.plegado .avatar { font-size: 0.85rem; margin: 0; }
+.barra-juego .icono-yo { display: flex; }
+
+/* ---------- portada: botones siempre centrados; en el ordenador, título más grande y más aire arriba ---------- */
+.inicio { align-items: center; }
+.inicio > .inicio-opciones { align-self: center; width: min(100%, 36rem); margin-inline: auto; }
+@media (min-width: 900px) and (min-height: 700px) and (orientation: landscape) {
+  .pantalla.inicio { --ancho: min(100vw, 60rem); padding-top: calc(env(safe-area-inset-top) + 9dvh); padding-bottom: 7dvh; }
+  .inicio > .titulo-nyp { font-size: min(3.6rem, 6.2dvh); gap: 0.3rem; }
+  .inicio .banner-grande { font-size: 2rem; }
+}
+/* Si sobra una casilla suelta, ocupa toda la fila */
+.final-datos { grid-template-columns: repeat(2, 1fr); }
+.final-dato:last-child:nth-child(odd) { grid-column: 1 / -1; }
+@media (min-width: 900px) { .final-datos { grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); } .final-dato:last-child:nth-child(odd) { grid-column: auto; } }

@@ -9,6 +9,7 @@ import { leerFamilia, idMovil } from "../comun/familia.js";
 import { comprobarHazanas, tarjetaHazanas, ventanaHazanas, celebrarHazanas } from "./hazanas.js";
 import { elegirAmbito } from "../comun/ambitos.js";
 import { estudioGrupos } from "../juegos/conexiones/piezas.js";
+import { casillasFinal } from "./final.js";
 
 const SIN_SOLO = new Set(["pulsador"]); // necesita presentador y más jugadores
 
@@ -429,7 +430,11 @@ export function entrarSolo({ app, perfil, alSalir }) {
       try {
         nuevas = comprobarHazanas(meta, r, ronda, yo.id);
       } catch {}
-      resultado(meta, r, resumen, nuevas);
+      let datos = null;
+      try {
+        datos = casillasFinal(meta, ronda, impl.estadoJugador(ronda, yo.id));
+      } catch {}
+      resultado(meta, r, resumen, nuevas, datos);
     }
 
     calmarFondo(true); // fondo quieto y tenue mientras se juega
@@ -438,7 +443,8 @@ export function entrarSolo({ app, perfil, alSalir }) {
         "section",
         h(
           "div.barra-sup.barra-juego",
-          h("span.icono-yo", avatar(yo)),
+          // El mismo banner, ya cerrado en círculo: así no hay salto al empezar.
+          h("span.icono-yo", banner(yo, ".plegado")),
           // Sin límite de tiempo: en vez del reloj, un botón para acabar cuando quieras (y ver el resultado).
           meta.duracion ? reloj.el : h("button.boton.suave.sin-limite", { type: "button", onclick: terminar }, "∞ · Terminar 🏁"),
           h("button.icono-btn", { type: "button", onclick: abandonar, "aria-label": "Dejar la partida" }, "✕")),
@@ -471,7 +477,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
     );
   }
 
-  function resultado(meta, r, resumen = null, hazanas = []) {
+  function resultado(meta, r, resumen = null, hazanas = [], datos = null) {
     const anterior = apuntar(meta, r);
     const record = r.valor != null && (!anterior || r.valor > anterior.valor);
     if (record) navigator.vibrate?.([60, 60, 120]);
@@ -499,6 +505,8 @@ export function entrarSolo({ app, perfil, alSalir }) {
               anterior && record ? h("small", `Antes: ${textoRecord(anterior)}`) : null
             )
           ),
+          // Los datos de la partida, en casillas propias de cada juego.
+          datos,
           // La palabra que faltó sale aparte (en su tarjeta), no repetida entre las respuestas.
           tarjetaHazanas(hazanas),
           meta.id === "llegar-resultado" ? null : detalleJugador(r.pendiente ? r.detalle?.slice(0, -1) : r.detalle, { clase: ".mis-respuestas" }),

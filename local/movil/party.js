@@ -142,7 +142,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
       const k = [e.yo.nombre, e.yo.color, e.yo.colorTexto, e.yo.contorno, e.yo.foto].join("|");
       if (k !== clave) {
         clave = k;
-        icono.replaceChildren(avatar(e.yo));
+        icono.replaceChildren(banner(e.yo, ".plegado")); // el mismo banner, cerrado en círculo
       }
     };
     actualizar(e);

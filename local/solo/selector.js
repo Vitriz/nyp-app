@@ -475,7 +475,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     h("div.sel-lado", ficha),
     h(
       "div.sel-lista",
-      h("div.sel-titulo", h("span.sel-titulo-texto", "🎮 Elige juego"), h("span.sel-titulo-der", contador, botonVista)),
+      h("div.sel-titulo", h("span.sel-titulo-texto", "Elige juego"), h("span.sel-titulo-der", contador, botonVista)),
       rueda,
       cuadricula,
       jugarAbajo,
