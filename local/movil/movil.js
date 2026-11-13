@@ -1,6 +1,6 @@
 // App NYP del móvil: inicio (perfil · jugar en grupo con PARTY · jugar solo).
 import { iniciarFondo } from "../comun/fondo.js";
-import { h, cambiarPantalla, banner, servidor, vigilarEncaje, tituloJuego } from "../comun/ui.js";
+import { h, cambiarPantalla, bannerFijo, servidor, vigilarEncaje, tituloJuego } from "../comun/ui.js";
 import { cargarPerfil, pantallaPerfil } from "./perfil.js";
 import { entrarParty } from "./party.js";
 import { pantallaGrupo, resolverSala } from "./grupo.js";
@@ -25,8 +25,33 @@ if (perfil) subirLuego(idMovil(), perfil, 4000);
 let instalador = null;
 let estadoPaquete = null; // null | "preparando" | "descargando" | "listo" | "error"
 
+// El banner del perfil: el mismo en el inicio y en «Jugar solo» (se mueve, no se rehace).
+let fijo = null;
+function bannerApp() {
+  if (!perfil) return null;
+  if (fijo) fijo.actualizar(perfil);
+  else fijo = bannerFijo(perfil);
+  return fijo;
+}
+function soltarBanner() {
+  fijo?.quitar();
+  fijo = null;
+}
+
 function mostrar(el) {
   cambiarPantalla(app, el);
+  fijo?.colocar();
+}
+
+/** La barra de arriba con el banner (tocarlo abre el perfil). */
+function barraPerfil(alTocar) {
+  const f = bannerApp();
+  return h(
+    "div.barra-sup.barra-inicio",
+    f
+      ? h("button.perfil-toque", { type: "button", onclick: alTocar, "aria-label": "Cambiar mi perfil", title: "Cambiar mi perfil" }, f.hueco("abierto"))
+      : h("button.boton.suave", { type: "button", onclick: alTocar }, "✏️ Crear mi perfil")
+  );
 }
 
 // ------------------------------------------------------------------ inicio
@@ -46,16 +71,9 @@ async function inicio() {
   mostrar(
     h(
       "section.inicio",
-      tituloJuego(),
-      h(
-        "div.inicio-perfil",
-        // Tocar el banner abre el perfil.
-        h(
-          "button.perfil-toque",
-          { type: "button", onclick: () => editarPerfil(inicio), "aria-label": "Cambiar mi perfil" },
-          perfil ? banner(perfil, ".banner-grande") : h("span.boton.suave", "✏️ Crear mi perfil")
-        )
-      ),
+      // Arriba a la izquierda, tu banner (tocarlo abre el perfil); en el centro, el título.
+      barraPerfil(() => editarPerfil(inicio)),
+      h("div.inicio-centro", tituloJuego()),
       h(
         "div.inicio-opciones",
         h(
@@ -92,7 +110,7 @@ function cambioPaquete(e) {
   alCambiarPaquete();
 }
 
-function editarPerfil(despues) {
+function editarPerfil(despues, volver = inicio) {
   mostrar(
     pantallaPerfil({
       perfil,
@@ -102,7 +120,7 @@ function editarPerfil(despues) {
         subirLuego(idMovil(), perfil);
         despues();
       },
-      alVolver: perfil ? inicio : null,
+      alVolver: perfil ? volver : null,
     }).el
   );
 }
@@ -114,9 +132,10 @@ function conPerfil(siguiente) {
 }
 
 // ------------------------------------------------------------------ batalla, partida y solo
-const batalla = () => crearBatalla({ app, perfil, mostrar, alVolver: inicio });
+const batalla = () => (soltarBanner(), crearBatalla({ app, perfil, mostrar, alVolver: inicio }));
 
 function irParty(aviso = "") {
+  soltarBanner(); // PARTY lleva su propio banner
   pantallaCompleta();
   const p = pantallaGrupo({
     baseLocal,
@@ -132,6 +151,7 @@ function irParty(aviso = "") {
 
 /** Abierta desde el QR de la TV: entramos directo a esa partida. */
 async function irPartyDirecto(texto) {
+  soltarBanner();
   pantallaCompleta();
   const base = texto ? await resolverSala(texto) : baseLocal;
   if (base) {
@@ -144,7 +164,14 @@ async function irPartyDirecto(texto) {
 async function irSolo() {
   pantallaCompleta();
   const { entrarSolo } = await import("../solo/solo.js");
-  entrarSolo({ app, perfil, alSalir: inicio });
+  entrarSolo({
+    app,
+    perfil,
+    fijo: bannerApp(),
+    alSalir: inicio,
+    // Desde la lista de juegos también se cambia el perfil (durante el juego, no).
+    alPerfil: (volver) => editarPerfil(() => volver(perfil), () => volver(perfil)),
+  });
 }
 
 // ------------------------------------------------------------------ utilidades del móvil

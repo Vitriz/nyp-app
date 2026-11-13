@@ -14,6 +14,10 @@ import kenken from "./kenken.js";
 import memoria from "./memoria.js";
 import conexiones from "./conexiones.js";
 import semantica from "./semantica.js";
+import hilo from "./hilo.js";
+import coronas from "./coronas.js";
+import parcelas from "./parcelas.js";
+import culebras from "./culebras.js";
 
 /*
  Interfaz de un juego (servidor):
@@ -28,7 +32,7 @@ import semantica from "./semantica.js";
 */
 
 const implementados = Object.fromEntries(
-  [matesFugaces, palabraLarga, definicion, sopa, revuelto, paraulogico, crucigrama, conexiones, semantica, memoria, calculoMental, llegarResultado, laberinto, kenken, pulsador].map((j) => [j.id, j])
+  [matesFugaces, palabraLarga, definicion, sopa, revuelto, paraulogico, crucigrama, conexiones, semantica, memoria, calculoMental, llegarResultado, laberinto, kenken, hilo, coronas, parcelas, culebras, pulsador].map((j) => [j.id, j])
 );
 
 const catalogo = [
@@ -40,12 +44,16 @@ const catalogo = [
   { id: "crucigrama", nombre: "Crucigrama", categoria: "palabras", duracion: 180 },
   { id: "conexiones", nombre: "Conexiones", categoria: "palabras", duracion: 180 },
   { id: "semantica", nombre: "Semántica", categoria: "palabras", duracion: 240 },
+  { id: "culebras", nombre: "Culebras", categoria: "palabras", duracion: 120 },
   { id: "memoria", nombre: "Memoria fotográfica", categoria: "palabras", duracion: 90 },
   { id: "calculo-mental", nombre: "Cálculo mental", categoria: "numeros", duracion: 30 },
   { id: "llegar-resultado", nombre: "Llegar al resultado", categoria: "numeros", duracion: 60 },
   { id: "mates-fugaces", nombre: "Mates fugaces", categoria: "numeros", duracion: 60 },
   { id: "laberinto", nombre: "Laberinto de cálculos", categoria: "numeros", duracion: 120 },
   { id: "kenken", nombre: "KenKen", categoria: "numeros", duracion: 120 },
+  { id: "hilo", nombre: "Hilo", categoria: "numeros", duracion: 120 },
+  { id: "coronas", nombre: "Coronas", categoria: "numeros", duracion: 120 },
+  { id: "parcelas", nombre: "Parcelas", categoria: "numeros", duracion: 120 },
   { id: "pulsador", nombre: "Pulsador", categoria: "pulsador", duracion: 180 },
 ];
 

@@ -486,3 +486,60 @@ html, body {
 @media (prefers-reduced-motion: reduce) { .paso-animado { animation: none; } }
 /* Laberinto: el camino de una cuenta correcta se pone verde */
 .lab > .lab-camino.hecha { background: color-mix(in srgb, #6cc49a 70%, transparent); box-shadow: 0 0 0.6rem rgba(108, 196, 154, 0.7); }
+
+/* ================= puzles nuevos: Hilo, Coronas, Parcelas y Culebras ================= */
+/* --- Hilo: casillas claras, hilo de azul a coral, paredes gruesas y números oscuros --- */
+.hilo { position: relative; aspect-ratio: 1; border-radius: 0.16em; overflow: hidden; background: #f4f7fd; box-shadow: 0 0.06em 0.18em rgba(4, 12, 40, 0.35); user-select: none; }
+.hilo-svg { display: block; width: 100%; height: 100%; }
+.hilo-casilla { fill: #f4f7fd; stroke: #d5def0; stroke-width: 0.02; }
+.hilo-marco { fill: none; stroke: #0b1f55; stroke-width: 0.08; }
+.hilo-trazo line { stroke-width: 0.56; stroke-linecap: round; }
+.hilo-cabeza { fill: none; stroke: #ffffff; stroke-width: 0.07; opacity: 0.9; }
+.hilo-paredes line { stroke: #0b1f55; stroke-width: 0.13; stroke-linecap: round; }
+.hilo-num circle { fill: #10183a; stroke: #ffffff; stroke-width: 0.035; }
+.hilo-num text { fill: #ffffff; font-size: 0.34px; font-weight: 900; font-family: var(--fuente-ficha, system-ui); }
+.hilo-num.pasado circle { fill: #0b1f55; stroke: #ffe28a; }
+.hilo.completo { box-shadow: 0 0 0 0.05em #5fd68e, 0 0.06em 0.18em rgba(4, 12, 40, 0.35); }
+
+/* --- Coronas: zonas de color con bordes gruesos --- */
+.cor { --n: 6; display: grid; grid-template-columns: repeat(var(--n), 1fr); grid-template-rows: repeat(var(--n), 1fr); aspect-ratio: 1; border: 0.06em solid #0b1f55; border-radius: 0.12em; overflow: hidden; background: #0b1f55; gap: 1px; user-select: none; }
+.cor-celda { position: relative; display: grid; place-items: center; background: var(--zona); border: 0 solid #0b1f55; min-width: 0; min-height: 0; cursor: pointer; }
+.cor-celda.b-arr { border-top-width: 0.045em; }
+.cor-celda.b-aba { border-bottom-width: 0.045em; }
+.cor-celda.b-izq { border-left-width: 0.045em; }
+.cor-celda.b-der { border-right-width: 0.045em; }
+.cor-marca { font-size: 0.3em; line-height: 1; color: rgba(11, 31, 85, 0.55); font-weight: 800; pointer-events: none; }
+.cor-celda.corona .cor-marca { font-size: 0.72em; color: inherit; filter: drop-shadow(0 0.04em 0 rgba(0, 0, 0, 0.25)); animation: cor-pon 220ms ease-out; }
+.cor-celda.choca { background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--zona) 55%, #ff5a4f), color-mix(in srgb, var(--zona) 55%, #ff5a4f) 0.08em, var(--zona) 0.08em, var(--zona) 0.16em); }
+.cor.completo .cor-celda.corona { box-shadow: inset 0 0 0 0.07em #f5b301; }
+@keyframes cor-pon { from { transform: scale(0.4); } 70% { transform: scale(1.15); } }
+
+/* --- Parcelas: casillas con pistas (forma + tamaño) y rectángulos de colores --- */
+.pc { --n: 5; position: relative; display: grid; grid-template-columns: repeat(var(--n), 1fr); grid-template-rows: repeat(var(--n), 1fr); aspect-ratio: 1; background: #f4f7fd; border-radius: 0.14em; box-shadow: 0 0.06em 0.18em rgba(4, 12, 40, 0.35); user-select: none; overflow: hidden; }
+.pc-celda { border: 1px dashed #cbd5ea; min-width: 0; min-height: 0; }
+.pc-capa { display: contents; }
+.pc-rect { margin: 0.04em; border-radius: 0.1em; z-index: 1; pointer-events: none; }
+.pc-rect.bien { background: var(--c); box-shadow: inset 0 0 0 0.035em color-mix(in srgb, var(--c) 70%, #000); }
+.pc-rect.mal { background: repeating-linear-gradient(45deg, #c9cfdc, #c9cfdc 0.06em, #dde2ec 0.06em, #dde2ec 0.12em); box-shadow: inset 0 0 0 0.035em #8a93a8; }
+.pc-rect.previa { z-index: 3; background: rgba(95, 183, 208, 0.28); box-shadow: inset 0 0 0 0.05em #1f7ea8; }
+.pc-rect.previa.bien { background: rgba(95, 214, 142, 0.3); box-shadow: inset 0 0 0 0.05em #2c9b5c; }
+.pc-pista { z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.04em; pointer-events: none; min-width: 0; min-height: 0; }
+.pc-pista b { font-size: 0.4em; line-height: 1; color: #0b1f55; font-weight: 900; font-family: var(--fuente-ficha, system-ui); }
+.pc-pista .pc-forma { font-size: 0.42em; }
+.pc-pista.con-numero .pc-forma { font-size: 0.3em; }
+.pc-pista.hecha b { color: #fff; text-shadow: 0 0.04em 0 rgba(0, 0, 0, 0.3); }
+.pc-forma { display: inline-block; width: 1em; height: 1em; position: relative; flex: none; }
+.pc-forma::before { content: ""; position: absolute; inset: 0; margin: auto; box-sizing: border-box; border: 0.13em solid #0b1f55; border-radius: 0.14em; background: rgba(255, 255, 255, 0.85); }
+.pc-forma.cuadrado::before { width: 0.8em; height: 0.8em; }
+.pc-forma.alto::before { width: 0.52em; height: 1em; }
+.pc-forma.ancho::before { width: 1em; height: 0.52em; }
+.pc-forma.cualquiera::before { width: 0.8em; height: 0.8em; border-style: dashed; background: rgba(255, 255, 255, 0.5); }
+.pc.completo { box-shadow: 0 0 0 0.05em #5fd68e, 0 0.06em 0.18em rgba(4, 12, 40, 0.35); }
+
+/* --- Culebras: letras sobre las culebras de colores --- */
+.cul { --n: 6; position: relative; display: grid; grid-template-columns: repeat(var(--n), 1fr); grid-template-rows: repeat(var(--n), 1fr); aspect-ratio: 1; background: #f4f7fd; border: 0.05em solid #0b1f55; border-radius: 0.14em; overflow: hidden; user-select: none; }
+.cul-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.cul-celda { position: relative; z-index: 1; display: grid; place-items: center; min-width: 0; min-height: 0; font-family: var(--fuente-ficha, system-ui); font-weight: 900; font-size: 0.5em; color: #0b1f55; border: 1px solid #dfe6f4; }
+.cul-celda.hueco { background: #aab3c5; border-color: #aab3c5; }
+.cul-celda.hecha { color: #ffffff; text-shadow: 0 0.05em 0 rgba(0, 0, 0, 0.25); border-color: transparent; }
+.cul-trazo { stroke: #ffd34d; opacity: 0.85; }

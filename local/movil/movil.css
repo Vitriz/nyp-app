@@ -1293,3 +1293,52 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 /* Al cerrarse, el círculo se queda exactamente donde estaba el icono (sin el pequeño salto a la derecha) */
 .banner-fijo .banner { transition: padding var(--cierre), gap var(--cierre), translate var(--cierre); }
 .banner-fijo.cerrado .banner { translate: -3px -50%; }
+
+/* ---------- portada: tu banner arriba a la izquierda (el mismo que en la lista de juegos) y el título en el centro ---------- */
+.pantalla.inicio {
+  display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 1rem;
+  padding-top: calc(env(safe-area-inset-top) + 0.9rem); padding-bottom: calc(env(safe-area-inset-bottom) + 2rem);
+}
+.barra-inicio { flex: none; }
+.perfil-toque { appearance: none; background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; display: flex; border-radius: 999px; }
+.perfil-toque:focus-visible { outline: 3px solid var(--acento, #ffc94a); outline-offset: 3px; }
+.inicio-centro { flex: 1; min-height: 0; display: grid; place-items: center; }
+.inicio-centro .titulo-nyp { font-size: min(2.4rem, calc((var(--ancho) - 2.6rem) / 13.2)); }
+@media (orientation: landscape) and (max-height: 560px) {
+  .pantalla.inicio { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr; padding-top: calc(env(safe-area-inset-top) + 0.6rem); padding-bottom: calc(env(safe-area-inset-bottom) + 0.8rem); }
+  .barra-inicio { grid-column: 1 / -1; grid-row: 1; }
+  .inicio-centro { grid-column: 1; grid-row: 2; }
+  .inicio-centro .titulo-nyp { font-size: min(1.9rem, calc((var(--ancho) / 2 - 3rem) / 13.2)); }
+  .pantalla.inicio > .inicio-opciones { grid-column: 2; grid-row: 2; }
+  .pantalla.inicio > :not(.barra-inicio):not(.inicio-centro):not(.inicio-opciones) { grid-column: 2; }
+}
+@media (min-width: 900px) and (min-height: 700px) and (orientation: landscape) {
+  .pantalla.inicio { --ancho: min(100vw, 68rem); padding-top: calc(env(safe-area-inset-top) + 0.9rem); padding-bottom: 7dvh; }
+  .inicio-centro .titulo-nyp { font-size: min(3.8rem, 6.6dvh); gap: 0.3rem; }
+}
+
+/* ---------- puzles nuevos en el móvil: tablero lo más grande posible, datos arriba y botones abajo ---------- */
+.hilo-pantalla, .cor-pantalla, .pc-pantalla, .cul-pantalla { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.55rem; }
+.puzle-zona { flex: 1 1 auto; min-height: 12rem; display: grid; place-items: center; container-type: size; }
+.puzle-zona > .hilo, .puzle-zona > .cor, .puzle-zona > .pc, .puzle-zona > .cul { width: min(100cqw, 100cqh); font-size: calc(min(100cqw, 100cqh) / var(--n)); }
+.puzle-datos { display: flex; justify-content: center; gap: 0.6rem; flex-wrap: wrap; }
+.puzle-datos > span { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.8rem; border-radius: 999px; background: rgba(255, 255, 255, 0.1); font-weight: 700; font-size: 0.9rem; color: var(--texto-suave, #a9bbe6); }
+.puzle-datos b { color: var(--texto, #fff); font-size: 1.05rem; }
+.puzle-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.puzle-botones .boton { min-height: 2.8rem; }
+.pc-leyenda { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem 0.9rem; font-size: 0.82rem; color: var(--texto-suave, #a9bbe6); font-weight: 700; }
+.pc-leyenda span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.pc-leyenda .pc-forma { font-size: 1.1rem; }
+.pc-leyenda .pc-forma::before { border-color: #e8f1ff; background: transparent; }
+.pc-leyenda small { flex-basis: 100%; text-align: center; font-weight: 600; }
+.cul-elegida { min-height: 2rem; text-align: center; font-family: var(--fuente-ficha, system-ui); font-weight: 900; font-size: 1.5rem; letter-spacing: 0.12em; color: #ffd34d; }
+.cul-elegida.vacia { visibility: hidden; }
+.cul-lista { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.45rem 0.8rem; }
+.cul-palabra { display: inline-flex; align-items: center; gap: 0.14rem; }
+.cul-palabra span { width: 1.35rem; height: 1.35rem; border-radius: 0.3rem; display: grid; place-items: center; font-weight: 900; font-size: 0.85rem; background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.22); color: #fff; }
+.cul-palabra.hallada span { background: var(--c); border-color: transparent; }
+.cul-palabra i { font-style: normal; color: #5fd68e; font-weight: 900; margin-left: 0.15rem; }
+.cul-info { text-align: center; font-size: 0.85rem; color: var(--texto-suave, #a9bbe6); margin: 0; }
+.final-puzle { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 0.8rem; }
+.final-puzle > .hilo, .final-puzle > .cor, .final-puzle > .pc, .final-puzle > .cul { width: min(100%, 17rem); font-size: calc(min(100cqw, 17rem) / var(--n)); }
+.final-puzle { container-type: inline-size; }

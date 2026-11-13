@@ -3,6 +3,10 @@ import { h } from "../comun/ui.js";
 import { crearRejilla } from "../juegos/kenken/rejilla.js";
 import { rangoDe } from "../juegos/paraulogico/movil.js";
 import { crearRejilla as rejillaLaberinto } from "../juegos/laberinto/rejilla.js";
+import { crearTablero as tableroHilo } from "../juegos/hilo/rejilla.js";
+import { crearTablero as tableroCoronas } from "../juegos/coronas/rejilla.js";
+import { crearTablero as tableroParcelas } from "../juegos/parcelas/rejilla.js";
+import { crearTablero as tableroCulebras, COLORES as COLORES_CULEBRAS } from "../juegos/culebras/rejilla.js";
 
 /** KenKen: ¿cada casilla tiene el número de la solución? (si lo resolvió, todo vale) */
 const kkBien = (j, ronda) => ronda.solucion.map((v, k) => j.ms != null || j.valores[k] === v);
@@ -122,7 +126,62 @@ const POR_JUEGO = {
       ...(j.ms != null ? [["⏱", "Tiempo", reloj(j.ms), "bien"]] : []),
     ];
   },
+  hilo: (j, ronda) => [
+    ["🔢", "Números", `${Math.max(1, numerosPasados(j.camino, ronda))} / ${ronda.ultimo}`, "oro"],
+    ["🧵", "Casillas", `${j.camino.length} / ${ronda.n * ronda.n}`],
+    ...(j.ms != null ? [["⏱", "Tiempo", reloj(j.ms), "bien"]] : []),
+  ],
+  coronas: (j, ronda) => {
+    const sol = new Set(ronda.solucion);
+    const puestas = j.marcas.filter((x) => x === 2).length;
+    return [
+      ["👑", "Coronas bien", `${j.marcas.filter((x, k) => x === 2 && sol.has(k)).length} / ${ronda.n}`, "oro"],
+      ["✕", "Marcas", j.marcas.filter((x) => x === 1).length],
+      ...(j.ms != null ? [["⏱", "Tiempo", reloj(j.ms), "bien"]] : [["📍", "Puestas", puestas]]),
+    ];
+  },
+  parcelas: (j, ronda) => {
+    const t = tableroParcelas(ronda);
+    const bien = j.rects.filter((x) => t.valida(x) >= 0).length;
+    return [
+      ["📐", "Rectángulos bien", `${bien} / ${ronda.pistas.length}`, "oro"],
+      ["✏️", "Dibujados", j.rects.length],
+      ...(j.ms != null ? [["⏱", "Tiempo", reloj(j.ms), "bien"]] : []),
+    ];
+  },
+  culebras: (j, ronda) => [
+    ["🐍", "Palabras", `${j.encontradas.length} / ${ronda.palabras.length}`, "oro"],
+    ["✍️", "Intentos", j.intentos],
+    ...(j.ms != null ? [["⏱", "Tiempo", reloj(j.ms), "bien"]] : [["⏳", "Faltaron", ronda.palabras.length - j.encontradas.length, "mal"]]),
+  ],
 };
+
+const numerosPasados = (camino, ronda) => {
+  const nums = new Map(ronda.numeros);
+  return camino.filter((k) => nums.has(k)).length;
+};
+
+/** Puzles nuevos: la solución al final (si lo resolviste, así quedó). */
+function finalPuzle(meta, ronda, j) {
+  const resuelto = j.ms != null;
+  let t = null, pie = null;
+  if (meta.id === "hilo") {
+    t = tableroHilo(ronda);
+    t.pintar(ronda.solucion, { completo: true });
+  } else if (meta.id === "coronas") {
+    t = tableroCoronas(ronda);
+    t.pintar(Array.from({ length: ronda.n * ronda.n }, (_, k) => (ronda.solucion.includes(k) ? 2 : 0)));
+  } else if (meta.id === "parcelas") {
+    t = tableroParcelas(ronda);
+    t.pintar(ronda.solucion);
+  } else if (meta.id === "culebras") {
+    t = tableroCulebras(ronda);
+    t.pintar(ronda.palabras.map((p, i) => ({ celdas: p.celdas, color: COLORES_CULEBRAS[i % COLORES_CULEBRAS.length] })));
+    const tuyas = new Set(j.encontradas);
+    pie = h("div.final-chips", ronda.palabras.map((p, i) => h(`span.pg-chip${tuyas.has(i) ? ".bien" : ".falta"}`, (p.forma ?? p.clave).toUpperCase())));
+  } else return null;
+  return h("div.final-puzle.tarjeta", h("small", resuelto ? "¡Resuelto! Así quedó" : "La solución"), t.el, pie);
+}
 
 /** Las casillas de datos de la partida (o null si el juego no tiene). */
 export function casillasFinal(meta, ronda, j) {
@@ -146,6 +205,7 @@ export function casillasFinal(meta, ronda, j) {
 export function extraFinal(meta, ronda, j) {
   if (meta.id === "paraulogico") return finalTutifruti(ronda, j);
   if (meta.id === "laberinto") return finalLaberinto(ronda, j);
+  if (["hilo", "coronas", "parcelas", "culebras"].includes(meta.id)) return finalPuzle(meta, ronda, j);
   if (meta.id !== "kenken" || !ronda?.solucion) return null;
   const rejilla = crearRejilla(ronda);
   rejilla.poner(ronda.solucion);

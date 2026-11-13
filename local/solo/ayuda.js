@@ -74,6 +74,26 @@ const AYUDA = {
     puntos: "Gana quien lo complete antes; si nadie lo completa, quien tenga más cuentas bien.",
     niveles: "Fácil: pocas cuentas y pocos huecos · Difícil: más cuentas y más huecos.",
   },
+  hilo: {
+    pasos: ["Pon el dedo en el 1 y arrástralo de casilla en casilla (sin diagonales).", "Pasa por los números en orden: 1, 2, 3… El hilo no puede cruzar las paredes gruesas.", "Rellena todas las casillas y termina en el número más alto. Para corregir, vuelve atrás por el mismo hilo."],
+    puntos: "Gana quien lo complete antes; si nadie, quien llegue a un número más alto.",
+    niveles: "Fácil: 5×5 sin paredes · Medio: 6×6 con alguna pared · Difícil: 7×7 con más paredes.",
+  },
+  coronas: {
+    pasos: ["Pon una 👑 en cada fila, en cada columna y en cada zona de color.", "Dos coronas no pueden tocarse, ni siquiera en diagonal.", "Toca una vez para marcar ✕ (aquí no va) y dos para poner la corona. Arrastra para marcar varias ✕ seguidas."],
+    puntos: "Gana quien lo resuelva antes; si nadie, quien tenga más coronas bien.",
+    niveles: "Fácil: 6×6 · Medio: 7×7 · Difícil: 8×8.",
+  },
+  parcelas: {
+    pasos: ["Arrastra el dedo de una esquina a la otra para dibujar un rectángulo.", "Cada rectángulo debe tener una sola pista y cumplirla: cuadrado, alto, ancho o cualquiera; si lleva número, ese es su número de casillas.", "Cubre toda la cuadrícula. Toca un rectángulo para borrarlo."],
+    puntos: "Gana quien lo complete antes; si nadie, quien tenga más rectángulos bien.",
+    niveles: "Fácil: 5×5 con muchas pistas · Medio: 6×6 · Difícil: 7×7 con menos pistas.",
+  },
+  culebras: {
+    pasos: ["El tablero está lleno de palabras que serpentean de letra en letra (sin diagonales).", "Solo sabes cuántas letras tiene cada una. Arrastra el dedo de la primera letra a la última.", "Si te equivocas de camino, vuelve atrás por el mismo. Las casillas grises no son de ninguna palabra."],
+    puntos: "Gana quien las encuentre todas antes; si nadie, quien encuentre más.",
+    niveles: "Fácil: 5×5 y palabras cortas · Medio: 6×6 · Difícil: 7×7 y palabras más largas.",
+  },
   pulsador: {
     pasos: ["Lee la pregunta en la TV (hay unos segundos para leer).", "Pulsa el botón el primero y responde en voz alta.", "El presentador dice si aciertas. Si fallas, ya no puedes pulsar en esa pregunta."],
     puntos: "Gana quien acierte más preguntas.",

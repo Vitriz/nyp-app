@@ -6,7 +6,7 @@ import { ventanaAyuda } from "./ayuda.js";
 
 export const ICONOS = {
   "palabra-larga": "🔠", definicion: "📖", sopa: "🔍", revuelto: "🔀", paraulogico: "🐝", crucigrama: "✏️", conexiones: "🔗", semantica: "🔥", memoria: "📸", kenken: "🔢",
-  "calculo-mental": "🧠", "llegar-resultado": "🎯", "mates-fugaces": "⚡", laberinto: "🧩", pulsador: "🔔",
+  "calculo-mental": "🧠", "llegar-resultado": "🎯", "mates-fugaces": "⚡", laberinto: "🧩", pulsador: "🔔", hilo: "🧵", coronas: "👑", parcelas: "📐", culebras: "🐍",
 };
 const PASO = 3.9; // rem entre elementos de la rueda
 let ultimoId = null; // al volver, la rueda sigue en el último juego
@@ -158,7 +158,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
   } catch {}
   const botonVista = h("button.sel-vista-btn", { type: "button", onclick: () => cambiarVista() });
   // 🎲 Un juego al azar: la ruleta gira sola (o en la cuadrícula se van iluminando casillas) hasta pararse en uno.
-  const botonDado = h("button.sel-vista-btn.sel-dado", { type: "button", title: "Un juego al azar", "aria-label": "Elegir un juego al azar", onclick: () => sortear() }, "🎲");
+  const botonDado = h("button.sel-vista-btn.sel-dado", { type: "button", title: "Un juego al azar", "aria-label": "Elegir un juego al azar", onclick: () => sortear() }, h("span.dado-cara", "🎲"));
   let sorteando = false;
   function sortear() {
     if (sorteando || n < 2) return;
@@ -173,8 +173,8 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     };
     if (vista === "cuadricula") {
       // Casillas que se iluminan al azar, cada vez más despacio, sin enseñar su ficha; la última es la elegida.
-      const saltos = 16;
-      let k = 0, previa = -1, espera = 60;
+      const saltos = 12;
+      let k = 0, previa = -1, espera = 45;
       const paso = () => {
         casillas.forEach((c) => c.classList.remove("sorteo"));
         if (k === saltos) {
@@ -190,13 +190,13 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
         casillas[i].classList.add("sorteo");
         navigator.vibrate?.(4);
         k++;
-        espera *= 1.17;
+        espera *= 1.13;
         setTimeout(paso, espera);
       };
       return paso();
     }
-    // Ruleta: dos vueltas y lo que falte hasta el elegido, frenando poco a poco.
-    const total = (((destino - sel) % n) + n) % n + n * 2;
+    // Ruleta: una vuelta y lo que falte hasta el elegido, frenando solo al final (≈2 s).
+    const total = (((destino - sel) % n) + n) % n + n;
     let hechos = 0;
     const paso = () => {
       if (hechos === total) {
@@ -206,7 +206,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       mover(1, { espera: null });
       hechos++;
       const t = hechos / total;
-      setTimeout(paso, 35 + 420 * t * t * t); // de muy deprisa a despacio
+      setTimeout(paso, 28 + 210 * t ** 4); // muy deprisa casi todo el rato; frena en los últimos
     };
     paso();
   }

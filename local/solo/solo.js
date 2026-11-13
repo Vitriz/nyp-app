@@ -92,11 +92,27 @@ function apuntar(meta, r) {
 }
 
 // ------------------------------------------------------------------ pantallas
-export function entrarSolo({ app, perfil, alSalir }) {
-  const yo = { id: "yo", nombre: perfil.nombre, color: perfil.color, colorTexto: perfil.colorTexto, contorno: perfil.contorno ?? null, foto: perfil.foto, puntos: 0 };
+export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfil = null }) {
+  const datosYo = (p) => ({ nombre: p.nombre, color: p.color, colorTexto: p.colorTexto, contorno: p.contorno ?? null, foto: p.foto, sombrero: p.sombrero ?? null, animacion: p.animacion ?? null });
+  const yo = { id: "yo", ...datosYo(perfil), puntos: 0 };
   let actual = null;
-  // Un solo banner para todo el modo solo: se abre en la lista y en el resultado y se cierra al jugar.
-  const fijo = bannerFijo(yo);
+  // Un solo banner para todo el modo solo (el mismo del inicio): se abre en la lista y en el resultado y se cierra al jugar.
+  const fijo = fijoApp ?? bannerFijo(yo);
+  if (fijoApp) fijo.actualizar(yo);
+  const salir = () => (fijoApp ? null : fijo.quitar(), alSalir());
+  /** Tocar el banner en la lista abre el perfil; al guardarlo (o volver) se vuelve a la lista. */
+  const editarPerfil = alPerfil
+    ? () => {
+        actual?.desmontar?.();
+        actual = null;
+        alPerfil((nuevo) => {
+          perfil = nuevo;
+          Object.assign(yo, datosYo(nuevo));
+          fijo.actualizar(yo);
+          lista();
+        });
+      }
+    : null;
 
   function mostrar(p) {
     actual?.desmontar?.();
@@ -106,6 +122,12 @@ export function entrarSolo({ app, perfil, alSalir }) {
   }
 
   const barra = (...extra) => h("div.barra-sup", fijo.hueco("abierto"), ...extra);
+  const barraLista = (...extra) =>
+    h(
+      "div.barra-sup",
+      editarPerfil ? h("button.perfil-toque", { type: "button", onclick: editarPerfil, "aria-label": "Cambiar mi perfil", title: "Cambiar mi perfil" }, fijo.hueco("abierto")) : fijo.hueco("abierto"),
+      ...extra
+    );
 
   function mensaje(titulo, texto) {
     mostrar({ el: h("section", barra(), h("div.espera", h("h1", titulo), texto ? h("p.suave", texto) : null)) });
@@ -123,12 +145,12 @@ export function entrarSolo({ app, perfil, alSalir }) {
     mostrar({
       el: h(
         "section.solo.solo-sel",
-        barra(
+        barraLista(
           h(
             "div.barra-botones",
             h("button.icono-btn.hazanas", { type: "button", onclick: () => ventanaHazanas(juegos, ICONOS), "aria-label": "Hazañas", title: "Hazañas" }, "🎖️"),
             h("button.icono-btn.records", { type: "button", onclick: () => verRecords(juegos), "aria-label": "Récords", title: "Récords" }, "🏆"),
-            h("button.icono-btn", { type: "button", onclick: () => (fijo.quitar(), alSalir()), "aria-label": "Volver al inicio" }, "✕")
+            h("button.icono-btn", { type: "button", onclick: salir, "aria-label": "Volver al inicio" }, "✕")
           )
         ),
         selectorJuegos({
@@ -601,5 +623,5 @@ export function entrarSolo({ app, perfil, alSalir }) {
   }
 
   lista();
-  return { salir: () => (actual?.desmontar?.(), fijo.quitar()) };
+  return { salir: () => (actual?.desmontar?.(), fijoApp ? null : fijo.quitar()) };
 }
