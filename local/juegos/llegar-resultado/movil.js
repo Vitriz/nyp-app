@@ -143,9 +143,9 @@ export function montar(cuerpo, e, ctx) {
     huecoR.disabled = !p?.vale;
     aviso.className = `lr-aviso${p && !p.vale ? " mal" : p?.vale ? " ok" : ""}`;
     aviso.textContent = p ? (p.vale ? (p.v === objetivo ? "🎉 ¡Exacto!" : "✔ Vale") : p.motivo) : huecos[0] == null ? "Toca un número" : !signo ? "Elige un signo" : huecos[1] == null ? "Toca otro número" : "";
-    // Si vale, la operación sube sola a la lista un momento después (para que se vea el resultado).
+    // Si vale, la operación sube a la lista al instante (justo después de pintarla).
     clearTimeout(subiendo);
-    subiendo = p?.vale ? setTimeout(usarResultado, 520) : 0;
+    subiendo = p?.vale ? setTimeout(usarResultado, 0) : 0;
 
     // Lo que ya has hecho, como fichas pequeñas.
     historial.replaceChildren(
