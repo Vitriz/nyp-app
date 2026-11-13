@@ -1046,3 +1046,23 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .rv-chip { flex-direction: row; align-items: baseline; gap: 0.5rem; padding: 0.4rem 0.8rem; white-space: nowrap; }
 .rv-chip small { font-size: 0.7rem; }
 .rv3 .rv-pasar { flex: none; width: auto; max-width: 45%; white-space: nowrap; }
+
+/* ---------- Revuelto en pantalla ancha (ordenador): dos columnas y todo más grande ---------- */
+@media (min-width: 900px) and (min-aspect-ratio: 1/1) and (min-height: 560px) {
+  .pantalla:has(.rv3) { --ancho: min(100vw, 66rem); }
+  .rv3 { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; grid-template-areas: "arriba abajo" "medio abajo"; column-gap: 2.2rem; row-gap: 1rem; align-items: start; align-content: center; }
+  .rv3 .rv-arriba { grid-area: arriba; }
+  .rv3 .rv-medio { grid-area: medio; justify-content: flex-start; }
+  .rv3 .rv-abajo { grid-area: abajo; align-self: center; gap: 0.9rem; }
+  .rv3 .rv-def, .cuerpo-juego .rv3 .rv-def { font-size: 1.35rem; }
+  .rv3 .rv-tarjeta.larga .rv-def { font-size: 1.2rem; }
+  .rv3 .rv-tarjeta.muy-larga .rv-def { font-size: 1.08rem; }
+  .rv3 .rv-tarjeta { padding: 0.9rem 1rem; }
+  .rv3 .rv-letras { gap: 0.6rem; }
+  .rv3 .rv-ficha { font-size: 2.4rem; }
+  .rv3 .fila-acciones .boton { min-height: 3.6rem; }
+  .rv-linea { font-size: 1.9rem; min-height: 4.4rem; }
+  /* Desactivado se distingue de activado */
+  .rv3 .pl-comprobar:disabled { filter: grayscale(0.85); opacity: 0.55; box-shadow: none; }
+}
+.rv3 .pl-comprobar:disabled { filter: grayscale(0.7); opacity: 0.6; }

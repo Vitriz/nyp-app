@@ -389,3 +389,90 @@
 .sel-jugar-abajo.bloqueado::after { display: none; }
 /* Pantalla ancha: la ficha ya lleva su «¡Jugar!» */
 @container (min-width: 44rem) { .sel-jugar-abajo { display: none; } }
+
+/* ======================================================================
+   Más contraste: paneles, lista y ajustes se separan del fondo
+   ====================================================================== */
+.sel-ficha {
+  background: linear-gradient(165deg, #2f5bb4, #1d4290 55%, #193a82);
+  border: 1px solid rgba(170, 200, 255, 0.28); border-top-color: rgba(220, 235, 255, 0.5);
+  box-shadow: 0 1.1rem 2.6rem rgba(3, 10, 36, 0.55), 0 0.25rem 0 rgba(3, 10, 36, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.sel-titulo {
+  background: linear-gradient(180deg, #2c56ad, #1d4290);
+  border: 1px solid rgba(170, 200, 255, 0.25); border-top-color: rgba(220, 235, 255, 0.45);
+  box-shadow: 0 0.5rem 1.4rem rgba(3, 10, 36, 0.45);
+}
+.sel-pildora { background: rgba(6, 18, 56, 0.55); border: 1px solid rgba(170, 200, 255, 0.18); }
+.sel-pil-flecha { background: rgba(140, 180, 255, 0.22); }
+.sel-record:not(.con) { background: rgba(6, 18, 56, 0.5); border-color: rgba(170, 200, 255, 0.22); }
+/* Lista: cada juego es una pieza con borde y luz arriba; la máscara de los bordes, más corta */
+.sel-item { background: linear-gradient(180deg, #2d58b0, #1f4594); border: 1px solid rgba(170, 200, 255, 0.22); border-top-color: rgba(220, 235, 255, 0.4); }
+.sel-item:not(.elegido) .sel-item-nombre { color: #eef4ff; }
+.sel-rueda { mask-image: linear-gradient(transparent, #000 9%, #000 91%, transparent); -webkit-mask-image: linear-gradient(transparent, #000 9%, #000 91%, transparent); }
+
+/* ======================================================================
+   Iconos: casilla con el color de su categoría y un contorno oscuro suave (el 📖 blanco ya no se pierde)
+   ====================================================================== */
+.sel-icono, .sel-item-icono, .sel-casilla > span:first-child { text-shadow: 0 0 0.05em rgba(8, 22, 66, 0.85), 0 0.05em 0.08em rgba(8, 22, 66, 0.5); }
+.sel-icono.palabras { --cat: #5fb7d0; }
+.sel-icono.numeros { --cat: #e7a05c; }
+.sel-icono.pulsador { --cat: #f08fb5; }
+.sel-icono { background: linear-gradient(180deg, color-mix(in srgb, var(--cat, #5fb7d0) 55%, #fff), color-mix(in srgb, var(--cat, #5fb7d0) 85%, #0b1f55)); border-color: #fff; }
+.sel-item.elegido .sel-item-icono { background: linear-gradient(180deg, color-mix(in srgb, var(--cat, var(--acento)) 70%, #fff), color-mix(in srgb, var(--cat, var(--acento)) 85%, #0b1f55)); }
+.sel-casilla.elegido { background: linear-gradient(180deg, color-mix(in srgb, var(--cat) 60%, #fff), color-mix(in srgb, var(--cat) 85%, #0b1f55)); }
+
+/* ======================================================================
+   Tiempo y nivel con todas las opciones a la vista (pantalla ancha y alta: ordenador, tablet)
+   ====================================================================== */
+.sel-segmentos, .sel-desc-larga { display: none; }
+.sel-seg-fila { display: grid; grid-template-columns: 6.2rem 1fr; align-items: center; gap: 0.6rem; }
+.sel-seg-etiqueta { font-size: 0.78rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: #bcd0f5; white-space: nowrap; }
+.sel-seg-opciones { display: flex; gap: 0.3rem; padding: 0.3rem; border-radius: 0.95rem; background: rgba(6, 18, 56, 0.55); border: 1px solid rgba(170, 200, 255, 0.18); }
+.sel-seg {
+  appearance: none; flex: 1; min-width: 0; height: 2.6rem; border: none; border-radius: 0.7rem; cursor: pointer; white-space: nowrap;
+  font: inherit; font-family: var(--fuente-ficha); font-weight: 900; font-size: 1.05rem; color: #dbe6ff; background: transparent;
+  transition: background 160ms, color 160ms, transform 120ms, box-shadow 160ms;
+}
+.sel-seg:hover { background: rgba(140, 180, 255, 0.18); }
+.sel-seg:active { transform: scale(0.95); }
+.sel-seg.elegido { background: linear-gradient(180deg, #fff, var(--ficha-2)); color: var(--ficha-texto); box-shadow: 0 0.15rem 0 rgba(4, 12, 40, 0.5), 0 0 0 0.12rem var(--oro); }
+.sel-seg[data-nv="facil"].elegido { background: linear-gradient(180deg, #e3f8ec, #8fdcb4); box-shadow: 0 0.15rem 0 rgba(4, 12, 40, 0.5), 0 0 0 0.12rem #6cc49a; }
+.sel-seg[data-nv="normal"].elegido { background: linear-gradient(180deg, #fff6d8, #f0c64a); box-shadow: 0 0.15rem 0 rgba(4, 12, 40, 0.5), 0 0 0 0.12rem #e9b93a; }
+.sel-seg[data-nv="dificil"].elegido { background: linear-gradient(180deg, #ffe1dc, #f2877a); box-shadow: 0 0.15rem 0 rgba(4, 12, 40, 0.5), 0 0 0 0.12rem #e8665a; }
+@media (min-height: 600px) {
+  @container (min-width: 44rem) {
+    .sel-ajustes { display: none; }
+    .sel-segmentos { display: flex; flex-direction: column; gap: 0.55rem; }
+    /* La ficha arriba, a la altura de la cabecera de la lista; con la explicación completa */
+    .sel-lado { justify-content: flex-start; }
+    .sel-desc { display: none; }
+    .sel-desc-larga { display: block; margin: 0; font-size: 1.08rem; line-height: 1.45; color: #d3e0fb; }
+  }
+}
+
+/* ======================================================================
+   Atajos del teclado: teclas dibujadas como fichas, en una barra
+   ====================================================================== */
+.sel-ayuda {
+  flex-wrap: wrap; justify-content: center; gap: 0.35rem 1rem; padding: 0.5rem 0.8rem; margin-top: 0.3rem;
+  border-radius: 0.9rem; background: rgba(6, 18, 56, 0.5); border: 1px solid rgba(170, 200, 255, 0.16);
+}
+@media (hover: hover) and (pointer: fine) { .sel-ayuda { display: flex; } }
+.sel-atajo { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.82rem; font-weight: 800; color: #bcd0f5; }
+.sel-atajo span { margin-left: 0.15rem; }
+.sel-atajo kbd {
+  display: inline-grid; place-items: center; min-width: 1.6rem; height: 1.6rem; padding: 0 0.35rem; border-radius: 0.4rem;
+  font-family: var(--fuente-ficha); font-size: 0.82rem; font-weight: 900; color: var(--ficha-texto);
+  background: linear-gradient(180deg, #fff, var(--ficha-2)); border: 0.08rem solid var(--ficha-borde); box-shadow: 0 0.12rem 0 rgba(4, 12, 40, 0.55);
+}
+/* Cuadrícula en pantalla ancha: casillas grandes con el nombre debajo */
+.sel-casilla-nombre { display: none; }
+@container (min-width: 44rem) {
+  .sel-cuadricula { grid-template-columns: repeat(auto-fill, minmax(7.2rem, 1fr)); gap: 0.8rem; }
+  .sel-casilla { aspect-ratio: auto; min-height: 7rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.35rem; padding: 0.6rem 0.4rem; font-size: 2.6rem; }
+  .sel-casilla-nombre { display: block; max-width: 100%; font-size: 0.8rem; font-weight: 900; line-height: 1.15; text-align: center; color: #eef4ff; text-shadow: none; }
+  .sel-casilla.elegido .sel-casilla-nombre { color: var(--ficha-texto); }
+  .sel-casilla.elegido { transform: scale(1.04); }
+}
+.sel-ayuda { gap: 0.35rem 0.75rem; }

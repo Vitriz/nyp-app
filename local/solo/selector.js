@@ -92,6 +92,28 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
   const nivelDe = (j) => nivel?.de(j) ?? "normal";
   const ruedaTiempo = tiempo ? ruedaValor("⏱", "Tiempo", (p) => pasoTiempo(p)) : null;
   const ruedaNivel = nivel ? ruedaValor("◆", "Nivel", (p) => pasoNivel(p)) : null;
+  // En pantalla ancha (ordenador) sobra sitio: todas las opciones a la vista, con su etiqueta, y un clic para elegir.
+  const segTiempo = tiempo ? h("div.sel-seg-opciones", { role: "radiogroup", "aria-label": "Tiempo" }) : null;
+  const segNivel = nivel ? h("div.sel-seg-opciones", { role: "radiogroup", "aria-label": "Nivel" }) : null;
+  const segmentos =
+    tiempo || nivel
+      ? h(
+          "div.sel-segmentos",
+          tiempo ? h("div.sel-seg-fila", h("span.sel-seg-etiqueta", "⏱ Tiempo"), segTiempo) : null,
+          nivel ? h("div.sel-seg-fila", h("span.sel-seg-etiqueta", "◆ Nivel"), segNivel) : null
+        )
+      : null;
+  function pintarSegmentos(caja, valores, textos, actual, alElegir, extra = () => ({})) {
+    caja.replaceChildren(
+      ...valores.map((v, k) =>
+        h(
+          `button.sel-seg${v === actual ? ".elegido" : ""}`,
+          { type: "button", role: "radio", "aria-checked": String(v === actual), onclick: () => alElegir(v), ...extra(v) },
+          textos[k]
+        )
+      )
+    );
+  }
   const n = juegos.length;
   let sel = Math.max(0, juegos.findIndex((j) => j.id === ultimoId));
   const antes = new Array(n).fill(null);
@@ -115,7 +137,8 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       `button.sel-casilla.${j.categoria}${j.bloqueado ? ".bloqueado" : ""}`,
       // Tocar una casilla solo la elige; se juega con el botón de abajo (así no se empieza sin querer).
       { type: "button", "data-i": i, title: j.nombre, "aria-label": j.nombre, onclick: () => ir(i, false) },
-      h("span", j.bloqueado ? "🔒" : ICONOS[j.id] ?? "🎲")
+      h("span", j.bloqueado ? "🔒" : ICONOS[j.id] ?? "🎲"),
+      h("small.sel-casilla-nombre", j.nombre) // solo en pantalla ancha
     )
   );
   const cuadricula = h("div.sel-cuadricula", { role: "listbox", "aria-label": "Juegos" }, casillas);
@@ -160,6 +183,14 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       ruedaTiempo.pintar(l.map(textoSegundos), Math.max(0, l.indexOf(seg)), animar);
     }
     if (ruedaNivel) ruedaNivel.pintar(nivel.lista.map((x) => nivel.nombres[x]), Math.max(0, nivel.lista.indexOf(nv)), animar);
+    if (segTiempo) pintarSegmentos(segTiempo, listaDe(j), listaDe(j).map(textoSegundos), seg, (s) => cambiarTiempo(s));
+    if (segNivel)
+      pintarSegmentos(segNivel, nivel.lista, nivel.lista.map((x) => nivel.nombres[x]), nv, (x) => {
+        if (juegos[sel].bloqueado || x === nivelDe(juegos[sel])) return;
+        nivel.fijar(juegos[sel], x);
+        navigator.vibrate?.(5);
+        pintarAjustes(true);
+      }, (x) => ({ "data-nv": x }));
     if (conRecords) {
       const r = recordDe(j, seg, nv);
       // Siempre una sola línea y lo mínimo: el tiempo y el nivel ya se ven elegidos debajo.
@@ -195,6 +226,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
           h("span.sel-icono-ayuda", { "aria-hidden": "true" }, "?")
         )
       : h("span.sel-icono", ICONOS[j.id] ?? "🎲");
+    icono.classList.add(j.categoria); // la casilla del icono, con el color de su categoría
     ficha.replaceChildren(
       h(
         "div.sel-cabeza",
@@ -208,12 +240,15 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       ),
       // Siempre una frase corta: así la ficha mide lo mismo con todos los juegos (lo demás, en el ?).
       h("p.sel-desc", typeof j.breve === "string" && j.breve ? j.breve : j.descripcion),
+      // En el ordenador cabe la explicación completa.
+      j.descripcion && j.breve ? h("p.sel-desc-larga", j.descripcion) : null,
       ...(conRecords ? [recordEl] : []),
       h(
         "div.sel-ajustes",
         ruedaTiempo ? ruedaTiempo.el : h("span.sel-chip", `⏱ ${textoSegundos(seg)}`),
         ruedaNivel ? ruedaNivel.el : null
       ),
+      segmentos,
       jugar
     );
     // La caja pasa de su altura anterior a la nueva con suavidad; el contenido no parpadea.
@@ -273,7 +308,8 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       const a = Math.abs(d);
       el.style.transition = salto ? "none" : "";
       el.style.transform = `translate(${(a * a * 0.55).toFixed(2)}rem, calc(-50% + ${d * PASO}rem)) scale(${1 - Math.min(a, 4) * 0.05})`;
-      el.style.opacity = a > 3.5 ? "0" : String(1 - a * 0.16);
+      // Los lejanos se leen (como poco ~60 %) y solo se desvanecen al salir por los bordes.
+      el.style.opacity = String(a <= 3 ? 1 - a * 0.13 : Math.max(0, (0.61 * (3.6 - a)) / 0.6));
       el.style.zIndex = String(10 - a);
       el.classList.toggle("elegido", d0 === 0);
       el.setAttribute("aria-selected", String(d0 === 0));
@@ -443,7 +479,17 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       rueda,
       cuadricula,
       jugarAbajo,
-      h("p.sel-ayuda", tiempo ? `↑ ↓ juego · ← → tiempo${nivel ? " · 1 2 3 nivel" : ""}${conAyuda ? " · ? ayuda" : ""} · Enter para jugar` : "↑ ↓ para elegir · Enter para jugar")
+      // Atajos del teclado (solo con ratón): cada tecla dibujada como una ficha.
+      h(
+        "div.sel-ayuda",
+        [
+          [["↑", "↓"], "juego"],
+          ...(tiempo ? [[["←", "→"], "tiempo"]] : []),
+          ...(nivel ? [[["1", "2", "3"], "nivel"]] : []),
+          ...(conAyuda ? [[["?"], "ayuda"]] : []),
+          [["Enter"], "jugar"],
+        ].map(([teclas, texto]) => h("span.sel-atajo", ...teclas.map((t) => h("kbd", t)), h("span", texto)))
+      )
     )
     )
   );
