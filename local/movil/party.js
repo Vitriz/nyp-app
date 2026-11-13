@@ -1,6 +1,6 @@
 // Modo partida: conectado a PARTY (la TV). Esperar, jugar y ver resultados.
 import { conectar, almacen } from "../comun/conexion.js";
-import { h, cambiarPantalla, avatar, banner, crearReloj, textoPuesto, textoCuenta, servidor, detalleJugador } from "../comun/ui.js";
+import { h, cambiarPantalla, avatar, banner, crearReloj, textoPuesto, textoCuenta, piezaCuenta, servidor, detalleJugador } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { actualizarPaquete } from "../solo/paquete.js";
 
@@ -252,7 +252,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
         const t = textoCuenta(estado.fin - con.ahora());
         if (t !== ultimo) {
           ultimo = t;
-          caja.replaceChildren(h("span.ficha.cuenta-num.aparece", t));
+          caja.replaceChildren(piezaCuenta(t));
           navigator.vibrate?.(30);
         }
       }, 100);

@@ -1,5 +1,5 @@
 // Modo solo: los mismos juegos que en PARTY, ejecutados en el propio móvil, con récords personales.
-import { h, cambiarPantalla, banner, avatar, crearReloj, textoCuenta, detalleJugador } from "../comun/ui.js";
+import { h, cambiarPantalla, banner, avatar, crearReloj, textoCuenta, piezaCuenta, detalleJugador } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { almacen } from "../comun/conexion.js";
 import { leerPaquete, diccionarioIncluido, desbloquearDiccionario, actualizarIncluido } from "./paquete.js";
@@ -37,12 +37,29 @@ function leerRecords() {
   }
 }
 
-// Los récords van con su tiempo: no es lo mismo 30 s que 2 minutos ("juego@segundos").
-// Los antiguos (solo "juego") cuentan como récord del tiempo normal de ese juego.
+// Los récords van con su tiempo y su nivel: "juego@segundos" (nivel medio) o "juego@segundos@facil|dificil".
+// Los antiguos (solo "juego") cuentan como récord del tiempo normal de ese juego, en nivel medio.
 const TIEMPOS = [30, 45, 60, 90, 120, 180];
+const NIVELES = ["facil", "normal", "dificil"];
+const NOMBRES_NIVEL = { facil: "Fácil", normal: "Medio", dificil: "Difícil" };
 
-function recordDe(records, meta, seg) {
-  return records[`${meta.id}@${seg}`] ?? (seg === meta.duracionBase ? records[meta.id] ?? null : null);
+function claveRecord(id, seg, nivel = "normal") {
+  return nivel === "normal" ? `${id}@${seg}` : `${id}@${seg}@${nivel}`;
+}
+
+function recordDe(records, meta, seg, nivel = "normal") {
+  const r = records[claveRecord(meta.id, seg, nivel)];
+  if (r || nivel !== "normal") return r ?? null;
+  return seg === meta.duracionBase ? records[meta.id] ?? null : null;
+}
+
+/** Nivel elegido para cada juego (se recuerda en el móvil). */
+function leerNiveles() {
+  try {
+    return JSON.parse(almacen.leer("nyp-niveles") ?? "{}");
+  } catch {
+    return {};
+  }
 }
 
 /** Tiempo elegido para cada juego (se recuerda en el móvil). */
@@ -57,9 +74,9 @@ function leerTiempos() {
 /** Guarda el resultado si es récord para ese tiempo. Devuelve el récord anterior (o null). */
 function apuntar(meta, r) {
   const records = leerRecords();
-  const anterior = recordDe(records, meta, meta.duracion);
+  const anterior = recordDe(records, meta, meta.duracion, meta.dificultad);
   if (r.valor != null && (!anterior || r.valor > anterior.valor)) {
-    records[`${meta.id}@${meta.duracion}`] = { valor: r.valor, texto: r.texto, detalle: r.detalle?.slice(0, 30) ?? null, fecha: new Date().toISOString().slice(0, 10) };
+    records[claveRecord(meta.id, meta.duracion, meta.dificultad)] = { valor: r.valor, texto: r.texto, detalle: r.detalle?.slice(0, 30) ?? null, fecha: new Date().toISOString().slice(0, 10) };
     almacen.guardar("nyp-records", JSON.stringify(records));
   }
   return anterior;
@@ -89,6 +106,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
     const conDiccionario = await cargarDiccionario();
     const records = leerRecords();
     const tiempos = leerTiempos();
+    const niveles = leerNiveles();
     const juegos = m.juegos.listaJuegos().filter((j) => j.disponible && !SIN_SOLO.has(j.id));
     mostrar({
       el: h(
@@ -96,7 +114,16 @@ export function entrarSolo({ app, perfil, alSalir }) {
         barra(h("button.icono-btn", { type: "button", onclick: alSalir, "aria-label": "Volver al inicio" }, "✕")),
         selectorJuegos({
           juegos: juegos.map((j) => ({ ...j, duracionBase: j.duracion, bloqueado: j.categoria === "palabras" && !conDiccionario })),
-          recordDe: (j, seg) => recordDe(records, j, seg),
+          recordDe: (j, seg, nv) => recordDe(records, j, seg, nv),
+          nivel: {
+            lista: NIVELES,
+            nombres: NOMBRES_NIVEL,
+            de: (j) => niveles[j.id] ?? "normal",
+            fijar: (j, nv) => {
+              niveles[j.id] = nv;
+              almacen.guardar("nyp-niveles", JSON.stringify(niveles));
+            },
+          },
           tiempo: {
             lista: (j) => [...new Set([...TIEMPOS, j.duracion])].sort((a, b) => a - b),
             de: (j) => tiempos[j.id] ?? j.duracion,
@@ -105,7 +132,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
               almacen.guardar("nyp-tiempos", JSON.stringify(tiempos));
             },
           },
-          alJugar: (j) => preparar({ ...j, duracion: tiempos[j.id] ?? j.duracion }),
+          alJugar: (j) => preparar({ ...j, duracion: tiempos[j.id] ?? j.duracion, dificultad: niveles[j.id] ?? "normal" }),
           alDesbloquear: sinDiccionario,
         })
       ),
@@ -178,7 +205,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
       const impl = motor.juegos.obtenerJuego(meta.id);
       const inicio = Date.now() + 4000; // 3, 2, 1 y ¡YA!
       const duracion = meta.duracion * 1000;
-      const ronda = impl.crear({ azar: motor.util.crearAzar(Date.now()), config: { pulsadorTipos: [] }, duracion, inicio });
+      const ronda = impl.crear({ azar: motor.util.crearAzar(Date.now()), config: { pulsadorTipos: [], dificultad: meta.dificultad ?? "normal" }, duracion, inicio });
       impl.vistaJugador(ronda, yo.id);
       cuenta(meta, impl, ronda, inicio, inicio + duracion);
     }, 60);
@@ -192,7 +219,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
       const txt = textoCuenta(s);
       if (txt !== ultimo) {
         ultimo = txt;
-        caja.replaceChildren(h("span.ficha.cuenta-num.aparece", txt));
+        caja.replaceChildren(piezaCuenta(txt));
         navigator.vibrate?.(30);
       }
       if (s <= 0) {
@@ -295,7 +322,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
         barra(),
         h(
           "div.espera",
-          h("span.suave", `${meta.nombre} · ${meta.duracion} s`),
+          h("span.suave", `${meta.nombre} · ${meta.duracion} s · ${NOMBRES_NIVEL[meta.dificultad ?? "normal"]}`),
           h("div.puesto-grande.aparece", record ? "🏆" : r.valor != null ? "👏" : "🙂"),
           h("h1", record ? (anterior ? "¡Nuevo récord!" : "¡Primer récord!") : r.valor != null ? "¡Bien jugado!" : "Esta vez no ha salido"),
           h("p", r.texto),

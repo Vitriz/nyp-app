@@ -2,32 +2,41 @@
 // y el presentador decide desde su mando si acierta (✔) o falla (✘).
 // Si falla, ese jugador ya no puede pulsar en esa pregunta y los demás sí.
 import { elegirDefiniciones } from "../lexico.js";
+import { nivelDificultad } from "../util.js";
 
-const LECTURA = 3000; // ms para leer cada pregunta antes de poder pulsar
+// Según el nivel (fácil, medio, difícil): segundos para leer, palabras y largo de las cuentas.
+const LECTURA = [4000, 3000, 2000];
+const PALABRAS = [{ largoMin: 4, largoMax: 6, nivelMax: 1 }, { largoMin: 4, largoMax: 9, nivelMax: 1 }, { largoMin: 6, largoMax: 11, nivelMax: 2 }];
+const OPS_CUENTA = [[2, 2], [3, 3], [4, 5]];
 
-function cadenaCalculo(azar) {
+function cadenaCalculo(azar, d = 0) {
   let v = azar.entero(2, 12);
   const pasos = [String(v)];
-  for (let k = 0; k < 3; k++) {
+  const n = azar.entero(...OPS_CUENTA[d + 1]);
+  for (let k = 0; k < n; k++) {
     const opciones = [["+", azar.entero(2, 15)]];
-    if (v > 3) opciones.push(["−", azar.entero(1, Math.min(v - 1, 12))]);
+    if (v > 3) opciones.push(["−", azar.entero(2, Math.min(v - 1, 12))]);
     if (v <= 30) opciones.push(["×", azar.entero(2, 4)]);
-    const divs = [2, 3, 4, 5].filter((d) => v % d === 0);
+    const divs = [2, 3, 4, 5].filter((d) => v % d === 0 && v / d >= 2);
     if (divs.length && v > 3) opciones.push(["÷", azar.elegir(divs)]);
-    const [op, n] = azar.elegir(opciones);
+    // Sin pasos que se repitan (+2 y +3) ni que se anulen (× 4 y ÷ 4).
+    const prev = pasos.length > 1 ? pasos.at(-1).split(" ") : null;
+    const inversa = { "+": "−", "−": "+", "×": "÷", "÷": "×" };
+    const buenas = opciones.filter(([o, m]) => !prev || (o !== prev[0] && !(o === inversa[prev[0]] && String(m) === prev[1])));
+    const [op, n] = azar.elegir(buenas.length ? buenas : opciones);
     v = op === "+" ? v + n : op === "−" ? v - n : op === "×" ? v * n : v / n;
     pasos.push(`${op} ${n}`);
   }
   return { pasos, r: v };
 }
 
-function preguntas(azar, tipos, n) {
-  const defs = elegirDefiniciones(azar, n * 2, { largoMin: 4, largoMax: 9, nivelMax: 1 });
+function preguntas(azar, tipos, n, d = 0) {
+  const defs = elegirDefiniciones(azar, n * 2, PALABRAS[d + 1]);
   const lista = [];
   for (let k = 0; k < n; k++) {
     const tipo = tipos[k % tipos.length];
     if (tipo === "calculo") {
-      const c = cadenaCalculo(azar);
+      const c = cadenaCalculo(azar, d);
       lista.push({ tipo, titulo: "Cálculo mental", pasos: c.pasos, solucion: String(c.r) });
     } else {
       const d = defs.pop();
@@ -53,7 +62,9 @@ export default {
 
   crear({ azar, config, inicio = Date.now() }) {
     const tipos = config?.pulsadorTipos?.length ? config.pulsadorTipos : ["definicion", "calculo", "revuelto"];
-    return { preguntas: preguntas(azar, azar.barajar(tipos), 40), i: 0, abre: inicio + LECTURA, pulsado: null, bloqueados: [], anterior: null, aciertos: {} };
+    const d = nivelDificultad(config);
+    const lectura = LECTURA[d + 1];
+    return { preguntas: preguntas(azar, azar.barajar(tipos), 40, d), lectura, i: 0, abre: inicio + lectura, pulsado: null, bloqueados: [], anterior: null, aciertos: {} };
   },
 
   publica(ronda) {
@@ -103,7 +114,7 @@ export default {
     const siguiente = (quien, ok) => {
       ronda.anterior = { n: ronda.i, solucion: p.solucion, quien, ok };
       ronda.i++;
-      ronda.abre = Date.now() + LECTURA;
+      ronda.abre = Date.now() + (ronda.lectura ?? 3000);
       ronda.pulsado = null;
       ronda.bloqueados = [];
     };

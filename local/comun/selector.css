@@ -69,11 +69,28 @@
   .sel-jugar { min-height: 4rem; font-size: 1.55rem; }
 }
 
-/* Tiempo de la partida (modo solo): botones pequeños */
-.sel-datos:has(.sel-tiempos) { grid-template-columns: 1fr; }
-.sel-tiempo-botones { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.2rem; }
-.sel-tiempo {
-  appearance: none; font: inherit; font-weight: 900; font-size: 0.95rem; padding: 0.3rem 0.65rem; border-radius: 0.6rem; cursor: pointer;
-  color: var(--texto); background: rgba(120, 160, 255, 0.14); border: 2px solid var(--borde-suave);
+/* Tiempo y nivel (modo solo): cada uno en su casilla, que gira como una rueda */
+.sel-datos:has(.sel-giro) { grid-template-columns: 1fr 1fr; }
+.sel-datos:has(.sel-giro) .record { grid-column: 1 / -1; }
+.sel-giro { align-items: center; padding: 0.35rem 0.4rem 0.4rem; }
+.sel-giro-caja { display: flex; flex-direction: column; align-items: stretch; width: 100%; }
+.sel-giro-flecha {
+  appearance: none; font: inherit; font-size: 0.85rem; line-height: 1; padding: 0.3rem 0; cursor: pointer; border-radius: 0.5rem;
+  color: var(--texto); background: rgba(120, 160, 255, 0.14); border: 1.5px solid var(--borde-suave);
 }
-.sel-tiempo.elegido { background: linear-gradient(180deg, #fff, var(--ficha-2)); color: var(--ficha-texto); border-color: var(--oro); }
+.sel-giro-flecha:active { transform: translateY(0.08rem); }
+.sel-giro-flecha:disabled { opacity: 0.3; cursor: default; }
+.sel-giro-ventana {
+  display: flex; flex-direction: column; align-items: center; overflow: hidden; touch-action: none; cursor: ns-resize; user-select: none;
+  margin: 0.2rem 0; height: 4.4rem; justify-content: center;
+  mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent); -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+}
+.sel-giro-otro { font-weight: 800; font-size: 0.85rem; color: var(--texto-suave); height: 1.2rem; line-height: 1.2rem; white-space: nowrap; }
+.sel-giro-valor {
+  font-family: var(--fuente-ficha); font-weight: 900; font-size: 1.15rem; line-height: 1.9rem; height: 1.9rem; padding: 0 0.7rem; white-space: nowrap;
+  border-radius: 0.55rem; background: linear-gradient(180deg, #fff, var(--ficha-2)); color: var(--ficha-texto); box-shadow: 0 0 0 2px var(--oro);
+}
+.sel-giro-valor.sube { animation: giro-sube 200ms var(--curva); }
+.sel-giro-valor.baja { animation: giro-baja 200ms var(--curva); }
+@keyframes giro-sube { from { transform: translateY(0.9rem); opacity: 0.4; } }
+@keyframes giro-baja { from { transform: translateY(-0.9rem); opacity: 0.4; } }

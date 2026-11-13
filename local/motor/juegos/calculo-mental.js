@@ -18,24 +18,45 @@ function expresion(inicio, ops) {
 }
 
 function cadena(azar, nivel, PASOS) {
+  // Si alguna vez no queda más remedio que repetir o anular un paso, se prueba otra cadena.
+  let c = null;
+  for (let intento = 0; intento < 40; intento++) {
+    c = cadenaUnaVez(azar, nivel, PASOS);
+    if (c.limpia) break;
+  }
+  return c;
+}
+
+function cadenaUnaVez(azar, nivel, PASOS) {
+  let limpia = true;
   let v = azar.entero(2, nivel < 2 ? 12 : 20);
   const inicio = v;
   const ops = [];
   const pasos = [String(v)];
+  const vistos = new Set([v]);
+  const INVERSA = { "+": "-", "-": "+", "*": "/", "/": "*" };
   for (let k = 1; k < PASOS; k++) {
-    const opciones = [];
-    opciones.push(["+", azar.entero(1, nivel < 2 ? 15 : 30)]);
-    if (v > 1) opciones.push(["-", azar.entero(1, Math.min(v - 1, nivel < 2 ? 15 : 40))]);
+    const prev = ops.at(-1);
+    let opciones = [];
+    opciones.push(["+", azar.entero(2, nivel < 2 ? 15 : 30)]);
+    if (v > 3) opciones.push(["-", azar.entero(2, Math.min(v - 1, nivel < 2 ? 15 : 40))]);
     const mult = [2, 3, 4, 5].filter((m) => v * m <= MAX);
     if (mult.length && v > 1) opciones.push(["*", azar.elegir(mult)]);
-    const divs = [2, 3, 4, 5, 6, 7, 8, 9].filter((d) => v % d === 0 && v / d >= 1);
+    const divs = [2, 3, 4, 5, 6, 7, 8, 9].filter((d) => v % d === 0 && v / d >= 2);
     if (divs.length && v > 3) opciones.push(["/", azar.elegir(divs)], ["/", azar.elegir(divs)]); // más peso a dividir cuando se puede
+    // Nada de pasos que se anulen o se repitan: ni la misma operación dos veces seguidas (+1 y +1),
+    // ni deshacer la anterior (× 4 y ÷ 4), ni volver a un número que ya ha salido.
+    const calc = ([op, n]) => (op === "+" ? v + n : op === "-" ? v - n : op === "*" ? v * n : v / n);
+    const buenas = opciones.filter(([op, n]) => !(prev && (op === prev[0] || (op === INVERSA[prev[0]] && n === prev[1]))) && !vistos.has(calc([op, n])));
+    if (buenas.length) opciones = buenas;
+    else limpia = false;
     const [op, n] = azar.elegir(opciones);
     v = op === "+" ? v + n : op === "-" ? v - n : op === "*" ? v * n : v / n;
     pasos.push(`${SIMBOLO[op]} ${n}`);
     ops.push([op, n]);
+    vistos.add(v);
   }
-  return { pasos, expresion: expresion(inicio, ops), r: v };
+  return { pasos, expresion: expresion(inicio, ops), r: v, limpia };
 }
 
 export default {

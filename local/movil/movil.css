@@ -561,3 +561,4 @@ html, body { height: 100dvh; }
 .lista-mini .item .respuestas { font-size: 0.8rem; }
 .espera { justify-content: safe center; overflow-y: auto; }
 .rv3 .fila-acciones .pl-comprobar { white-space: nowrap; font-size: 1.1rem; }
+.espera .cuenta-ya { font-size: min(5.5rem, calc(var(--ancho) / 4.4)); }

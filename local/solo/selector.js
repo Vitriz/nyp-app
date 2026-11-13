@@ -11,17 +11,84 @@ const PASO = 3.9; // rem entre elementos de la rueda
 let ultimoId = null; // al volver, la rueda sigue en el último juego
 
 /**
+ * Una casilla que gira como una rueda (de arriba a abajo): ▲ y ▼ van de una en una,
+ * y también se puede arrastrar con el dedo o usar la rueda del ratón.
+ * alPaso(+1 | -1): pide pasar al siguiente o al anterior.
+ */
+function ruedaValor(etiqueta, alPaso) {
+  const arriba = h("button.sel-giro-flecha", { type: "button", "aria-label": `${etiqueta}: anterior` }, "▲");
+  const abajo = h("button.sel-giro-flecha", { type: "button", "aria-label": `${etiqueta}: siguiente` }, "▼");
+  const ventana = h("div.sel-giro-ventana");
+  const el = h("div.sel-dato.sel-giro", h("small", etiqueta), h("div.sel-giro-caja", arriba, ventana, abajo));
+  arriba.addEventListener("click", () => alPaso(-1));
+  abajo.addEventListener("click", () => alPaso(1));
+  let arrastre = null;
+  ventana.addEventListener("pointerdown", (ev) => {
+    arrastre = { y: ev.clientY, id: ev.pointerId };
+    ventana.setPointerCapture(ev.pointerId);
+  });
+  ventana.addEventListener("pointermove", (ev) => {
+    if (!arrastre || ev.pointerId !== arrastre.id) return;
+    const paso = parseFloat(getComputedStyle(document.documentElement).fontSize) * 1.5;
+    const dy = arrastre.y - ev.clientY; // dedo hacia arriba: el siguiente
+    if (Math.abs(dy) >= paso) {
+      alPaso(Math.sign(dy));
+      arrastre.y = ev.clientY;
+    }
+  });
+  const soltar = () => (arrastre = null);
+  ventana.addEventListener("pointerup", soltar);
+  ventana.addEventListener("pointercancel", soltar);
+  let acumulado = 0;
+  ventana.addEventListener(
+    "wheel",
+    (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      acumulado += ev.deltaY;
+      if (Math.abs(acumulado) >= 40) {
+        alPaso(Math.sign(acumulado));
+        acumulado = 0;
+      }
+    },
+    { passive: false }
+  );
+  let ultimo = null;
+  return {
+    el,
+    /** textos: los valores ya escritos; i: el elegido. */
+    pintar(textos, i) {
+      const dir = ultimo == null || ultimo.textos !== textos.join() ? 0 : Math.sign(i - ultimo.i);
+      ultimo = { textos: textos.join(), i };
+      ventana.replaceChildren(
+        h("span.sel-giro-otro", textos[i - 1] ?? ""),
+        h(`span.sel-giro-valor${dir > 0 ? ".sube" : dir < 0 ? ".baja" : ""}`, textos[i] ?? ""),
+        h("span.sel-giro-otro", textos[i + 1] ?? "")
+      );
+      arriba.disabled = i <= 0;
+      abajo.disabled = i >= textos.length - 1;
+    },
+  };
+}
+
+const textoSegundos = (s) => (s < 60 || s % 60 ? `${s} s` : `${s / 60} min`);
+
+/**
  * juegos: [{ id, nombre, categoria, descripcion, duracion, bloqueado }]
- * recordDe(juego, segundos) -> { texto } | null   (sin él no hay récords, p. ej. en la TV de PARTY)
+ * recordDe(juego, segundos, nivel) -> { texto } | null   (sin él no hay récords, p. ej. en la TV de PARTY)
  * tiempo: { lista: [s…], de(juego) -> s, fijar(juego, s) }   (para elegir la duración; ← → también)
+ * nivel: { lista: [id…], nombres: { id: texto }, de(juego) -> id, fijar(juego, id) }   (1 2 3 en el teclado)
  * textoJugar: texto del botón grande
  * alJugar(juego) / alDesbloquear(juego)
  */
-export function selectorJuegos({ juegos, recordDe = null, tiempo = null, textoJugar = "¡Jugar! ▶", alJugar, alDesbloquear }) {
+export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel = null, textoJugar = "¡Jugar! ▶", alJugar, alDesbloquear }) {
   const conRecords = recordDe != null;
   const segundosDe = (j) => tiempo?.de(j) ?? j.duracion;
   const listaDe = (j) => (typeof tiempo?.lista === "function" ? tiempo.lista(j) : tiempo?.lista ?? [j.duracion]);
-  const conCopa = (j) => conRecords && listaDe(j).some((s) => recordDe(j, s));
+  const nivelDe = (j) => nivel?.de(j) ?? "normal";
+  const conCopa = (j) => conRecords && listaDe(j).some((s) => (nivel?.lista ?? ["normal"]).some((nv) => recordDe(j, s, nv)));
+  const ruedaTiempo = tiempo ? ruedaValor("Tiempo", (p) => pasoTiempo(p)) : null;
+  const ruedaNivel = nivel ? ruedaValor("Nivel", (p) => pasoNivel(p)) : null;
   const n = juegos.length;
   let sel = Math.max(0, juegos.findIndex((j) => j.id === ultimoId));
   const antes = new Array(n).fill(null);
@@ -42,10 +109,28 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, textoJu
   const ficha = h("div.sel-ficha.tarjeta");
   const contador = h("span.sel-contador");
 
+  const recordEl = h("div.sel-dato.record");
+
+  /** Solo las casillas de tiempo y nivel y el récord (sin rehacer la ficha: así no se corta el arrastre). */
+  function pintarAjustes() {
+    const j = juegos[sel];
+    const seg = segundosDe(j);
+    const nv = nivelDe(j);
+    if (ruedaTiempo) {
+      const l = listaDe(j);
+      ruedaTiempo.pintar(l.map(textoSegundos), Math.max(0, l.indexOf(seg)));
+    }
+    if (ruedaNivel) ruedaNivel.pintar(nivel.lista.map((x) => nivel.nombres[x]), Math.max(0, nivel.lista.indexOf(nv)));
+    if (conRecords) {
+      const r = recordDe(j, seg, nv);
+      recordEl.replaceChildren(h("small", `Tu récord · ${textoSegundos(seg)}${nivel ? ` · ${nivel.nombres[nv]}` : ""}`), h("b", r ? `🏆 ${r.texto}` : "—"));
+    }
+  }
+
   function pintarFicha() {
     const j = juegos[sel];
     const seg = segundosDe(j);
-    const r = conRecords ? recordDe(j, seg) : null;
+    pintarAjustes();
     const jugar = h(
       `button.boton.acento.grande.sel-jugar${j.bloqueado ? ".bloqueado" : ""}`,
       { type: "button", onclick: () => elegir() },
@@ -60,19 +145,11 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, textoJu
       h("p.sel-desc", j.descripcion),
       h(
         "div.sel-datos",
-        tiempo
-          ? h(
-              "div.sel-dato.sel-tiempos",
-              h("small", "Tiempo"),
-              h(
-                "div.sel-tiempo-botones",
-                listaDe(j).map((s) =>
-                  h(`button.sel-tiempo${s === seg ? ".elegido" : ""}`, { type: "button", onclick: () => cambiarTiempo(s) }, s < 60 || s % 60 ? `${s} s` : `${s / 60} min`)
-                )
-              )
-            )
-          : h("div.sel-dato", h("small", "Tiempo"), h("b", `${seg} s`)),
-        conRecords ? h("div.sel-dato.record", h("small", `Tu récord en ${seg < 60 || seg % 60 ? `${seg} s` : `${seg / 60} min`}`), h("b", r ? `🏆 ${r.texto}` : "—")) : h("div.sel-dato", h("small", "Tipo"), h("b", j.categoria === "palabras" ? "Palabras" : j.categoria === "pulsador" ? "Pulsador" : "Números"))
+        ruedaTiempo ? ruedaTiempo.el : h("div.sel-dato", h("small", "Tiempo"), h("b", `${seg} s`)),
+        ruedaNivel ? ruedaNivel.el : null,
+        conRecords
+          ? recordEl
+          : h("div.sel-dato", h("small", "Tipo"), h("b", j.categoria === "palabras" ? "Palabras" : j.categoria === "pulsador" ? "Pulsador" : "Números"))
       ),
       jugar
     );
@@ -85,10 +162,22 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, textoJu
   function cambiarTiempo(s) {
     const j = juegos[sel];
     if (!tiempo || j.bloqueado || s == null) return;
+    if (s === segundosDe(j)) return;
     tiempo.fijar(j, s);
     navigator.vibrate?.(5);
-    pintarFicha();
+    pintarAjustes();
   }
+  function pasoNivel(paso) {
+    const j = juegos[sel];
+    if (!nivel || j.bloqueado) return;
+    const l = nivel.lista;
+    const i = Math.max(0, Math.min(l.length - 1, l.indexOf(nivelDe(j)) + paso));
+    if (l[i] === nivelDe(j)) return;
+    nivel.fijar(j, l[i]);
+    navigator.vibrate?.(5);
+    pintarAjustes();
+  }
+
   function pasoTiempo(paso) {
     if (!tiempo) return false;
     const l = listaDe(juegos[sel]);
@@ -183,6 +272,11 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, textoJu
     if (t === "ArrowRight") return tiempo ? pasoTiempo(1) : mover(1);
     if (t === "PageUp") return mover(-3);
     if (t === "PageDown") return mover(3);
+    if (nivel && /^[1-9]$/.test(t) && nivel.lista[Number(t) - 1]) {
+      const j = juegos[sel];
+      if (!j.bloqueado) nivel.fijar(j, nivel.lista[Number(t) - 1]);
+      return pintarAjustes();
+    }
     if (t === "OK" || t === " ") return elegir();
     return false;
   });
@@ -199,7 +293,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, textoJu
       "div.sel-lista",
       h("div.sel-titulo", h("span", "Elige juego"), contador),
       rueda,
-      h("p.sel-ayuda", tiempo ? "↑ ↓ juego · ← → tiempo · Enter para jugar" : "↑ ↓ para elegir · Enter para jugar")
+      h("p.sel-ayuda", tiempo ? `↑ ↓ juego · ← → tiempo${nivel ? " · 1 2 3 nivel" : ""} · Enter para jugar` : "↑ ↓ para elegir · Enter para jugar")
     )
     )
   );

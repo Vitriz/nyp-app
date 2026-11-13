@@ -63,7 +63,9 @@ export function montar(cuerpo, e, ctx) {
   function pintarLista() {
     puntos.textContent = d.puntos;
     const n = d.encontradas.length;
-    cuantas.textContent = `· ${n} ${n === 1 ? "palabra" : "palabras"}`;
+    cuantas.textContent = d.ayuda
+      ? `· ${n} ${n === 1 ? "palabra" : "palabras"} · quedan ${Math.max(0, d.ayuda.total - d.ayuda.halladas)} comunes`
+      : `· ${n} ${n === 1 ? "palabra" : "palabras"}`;
     lista.replaceChildren(
       ...(d.encontradas.length
         ? d.encontradas.map((w) => h(`span.pg-chip${w.tuti ? ".tuti" : ""}`, h("b", w.forma.toUpperCase()), h("small", `+${w.pts}`)))

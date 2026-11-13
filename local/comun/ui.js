@@ -172,6 +172,12 @@ export function detalleJugador(detalle, { max = Infinity, clase = "" } = {}) {
   );
 }
 
+/** Lo que se pinta en la cuenta atrás: los números en ficha y el ¡YA! como un rótulo que estalla. */
+export function piezaCuenta(txt) {
+  if (txt !== "¡YA!") return h("span.ficha.cuenta-num.aparece", txt);
+  return h("span.cuenta-ya", h("span.cuenta-ya-rayos"), h("span.cuenta-ya-texto", "¡YA!"));
+}
+
 export function textoPuesto(p) {
   return p == null ? "–" : `${p}º`;
 }

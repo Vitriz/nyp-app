@@ -1,6 +1,11 @@
 // PARAULÓGICO · 7 letras en panal; la del centro es obligatoria y las letras se pueden repetir.
 // Puntos: 3 letras = 1, 4 letras = 2, 5 o más = tantas como letras; usar las 7 letras = +10.
 import { clave, formaVisible, pangramasPosibles, palabrasDeConjunto, letrasDeMascara, indiceLetra, mascaraDe } from "../lexico.js";
+import { nivelDificultad } from "../util.js";
+
+// Cuántas palabras comunes tiene el panal según el nivel: [mínimo, máximo, ideal].
+// Fácil: muchas (y se dice cuántas quedan); medio: como siempre; difícil: pocas.
+const PANAL = [[150, 450, 250], [60, 300, 150], [25, 90, 55]];
 
 const RARAS = new Set(["ñ", "x", "k", "w", "q", "j", "z", "y", "h", "v", "f"]);
 
@@ -9,18 +14,19 @@ function puntosDe(c, esTuti) {
   return base + (esTuti ? 10 : 0);
 }
 
-function generar(azar) {
+function generar(azar, d = 0) {
+  const [min, max, ideal] = PANAL[d + 1];
   const pangramas = pangramasPosibles();
   let mejor = null;
-  for (let intento = 0; intento < 60; intento++) {
+  for (let intento = 0; intento < 80; intento++) {
     const p = azar.elegir(pangramas);
     const letras = letrasDeMascara(p.mascara);
     const centros = azar.barajar(letras.filter((l) => !RARAS.has(l)));
     for (const centro of centros.slice(0, 3)) {
       const { todas, comunes } = palabrasDeConjunto(p.mascara, 1 << indiceLetra(centro));
       const cand = { mascara: p.mascara, letras, centro, todas, comunes };
-      if (comunes.length >= 40 && comunes.length <= 450) return cand;
-      if (!mejor || Math.abs(comunes.length - 150) < Math.abs(mejor.comunes.length - 150)) mejor = cand;
+      if (comunes.length >= min && comunes.length <= max) return cand;
+      if (!mejor || Math.abs(comunes.length - ideal) < Math.abs(mejor.comunes.length - ideal)) mejor = cand;
     }
   }
   return mejor;
@@ -33,9 +39,11 @@ export default {
   duracion: 120,
   descripcion: "Forma palabras de 3 o más letras con las del panal. La del centro es obligatoria y puedes repetir letras. Cuanto más larga, más puntos; usar las 7 letras da +10.",
 
-  crear({ azar }) {
-    const g = generar(azar);
+  crear({ azar, config }) {
+    const d = nivelDificultad(config);
+    const g = generar(azar, d);
     return {
+      ayuda: d < 0, // en fácil se dice cuántas palabras comunes quedan
       centro: g.centro,
       letras: azar.barajar(g.letras.filter((l) => l !== g.centro)),
       mascara: g.mascara,
@@ -51,7 +59,9 @@ export default {
 
   vistaJugador(ronda, id) {
     const j = this.estadoJugador(ronda, id);
-    return { centro: ronda.centro, letras: ronda.letras, encontradas: j.encontradas, puntos: j.puntos, ultimo: j.ultimo };
+    const comunes = ronda.ayuda ? new Set(ronda.comunes) : null;
+    const ayuda = comunes && { total: comunes.size, halladas: j.encontradas.filter((e) => comunes.has(e.clave)).length };
+    return { centro: ronda.centro, letras: ronda.letras, encontradas: j.encontradas, puntos: j.puntos, ultimo: j.ultimo, ayuda };
   },
 
   vistaTV(ronda) {

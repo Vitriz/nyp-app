@@ -306,3 +306,21 @@ html, body {
 .det-tuti, .det-mejor { background: linear-gradient(180deg, #ffe48a, #f0c64a); border-color: #f0c64a; color: #3a2a00; }
 .det-paso { background: rgba(120, 160, 255, 0.14); border-color: var(--borde-suave); color: var(--texto); font-variant-numeric: tabular-nums; }
 .det-mas { background: transparent; border-style: dashed; border-color: var(--borde-suave); color: var(--texto-suave); }
+
+/* ---------- ¡YA! de la cuenta atrás: un rótulo inclinado que estalla ---------- */
+.cuenta-ya { position: relative; display: grid; place-items: center; font-size: 6rem; animation: ya-entra 520ms cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+.cuenta-ya-texto {
+  position: relative; font-family: var(--fuente-ficha); font-weight: 900; line-height: 1; letter-spacing: 0.02em; white-space: nowrap;
+  padding: 0.12em 0.4em 0.16em; border-radius: 0.28em; transform: rotate(-7deg);
+  color: #3a2200; background: linear-gradient(180deg, #fff3b0 0%, #ffd34d 45%, #f5a623 100%);
+  box-shadow: 0 0.09em 0 #b86e0a, 0 0.2em 0.5em rgba(0, 0, 0, 0.35), inset 0 0.04em 0 rgba(255, 255, 255, 0.8);
+  text-shadow: 0 0.03em 0 rgba(255, 255, 255, 0.6);
+}
+.cuenta-ya-rayos {
+  position: absolute; width: 2.6em; height: 2.6em; border-radius: 50%; z-index: -1;
+  background: repeating-conic-gradient(rgba(255, 215, 90, 0.35) 0 9deg, transparent 9deg 22deg);
+  -webkit-mask: radial-gradient(circle, #000 35%, transparent 70%); mask: radial-gradient(circle, #000 35%, transparent 70%);
+  animation: ya-rayos 1.2s linear both;
+}
+@keyframes ya-entra { 0% { transform: scale(0.2); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes ya-rayos { from { transform: scale(0.4) rotate(0deg); opacity: 0; } 30% { opacity: 1; } to { transform: scale(1.1) rotate(40deg); } }
