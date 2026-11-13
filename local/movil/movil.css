@@ -657,3 +657,10 @@ html, body { height: 100dvh; }
 .lr-res-hecho { background: linear-gradient(180deg, #e3f6fb, #b9e5f1) !important; }
 .lr-res-hecho.exacto { background: linear-gradient(180deg, #c9f2dc, var(--bien)) !important; }
 .lr2 .lr-historial { gap: 0.4rem; }
+
+/* Llegar al resultado: con la quinta operación se acaba (sin huecos nuevos ni números abajo) */
+.lr2.completo .lr-montaje:not(.lr-hecha) { display: none; }
+.lr2.completo .lr-fichas { min-height: 0; }
+.lr-res-hecho.lejos { background: linear-gradient(180deg, #ffd9d5, #f2a39c) !important; color: #5a1410; }
+.lr-aviso.lr-final { font-size: 1.1rem; font-weight: 900; padding: 0.4rem 0; }
+.lr2 .lr-hecha .lr-hueco { height: 2.9rem; }

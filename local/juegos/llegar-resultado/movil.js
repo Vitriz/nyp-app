@@ -48,15 +48,17 @@ export function montar(cuerpo, e, ctx) {
   const deshacer = h("button.boton.suave", { type: "button", onclick: () => { ops.pop(); limpiar(); enviar(); pintar(); } }, "↶ Deshacer");
   const borrar = botonMantener("Borrar todo", () => { ops = []; limpiar(); enviar(); pintar(); }, { clase: ".suave", ms: 700 });
   const centro = h("div.lr-centro", historial, montaje, aviso);
+  const MAX_OPS = Math.min(5, base.length - 1);
 
-  cuerpo.append(
-    h(
-      "div.lr.lr2",
+  const lr = h("div.lr.lr2");
+  cuerpo.append(lr);
+  lr.append(
+    ...[
       h("div.lr-arriba", h("div.lr-objetivo", h("span.suave", "Objetivo"), h("span.ficha.oscura.lr-numero", String(objetivo))), mejor),
       mejorPasos,
       centro,
-      h("div.lr-abajo", fichas, botonesOp, h("div.pl-botones", deshacer, borrar))
-    )
+      h("div.lr-abajo", fichas, botonesOp, h("div.pl-botones", deshacer, borrar)),
+    ]
   );
 
   /** Repite las operaciones: qué números quedan, cuáles son resultados y los pasos hechos. */
@@ -124,11 +126,18 @@ export function montar(cuerpo, e, ctx) {
   function pintar() {
     const { lista, pasos } = estado();
     const enHueco = new Set(huecos.filter((x) => x != null));
+    // Como mucho 5 operaciones (con 6 números ya no quedan más): la quinta se comprueba y ahí se acaba;
+    // ni salen huecos nuevos ni su resultado vuelve a los números de abajo.
+    const completo = ops.length >= MAX_OPS;
+    lr.classList.toggle("completo", completo);
     fichas.replaceChildren(
-      ...lista.map((x, i) =>
-        h(`button.ficha.lr-ficha${x.hecho ? ".nuevo" : ""}${enHueco.has(i) ? ".puesta" : ""}`, { type: "button", "data-i": i }, numTexto(x.v))
-      )
+      ...(completo
+        ? []
+        : lista.map((x, i) =>
+            h(`button.ficha.lr-ficha${x.hecho ? ".nuevo" : ""}${enHueco.has(i) ? ".puesta" : ""}`, { type: "button", "data-i": i }, numTexto(x.v))
+          ))
     );
+    botonesOp.querySelectorAll(".lr-op").forEach((b) => (b.disabled = completo));
     pintarHueco(huecoA, 0, lista);
     pintarHueco(huecoB, 1, lista);
     huecoOp.textContent = signo ? SIMBOLO[signo] : "";
@@ -143,6 +152,12 @@ export function montar(cuerpo, e, ctx) {
     huecoR.disabled = !p?.vale;
     aviso.className = `lr-aviso${p && !p.vale ? " mal" : p?.vale ? " ok" : ""}`;
     aviso.textContent = p ? (p.vale ? (p.v === objetivo ? "🎉 ¡Exacto!" : "✔ Vale") : p.motivo) : huecos[0] == null ? "Toca un número" : !signo ? "Elige un signo" : huecos[1] == null ? "Toca otro número" : "";
+    if (completo) {
+      const final = pasos.at(-1)?.r;
+      const exacto = final === objetivo;
+      aviso.className = `lr-aviso lr-final${exacto ? " ok" : " mal"}`;
+      aviso.textContent = exacto ? "🎉 ¡Exacto! Has llegado al objetivo" : `Te has quedado a ${numTexto(Math.abs(final - objetivo))} · ↶ Deshacer para probar otra cosa`;
+    }
     // Si vale, la operación sube a la lista al instante (justo después de pintarla).
     clearTimeout(subiendo);
     subiendo = p?.vale ? setTimeout(usarResultado, 0) : 0;
@@ -176,6 +191,9 @@ export function montar(cuerpo, e, ctx) {
     const enPantalla = m?.pasos?.length && m.pasos.every((t) => hechos.includes(t));
     mejorPasos.replaceChildren(...(m?.pasos?.length && !enPantalla ? [h("span.suave", "Así llegaste: "), m.pasos.join(" · ")] : []));
     deshacer.disabled = !ops.length;
+    // El resultado de la quinta, en verde si acierta y en rojo si no.
+    const ultima = historial.lastElementChild?.lastElementChild;
+    if (completo && ultima) ultima.classList.add(pasos.at(-1)?.r === objetivo ? "exacto" : "lejos");
   }
 
   function tocarNumero(i) {
