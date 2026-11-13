@@ -1,9 +1,10 @@
 // Perfil del jugador: nombre, color de las letras, fondo del banner y foto (o iniciales).
-import { h, banner } from "../comun/ui.js";
+import { h, banner, SOMBREROS, ANIMACIONES } from "../comun/ui.js";
 import { almacen } from "../comun/conexion.js";
 import { campoTexto } from "../comun/teclado.js";
 import { selectorColor } from "../comun/color.js";
 import { editarFoto, cuadrado } from "./recorte.js";
+import { premiosGanados, hazanaDe } from "../solo/hazanas.js";
 
 export const FONDOS = ["#5fb7d0", "#7c9cf0", "#6cc49a", "#e9c75a", "#e7a05c", "#e46a62", "#f08fb5", "#c58be0", "#ffffff", "#1d3f86", "#0b1d4f", "#2b2b2b"];
 export const TEXTOS = ["#0a1b4a", "#ffffff", "#000000", "#e9c75a", "#e46a62", "#6cc49a", "#5fb7d0", "#c58be0"];
@@ -151,10 +152,36 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, titulo = "Tu perfi
     }
   }
 
-  const pestañas = { nombre: "Nombre", colores: "Colores", foto: "Foto" };
+  // Premios: sombreros y animaciones que se ganan con las hazañas (los que faltan, con candado).
+  const cajaPremios = h("div.premios");
+  const pintarPremios = () => {
+    const ganados = premiosGanados();
+    const opcion = (tipo, id, texto, icono) => {
+      const ok = id === null || ganados[tipo === "sombrero" ? "sombreros" : "animaciones"].has(id);
+      const elegido = (p[tipo] ?? null) === id;
+      const de = id && !ok ? hazanaDe(tipo, id) : null;
+      return h(
+        `button.premio${elegido ? ".elegido" : ""}${ok ? "" : ".bloqueado"}`,
+        { type: "button", disabled: !ok, title: de ? `Se consigue con la hazaña «${de.nombre}»` : texto, onclick: () => ((p[tipo] = id), pintarPremios(), pintarVista()) },
+        h("span.premio-icono", ok ? icono : "🔒"),
+        h("small", ok ? texto : de?.nombre ?? texto)
+      );
+    };
+    cajaPremios.replaceChildren(
+      h("span.etiqueta", "Sombrero"),
+      h("div.premios-fila", opcion("sombrero", null, "Ninguno", "🚫"), Object.entries(SOMBREROS).map(([id, e]) => opcion("sombrero", id, id[0].toUpperCase() + id.slice(1), e))),
+      h("span.etiqueta", "Animación"),
+      h("div.premios-fila", opcion("animacion", null, "Ninguna", "🚫"), Object.entries(ANIMACIONES).map(([id, t]) => opcion("animacion", id, t, { salto: "🦘", giro: "🌀", baile: "💃", brillo: "✨" }[id]))),
+      h("p.suave.premios-nota", "Se desbloquean con las 🎖️ Hazañas de «Jugar solo».")
+    );
+  };
+  pintarPremios();
+
+  const pestañas = { nombre: "Nombre", colores: "Colores", foto: "Foto", premios: "Premios" };
   const paneles = {
     nombre: h("div.panel-perfil", campo.visor, campo.teclado),
     colores: h("div.panel-perfil", interruptores, cajaColores),
+    premios: h("div.panel-perfil", cajaPremios),
     foto: h(
       "div.panel-perfil",
       h("button.boton.acento.grande", { type: "button", onclick: hacerFoto }, "📸 Hacer una foto"),

@@ -60,7 +60,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
       case "necesitoNombre":
         // Entramos con el perfil del móvil: no hace falta escribir nada.
         almacen.guardar("nyp-token", null);
-        con.enviar({ t: "unirse", nombre: perfil.nombre, color: perfil.color, colorTexto: perfil.colorTexto, contorno: perfil.contorno ?? null, foto: perfil.foto });
+        con.enviar({ t: "unirse", nombre: perfil.nombre, color: perfil.color, colorTexto: perfil.colorTexto, contorno: perfil.contorno ?? null, foto: perfil.foto, sombrero: perfil.sombrero ?? null, animacion: perfil.animacion ?? null });
         break;
       case "bienvenida":
         almacen.guardar("nyp-token", m.token);
@@ -194,7 +194,14 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
           const t = e.sala ?? {};
           mensaje.textContent =
             e.fase === "nueva" ? "Preparando la sala…"
-            : t.campeon ? (t.campeon === e.yo.id ? "🏆 ¡Has ganado el torneo!" : `🏆 Campeón: ${e.jugadores.find((j) => j.id === t.campeon)?.nombre ?? ""}`)
+            : t.campeon
+              ? t.campeon === e.yo.id || t.campeon === e.yo.equipo
+                ? "🏆 ¡Has ganado la partida!"
+                : `🏆 Gana: ${(e.jugadores.find((j) => j.id === t.campeon) ?? e.equipos?.find((q) => q.id === t.campeon))?.nombre ?? ""}`
+            : t.desempate?.length
+              ? `⚔️ ¡Desempate! La próxima prueba decide entre ${t.desempate.map((id) => (e.jugadores.find((j) => j.id === id) ?? e.equipos?.find((q) => q.id === id))?.nombre ?? "").join(" y ")}`
+            : t.meta && t.modo !== "torneo"
+              ? `🏁 Gana quien llegue a ${t.meta} puntos`
             : e.yo.eliminado ? (t.eliminadoRonda === e.yo.id ? "❌ Te ha tocado: quedas eliminado" : "Estás eliminado del torneo")
             : t.modo === "torneo" ? "Torneo: el peor de cada prueba queda eliminado"
             : "Esperando al presentador…";

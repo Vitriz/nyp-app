@@ -42,6 +42,8 @@ export function cambiarPantalla(contenedor, nueva) {
   }
   nueva.classList.add("pantalla", "entra");
   contenedor.append(nueva);
+  // Acabada la entrada, sus elementos vuelven a sus propias animaciones.
+  setTimeout(() => nueva.classList.remove("entra"), 560);
   return nueva;
 }
 
@@ -54,6 +56,18 @@ export function iniciales(nombre) {
 export const servidor = { base: new URL("../", import.meta.url).href };
 
 /** Icono redondo del jugador: su foto o sus iniciales, con sus colores. */
+// Premios de las hazañas para el avatar: un sombrero encima y/o una animación.
+export const SOMBREROS = { corona: "👑", chistera: "🎩", birrete: "🎓", gorra: "🧢", lazo: "🎀" };
+export const ANIMACIONES = { salto: "Salto", giro: "Giro", baile: "Baile", brillo: "Brillo" };
+
+/** Pone el sombrero y la animación (si tiene) a un avatar ya creado. */
+function vestir(el, j) {
+  const s = SOMBREROS[j.sombrero];
+  if (s) el.append(h("span.avatar-sombrero", { "aria-hidden": "true" }, s));
+  if (ANIMACIONES[j.animacion]) el.classList.add(`anim-${j.animacion}`);
+  return el;
+}
+
 export function avatar(j, extra = "") {
   const estilo = { "--c": j.color, ...(j.colorTexto ? { color: j.colorTexto } : {}), ...(j.contorno ? { "--contorno": j.contorno } : {}) };
   if (j.contorno) extra += ".con-contorno";
@@ -61,9 +75,9 @@ export function avatar(j, extra = "") {
     const src = j.foto.startsWith("data:") ? j.foto : new URL(j.foto, servidor.base).href;
     // Recorte (con fondo transparente): la cabeza sale por encima del círculo de color.
     const recorte = /^data:image\/(png|webp)/.test(j.foto) || /[?&]r=1\b/.test(j.foto);
-    return h(`span.avatar.con-foto${recorte ? ".con-recorte" : ""}${extra}`, { style: estilo }, h("img", { src, alt: "", draggable: false }));
+    return vestir(h(`span.avatar.con-foto${recorte ? ".con-recorte" : ""}${extra}`, { style: estilo }, h("img", { src, alt: "", draggable: false })), j);
   }
-  return h(`span.avatar${extra}`, { style: estilo }, iniciales(j.nombre));
+  return vestir(h(`span.avatar${extra}`, { style: estilo }, h("span.avatar-letras", iniciales(j.nombre))), j);
 }
 
 /** Banner del jugador: su icono y su nombre con su color de fondo y de letras. */

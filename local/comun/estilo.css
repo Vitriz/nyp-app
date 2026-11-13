@@ -373,3 +373,30 @@ html, body {
 @keyframes cabeza { 0%, 100% { transform: rotate(0deg); } 30% { transform: rotate(-4deg); } 65% { transform: rotate(3deg); } }
 @keyframes cabeza-salto { 40% { transform: translateY(-18%) scale(1.06); } }
 @media (prefers-reduced-motion: reduce) { .banner .avatar.con-recorte img { animation: none; } }
+
+/* ---------- la barra de arriba (tu avatar) no parpadea al cambiar de pantalla ----------
+   Se anima el contenido de la pantalla, no la barra: la nueva aparece ya en su sitio y la vieja se oculta. */
+.pantalla.entra, .pantalla.sale { animation: none; }
+.pantalla.entra > :not(.barra-sup) { animation: entrar 520ms var(--curva) both; }
+.pantalla.sale > :not(.barra-sup) { animation: salir 320ms ease-in both; }
+.pantalla.sale > .barra-sup { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .pantalla.entra > *, .pantalla.sale > * { animation-duration: 1ms !important; } }
+
+/* ---------- premios del avatar: sombrero y animaciones ---------- */
+.avatar { position: relative; }
+.avatar-sombrero {
+  position: absolute; left: 50%; top: -0.85em; translate: -50% 0; rotate: -14deg; font-size: 1.3em; line-height: 1; z-index: 3;
+  pointer-events: none; filter: drop-shadow(0 0.06em 0.06em rgba(4, 12, 40, 0.5));
+}
+.avatar.con-recorte .avatar-sombrero { top: -1.35em; }
+.avatar.con-foto:not(.con-recorte) { overflow: visible; }
+.avatar.con-foto:not(.con-recorte) img { border-radius: 50%; overflow: hidden; }
+.avatar.anim-salto { animation: av-salto 3.2s ease-in-out infinite; }
+.avatar.anim-giro { animation: av-giro 5s cubic-bezier(0.5, 0, 0.3, 1) infinite; }
+.avatar.anim-baile { animation: av-baile 1.6s ease-in-out infinite; transform-origin: 50% 90%; }
+.avatar.anim-brillo { animation: av-brillo 2.2s ease-in-out infinite; }
+@keyframes av-salto { 0%, 70%, 100% { transform: translateY(0); } 78% { transform: translateY(-28%) scale(0.96, 1.05); } 86% { transform: translateY(0) scale(1.08, 0.92); } 92% { transform: translateY(-8%); } }
+@keyframes av-giro { 0%, 75% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
+@keyframes av-baile { 0%, 100% { transform: rotate(-9deg); } 50% { transform: rotate(9deg); } }
+@keyframes av-brillo { 0%, 100% { box-shadow: 0 0 0 0.08em rgba(255, 211, 77, 0.6), 0 0 0.4em rgba(255, 211, 77, 0.4); } 50% { box-shadow: 0 0 0 0.12em rgba(255, 230, 140, 0.95), 0 0 1em rgba(255, 211, 77, 0.85); } }
+@media (prefers-reduced-motion: reduce) { .avatar[class*="anim-"] { animation: none; } }

@@ -6,7 +6,7 @@ import { leerPaquete, diccionarioIncluido, desbloquearDiccionario, actualizarInc
 import { campoTexto } from "../comun/teclado.js";
 import { selectorJuegos, ICONOS, textoSegundos, textoRecord } from "./selector.js";
 import { leerFamilia, idMovil } from "../comun/familia.js";
-import { comprobarHazanas, tarjetaHazanas, ventanaHazanas } from "./hazanas.js";
+import { comprobarHazanas, tarjetaHazanas, ventanaHazanas, celebrarHazanas } from "./hazanas.js";
 
 const SIN_SOLO = new Set(["pulsador"]); // necesita presentador y más jugadores
 
@@ -450,10 +450,8 @@ export function entrarSolo({ app, perfil, alSalir }) {
     const record = r.valor != null && (!anterior || r.valor > anterior.valor);
     if (record) navigator.vibrate?.([60, 60, 120]);
     const textoR = h("p.final-marca", r.texto);
-    if (record || hazanas.length) {
-      // Récord nuevo o hazaña: confeti dorado y la marca contando hasta su número.
-      setTimeout(() => confeti(), 250);
-    }
+    if (hazanas.length) setTimeout(() => celebrarHazanas(hazanas), 500); // ¡con trompetas!
+    else if (record) setTimeout(() => confeti(), 250); // récord nuevo: confeti dorado
     if (record) {
       contarHasta(textoR, r.texto);
     }

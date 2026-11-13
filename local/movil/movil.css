@@ -680,3 +680,66 @@ html, body { height: 100dvh; }
 .rec-herramientas .boton { min-height: 3rem; }
 .rec-detectar { background: linear-gradient(180deg, #ffe48a, #f0c64a); color: #3a2a00; }
 .capa-recorte { gap: 0.7rem; overflow-y: auto; justify-content: safe center; }
+
+/* ---------- perfil: pestaña Premios ---------- */
+.pestanas:has(> :nth-child(4)) { grid-template-columns: repeat(4, 1fr); }
+.premios { display: flex; flex-direction: column; gap: 0.5rem; }
+.premios-fila { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.45rem; }
+.premio {
+  appearance: none; font: inherit; display: flex; flex-direction: column; align-items: center; gap: 0.15rem; padding: 0.55rem 0.3rem; cursor: pointer;
+  border-radius: 0.9rem; background: rgba(120, 160, 255, 0.12); border: 2px solid var(--borde-suave); color: var(--texto);
+}
+.premio-icono { font-size: 1.7rem; line-height: 1.1; }
+.premio small { font-size: 0.75rem; font-weight: 800; text-align: center; line-height: 1.15; }
+.premio.elegido { background: linear-gradient(180deg, #fff3b0, #f0c64a); color: #3a2a00; border-color: #fff3b0; }
+.premio.bloqueado { opacity: 0.5; cursor: not-allowed; }
+.premio.bloqueado small { color: var(--texto-suave); }
+.premios-nota { margin: 0.2rem 0 0; font-size: 0.85rem; text-align: center; }
+.hazana-premio { color: var(--oro) !important; }
+
+/* ---------- celebración de hazaña: trompetas, medalla y premio ---------- */
+.celebracion {
+  position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 1rem; overflow: hidden;
+  background: radial-gradient(circle at 50% 38%, rgba(120, 90, 20, 0.97), rgba(5, 13, 42, 0.98) 62%); animation: cel-fondo 400ms ease-out both;
+}
+.celebracion.se-va { animation: cel-fuera 300ms ease-in both; }
+.celebracion-caja { position: relative; width: min(100%, 24rem); display: flex; flex-direction: column; align-items: center; gap: 0.6rem; text-align: center; }
+.celebracion-rayos {
+  position: absolute; top: 2.5rem; left: 50%; width: 26rem; height: 26rem; translate: -50% -25%; z-index: -1; border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255, 220, 110, 0.35) 0 8deg, transparent 8deg 20deg);
+  -webkit-mask: radial-gradient(circle, #000 25%, transparent 68%); mask: radial-gradient(circle, #000 25%, transparent 68%);
+  animation: cel-rayos 8s linear infinite;
+}
+.celebracion-titulo {
+  font-family: var(--fuente-ficha); font-weight: 900; font-size: 3rem; letter-spacing: 0.06em; color: #3a2200; padding: 0.1em 0.5em; border-radius: 0.3em;
+  background: linear-gradient(180deg, #fff3b0, #ffd34d 45%, #f5a623); box-shadow: 0 0.12em 0 #b86e0a, 0 0.3em 0.8em rgba(0, 0, 0, 0.4);
+  rotate: -5deg; animation: cel-titulo 700ms cubic-bezier(0.2, 1.6, 0.4, 1) 150ms both;
+}
+.celebracion-medalla {
+  display: grid; place-items: center; width: 7rem; height: 7rem; border-radius: 50%; font-size: 3.6rem;
+  background: linear-gradient(180deg, #ffe48a, #f0c64a); box-shadow: 0 0 0 0.35rem #fff3b0, 0 0 2.5rem rgba(255, 211, 77, 0.8);
+  animation: cel-medalla 900ms cubic-bezier(0.3, 1.7, 0.5, 1) 350ms both;
+}
+.celebracion-nombre { font-size: 1.7rem; animation: aparece 400ms var(--curva) 700ms both; }
+.celebracion-desc { margin: 0; color: var(--texto-suave); font-weight: 700; animation: aparece 400ms var(--curva) 800ms both; }
+.celebracion-premio {
+  display: flex; flex-direction: column; gap: 0.15rem; padding: 0.7rem 1.2rem; border-radius: 1rem; border: 2px dashed rgba(255, 211, 77, 0.8);
+  background: rgba(255, 211, 77, 0.12); animation: cel-premio 700ms cubic-bezier(0.3, 1.6, 0.5, 1) 1200ms both;
+}
+.celebracion-premio b { font-size: 1.4rem; color: var(--oro); }
+.celebracion-premio small { color: var(--texto-suave); font-weight: 800; }
+.celebracion .boton.grande { width: 100%; animation: aparece 400ms var(--curva) 1500ms both; }
+.trompeta { position: absolute; top: 31%; font-size: 5rem; z-index: 2; filter: drop-shadow(0 0.3rem 0.6rem rgba(0, 0, 0, 0.5)); }
+.trompeta.izq { left: -1rem; animation: trompeta-izq 1.6s cubic-bezier(0.3, 1.4, 0.5, 1) both, trompeta-toca 0.45s ease-in-out 1.2s 4 alternate; }
+.trompeta.der { right: -1rem; transform: scaleX(-1); animation: trompeta-der 1.6s cubic-bezier(0.3, 1.4, 0.5, 1) both, trompeta-toca-der 0.45s ease-in-out 1.2s 4 alternate; }
+@keyframes cel-fondo { from { opacity: 0; } }
+@keyframes cel-fuera { to { opacity: 0; transform: scale(1.04); } }
+@keyframes cel-rayos { to { rotate: 360deg; } }
+@keyframes cel-titulo { from { transform: scale(0.2) rotate(-25deg); opacity: 0; } }
+@keyframes cel-medalla { from { transform: scale(0) rotate(-180deg); } }
+@keyframes cel-premio { from { transform: scale(0.5); opacity: 0; } }
+@keyframes trompeta-izq { from { transform: translateX(-120%) rotate(-30deg); } to { transform: translateX(0) rotate(-20deg); } }
+@keyframes trompeta-der { from { transform: scaleX(-1) translateX(-120%) rotate(-30deg); } to { transform: scaleX(-1) translateX(0) rotate(-20deg); } }
+@keyframes trompeta-toca { from { transform: rotate(-20deg) scale(1); } to { transform: rotate(-28deg) scale(1.12); } }
+@keyframes trompeta-toca-der { from { transform: scaleX(-1) rotate(-20deg) scale(1); } to { transform: scaleX(-1) rotate(-28deg) scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { .celebracion *, .celebracion { animation: none !important; } }
