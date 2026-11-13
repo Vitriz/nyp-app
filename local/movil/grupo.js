@@ -42,7 +42,18 @@ export async function resolverSala(texto) {
  * baseLocal: si la app viene del propio ordenador de PARTY, se puede entrar sin código.
  * alEntrar(base) entra en la partida; alVolver() vuelve al inicio.
  */
-export function pantallaGrupo({ baseLocal, aviso: avisoInicial = "", alEntrar, alVolver }) {
+export function pantallaGrupo({
+  baseLocal,
+  aviso: avisoInicial = "",
+  alEntrar,
+  alVolver,
+  // Para reutilizarla en «Unirse a una Batalla»: qué hacer con lo escrito o escaneado y los textos.
+  titulo = "Unirse a modo PARTY",
+  resolver = resolverSala,
+  reconocer = (t) => baseDe(t) || cifrasDe(t),
+  textos = { escanear: "📷 Escanear el QR de la TV", ayuda: "o escribe el código que sale en la TV:", buscando: "Buscando la partida…", noEsta: "No encuentro esa partida. ¿Está abierta en la TV?", formato: "El código son 6 números, como 1234-56", sinCamara: "escribe el código de la TV" },
+  guion = 4,
+}) {
   const aviso = h("div.pl-aviso.mal", avisoInicial);
   const estado = h("p.suave.grupo-estado");
   let ocupado = false;
@@ -50,18 +61,18 @@ export function pantallaGrupo({ baseLocal, aviso: avisoInicial = "", alEntrar, a
 
   async function entrar(texto) {
     if (ocupado) return;
-    if (!cifrasDe(texto) && !baseDe(texto)) {
-      aviso.textContent = "El código son 6 números, como 1234-56";
+    if (!reconocer(texto)) {
+      aviso.textContent = textos.formato;
       return;
     }
     ocupado = true;
     aviso.textContent = "";
-    estado.textContent = "Buscando la partida…";
-    const base = await resolverSala(texto);
+    estado.textContent = textos.buscando;
+    const base = await resolver(texto);
     ocupado = false;
     estado.textContent = "";
     if (!base) {
-      aviso.textContent = "No encuentro esa partida. ¿Está abierta en la TV?";
+      aviso.textContent = textos.noEsta;
       navigator.vibrate?.([30, 40, 30]);
       return;
     }
@@ -74,7 +85,7 @@ export function pantallaGrupo({ baseLocal, aviso: avisoInicial = "", alEntrar, a
   const pintarCodigo = () =>
     visor.replaceChildren(
       ...[..."000000"].flatMap((_, i) => [
-        ...(i === 4 ? [h("span.codigo-guion", "–")] : []),
+        ...(i === guion ? [h("span.codigo-guion", "–")] : []),
         h(`span.codigo-cifra${i === cifras.length ? ".actual" : ""}`, cifras[i] ?? ""),
       ])
     );
@@ -113,7 +124,7 @@ export function pantallaGrupo({ baseLocal, aviso: avisoInicial = "", alEntrar, a
     flujo?.getTracks().forEach((t) => t.stop());
     flujo = null;
     video.classList.add("oculto");
-    escanear.textContent = "📷 Escanear el QR de la TV";
+    escanear.textContent = textos.escanear;
   }
   async function cargarLector() {
     if ("BarcodeDetector" in window || window.jsQR) return;
@@ -125,13 +136,13 @@ export function pantallaGrupo({ baseLocal, aviso: avisoInicial = "", alEntrar, a
   }
   async function empezarCamara() {
     if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
-      aviso.textContent = "Aquí no puedo usar la cámara: escribe el código de la TV";
+      aviso.textContent = `Aquí no puedo usar la cámara: ${textos.sinCamara}`;
       return;
     }
     try {
       [flujo] = await Promise.all([navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }), cargarLector()]);
     } catch {
-      aviso.textContent = "No puedo usar la cámara: escribe el código de la TV";
+      aviso.textContent = `No puedo usar la cámara: ${textos.sinCamara}`;
       return;
     }
     video.srcObject = flujo;
@@ -154,26 +165,26 @@ export function pantallaGrupo({ baseLocal, aviso: avisoInicial = "", alEntrar, a
           texto = window.jsQR(ctx.getImageData(0, 0, lienzo.width, lienzo.height).data, lienzo.width, lienzo.height)?.data ?? null;
         }
       } catch {}
-      if (texto && (baseDe(texto) || cifrasDe(texto))) return entrar(texto);
+      if (texto && reconocer(texto)) return entrar(texto);
       setTimeout(mirar, 250);
     };
     mirar();
   }
-  const escanear = h("button.boton.suave.grande", { type: "button", onclick: () => (mirando || flujo ? pararCamara() : empezarCamara()) }, "📷 Escanear el QR de la TV");
+  const escanear = h("button.boton.suave.grande", { type: "button", onclick: () => (mirando || flujo ? pararCamara() : empezarCamara()) }, textos.escanear);
 
   const el = h(
     "section.grupo",
     h(
       "div.barra-sup",
       h("button.icono-btn", { type: "button", onclick: () => (pararCamara(), alVolver()), "aria-label": "Volver" }, "←"),
-      h("span.nombre", "Jugar en grupo")
+      h("span.nombre", titulo)
     ),
     baseLocal
       ? h("button.boton.acento.grande", { type: "button", onclick: () => (pararCamara(), alEntrar(baseLocal)) }, "📺 Entrar a la partida de esta wifi")
       : null,
     video,
     escanear,
-    h("p.suave.grupo-ayuda", "o escribe el código que sale en la TV:"),
+    h("p.suave.grupo-ayuda", textos.ayuda),
     visor,
     estado,
     aviso,

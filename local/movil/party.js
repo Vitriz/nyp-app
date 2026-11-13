@@ -1,16 +1,22 @@
 // Modo partida: conectado a PARTY (la TV). Esperar, jugar y ver resultados.
 import { conectar, almacen } from "../comun/conexion.js";
-import { h, cambiarPantalla, avatar, banner, bannerFijo, crearReloj, msDuracion, textoSegundos, textoPuesto, textoCuenta, piezaCuenta, servidor, detalleJugador, finalLlegar, palabraPendiente } from "../comun/ui.js";
+import { h, cambiarPantalla, avatar, banner, bannerFijo, fotosMemoria, TIEMPOS, crearReloj, msDuracion, textoSegundos, textoPuesto, textoCuenta, piezaCuenta, servidor, detalleJugador, finalLlegar, palabraPendiente } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { actualizarPaquete } from "../solo/paquete.js";
 import { mensajeRecords, guardarFamilia } from "../comun/familia.js";
+import { selectorJuegos } from "../solo/selector.js";
+import { svgQR } from "../comun/qr.js";
 
 /**
  * app: contenedor; base: dirección del servidor PARTY; perfil: { nombre, color, colorTexto, foto }
  * alSalir(): vuelve al inicio de la app.
  */
-export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
-  servidor.base = base;
+/**
+ * Batalla multijugador (sin PARTY): las mismas pantallas, pero la conexión es otra (crearConexion), el que
+ * crea la sala la maneja desde su móvil (claveHost) y al salir se cierra la sala (alCerrar).
+ */
+export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexion = null, claveHost = null, batalla = false, alCerrar = null }) {
+  if (base) servidor.base = base;
   const avisoConexion = document.getElementById("sin-conexion");
   let estado = null;
   let actual = null;
@@ -24,9 +30,10 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
     return fijo;
   };
 
-  const con = conectar({
+  const tokenClave = batalla ? "nyp-token-batalla" : "nyp-token";
+  const con = (crearConexion ?? conectar)({
     base,
-    alAbrir: () => con.enviar({ t: "hola", rol: "jugador", token: almacen.leer("nyp-token") }),
+    alAbrir: () => con.enviar({ t: "hola", rol: "jugador", token: almacen.leer(tokenClave), ...(claveHost ? { clave: claveHost } : {}) }),
     alMensaje: recibir,
     alEstadoConexion: (ok) => {
       avisoConexion.classList.toggle("oculto", ok);
@@ -46,6 +53,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
     actual?.desmontar?.();
     avisoConexion.classList.add("oculto");
     avisoConexion.onclick = null;
+    alCerrar?.();
     alSalir();
   }
 
@@ -68,14 +76,18 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
     switch (m.t) {
       case "necesitoNombre":
         // Entramos con el perfil del móvil: no hace falta escribir nada.
-        almacen.guardar("nyp-token", null);
+        almacen.guardar(tokenClave, null);
         con.enviar({ t: "unirse", nombre: perfil.nombre, color: perfil.color, colorTexto: perfil.colorTexto, contorno: perfil.contorno ?? null, foto: perfil.foto, sombrero: perfil.sombrero ?? null, animacion: perfil.animacion ?? null });
         break;
       case "bienvenida":
-        almacen.guardar("nyp-token", m.token);
+        almacen.guardar(tokenClave, m.token);
+        break;
+      case "fotos":
+        // Batalla: las fotos de los jugadores llegan aparte (una vez) y los avatares las citan como «mem:id».
+        Object.assign(fotosMemoria, m.fotos ?? {});
         break;
       case "expulsado":
-        almacen.guardar("nyp-token", null);
+        almacen.guardar(tokenClave, null);
         mostrar("expulsado", () => ({
           el: h("section", h("div.espera", h("h1", "El presentador te ha sacado de la partida"), h("button.boton.grande", { onclick: salir }, "Volver al inicio"))),
         }));
@@ -92,7 +104,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
           // Y nuestros récords de «Jugar solo», para la clasificación de la familia.
           con.enviar(mensajeRecords(perfil));
           // Aprovechamos para descargar el diccionario del modo solo (en segundo plano).
-          actualizarPaquete(base, alPaquete).catch(() => {});
+          if (base) actualizarPaquete(base, alPaquete).catch(() => {});
         }
         pintar(m);
         break;
@@ -170,6 +182,31 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
     };
   }
 
+  // ---------------------------------------------------------------- Batalla: el móvil anfitrión manda
+  const host = (accion, extra = {}) => con.enviar({ t: "host", accion, ...extra });
+  const enlaceSala = (codigo) => `${new URL("./", location.href).href.split("#")[0]}#b=${codigo}`;
+  const codigoBonito = (c) => `${c.slice(0, 3)} ${c.slice(3)}`;
+
+  /** Tarjeta con el código y el QR de la sala, para que se unan los demás. */
+  function tarjetaCodigo(e) {
+    const c = e.batalla?.codigo ?? "";
+    const qr = h("div.batalla-qr");
+    try {
+      qr.innerHTML = svgQR(enlaceSala(c));
+    } catch {}
+    return h(
+      "div.batalla-codigo.tarjeta",
+      qr,
+      h("div.batalla-codigo-texto", h("small", "Código de la sala"), h("b", codigoBonito(c)), h("span.suave", "En «Batalla multijugador → Unirse», o escaneando el QR"))
+    );
+  }
+
+  /** Selector de juegos del anfitrión (con los que se pueden jugar en la sala). */
+  function selectorHost(e) {
+    const juegos = (e.catalogo ?? []).filter((j) => j.disponible && (e.sala?.juegos ?? []).includes(j.id));
+    return selectorJuegos({ juegos, textoJugar: "Elegir este juego ▶", alJugar: (j) => host("elegir", { juego: j.id }) });
+  }
+
   function tituloEnFichas(texto) {
     const largo = Math.max(...texto.split(" ").map((p) => p.length));
     return h("div.titulo-fichas", { style: { "--n": largo } }, texto.toUpperCase().split(" ").map((p) => h("div.palabra", [...p].map((l) => h("span.ficha", l)))));
@@ -183,7 +220,12 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
       const equipos = h("div.elegir-equipo");
       const grande = bannerVivo(".banner-grande");
       const mensaje = h("p.suave", "Esperando al presentador…");
-      const el = h("section", barra.el, h("div.espera", grande.el, mensaje, equipos, puesto, lista));
+      // Batalla: el anfitrión ve el código para invitar y elige el juego; los demás, quién hay en la sala.
+      const esHostBatalla = batalla && e.esHost;
+      const panelHost = esHostBatalla ? h("div.batalla-host", tarjetaCodigo(e), selectorHost(e)) : null;
+      const el = esHostBatalla
+        ? h("section.batalla-sala", barra.el, panelHost, h("div.batalla-gente", puesto, lista))
+        : h("section", barra.el, h("div.espera", grande.el, mensaje, equipos, puesto, lista));
       return {
         el,
         actualizar(e) {
@@ -204,6 +246,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
               ? `🏁 Gana quien llegue a ${t.meta} puntos`
             : e.yo.eliminado ? (t.eliminadoRonda === e.yo.id ? "❌ Te ha tocado: quedas eliminado" : "Estás eliminado del torneo")
             : t.modo === "torneo" ? "Torneo: el peor de cada prueba queda eliminado"
+            : batalla ? "Esperando a que el anfitrión elija el juego…"
             : "Esperando al presentador…";
           equipos.replaceChildren(
             ...(e.equipos && e.fase !== "clasificacion"
@@ -229,7 +272,8 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
                   h(`div.item.tarjeta${q.id === e.yo.equipo ? ".yo" : ""}`, h("span", textoPuesto(q.puesto)), h("span.avatar", { style: { "--c": q.color } }, "👥"), h("span.n", q.nombre), h("span", q.puntos.toLocaleString("es-ES")))
                 )
               : []),
-            ...(e.fase === "clasificacion" ? top : []).map((j) =>
+            // En Batalla se ve siempre quién está en la sala (y sus puntos).
+            ...(e.fase === "clasificacion" || batalla ? top : []).map((j) =>
               h(`div.item.tarjeta${j.id === e.yo.id ? ".yo" : ""}`, h("span", textoPuesto(j.puesto)), avatar(j), h("span.n", j.nombre), h("span", `${j.puntos}`))
             )
           );
@@ -249,12 +293,38 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
 
     presentacion(e) {
       const barra = barraSuperior(e);
+      const info = h("p.suave");
+      // Batalla: el anfitrión elige el tiempo y empieza (o vuelve a elegir otro juego).
+      const tiempos = h("div.batalla-tiempos");
+      const controles =
+        batalla && e.esHost
+          ? h(
+              "div.batalla-controles",
+              tiempos,
+              h(
+                "div.pl-botones",
+                h("button.boton.suave", { type: "button", onclick: () => host("volver") }, "← Otro juego"),
+                h("button.boton.acento", { type: "button", onclick: () => host("empezar") }, "¡Empezar! ▶")
+              )
+            )
+          : null;
       const el = h(
         "section",
         barra.el,
-        h("div.espera", h("span.suave", "Siguiente prueba"), tituloEnFichas(e.juego.nombre), h("p", e.juego.descripcion), h("p.suave", `${e.juego.duracion ? textoSegundos(e.juego.duracion) : "Sin límite de tiempo"} · ¡prepárate!`))
+        h("div.espera", h("span.suave", "Siguiente prueba"), tituloEnFichas(e.juego.nombre), h("p", e.juego.descripcion), info, controles)
       );
-      return { el, actualizar: (e) => barra.actualizar(e) };
+      return {
+        el,
+        actualizar: (e) => {
+          barra.actualizar(e);
+          info.textContent = `${e.juego.duracion ? textoSegundos(e.juego.duracion) : "Sin límite de tiempo"} · ${batalla && !e.esHost ? "esperando a que empiece…" : "¡prepárate!"}`;
+          if (controles)
+            tiempos.replaceChildren(
+              h("span.suave", "Tiempo:"),
+              ...TIEMPOS.map((s) => h(`button.boton.suave.mini${s === e.juego.duracion ? ".elegida" : ""}`, { type: "button", onclick: () => host("duracion", { segundos: s }) }, textoSegundos(s)))
+            );
+        },
+      };
     },
 
     cuenta(e) {
@@ -330,12 +400,16 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
         )
       );
       if (mio?.puesto === 1) navigator.vibrate?.([60, 60, 120]);
+      // Batalla: el anfitrión pasa a la clasificación (y desde allí elige el siguiente juego).
+      if (batalla && e.esHost) el.append(h("div.pl-botones.batalla-siguiente", h("button.boton.acento.grande", { type: "button", onclick: () => host("siguiente") }, "Ver la clasificación ▶")));
       return { el, actualizar: (e) => barra.actualizar(e) };
     },
   };
 
   // Mientras llega el primer estado
-  mostrar("conectando", () => ({ el: h("section", h("div.espera", h("h1", "Conectando con la partida…"), h("p.suave", "Asegúrate de que la TV está encendida."))) }));
+  mostrar("conectando", () => ({
+    el: h("section", h("div.espera", h("h1", batalla ? "Entrando en la sala…" : "Conectando con la partida…"), h("p.suave", batalla ? "Comprueba que el código es correcto y que tienes internet." : "Asegúrate de que la TV está encendida."))),
+  }));
 
   return { salir };
 }

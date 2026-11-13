@@ -4,6 +4,7 @@ import { h, cambiarPantalla, banner, servidor, vigilarEncaje, tituloJuego } from
 import { cargarPerfil, pantallaPerfil } from "./perfil.js";
 import { entrarParty } from "./party.js";
 import { pantallaGrupo, resolverSala } from "./grupo.js";
+import { crearBatalla, codigoBatalla } from "./batalla.js";
 import { actualizarPaquete } from "../solo/paquete.js";
 import { subirLuego } from "../comun/nube.js";
 import { idMovil } from "../comun/familia.js";
@@ -59,16 +60,23 @@ async function inicio() {
         "div.inicio-opciones",
         h(
           "button.boton.acento.opcion",
-          { type: "button", onclick: () => conPerfil(() => irParty()) },
-          h("span.icono", "📺"),
-          h("span.opcion-texto", "Jugar en grupo", h("small", "Entra con el código de la TV")),
+          { type: "button", onclick: () => conPerfil(irSolo) },
+          h("span.icono", "🎯"),
+          h("span.opcion-texto", "Jugar solo", h("small", "Pruebas sueltas y récords")),
+          h("span.opcion-flecha", { "aria-hidden": "true" }, "›")
+        ),
+        h(
+          "button.boton.opcion.opcion-batalla",
+          { type: "button", onclick: () => conPerfil(() => batalla().menu()) },
+          h("span.icono", "⚔️"),
+          h("span.opcion-texto", "Batalla multijugador", h("small", "Con tus amigos, solo con los móviles")),
           h("span.opcion-flecha", { "aria-hidden": "true" }, "›")
         ),
         h(
           "button.boton.opcion",
-          { type: "button", onclick: () => conPerfil(irSolo) },
-          h("span.icono", "🎯"),
-          h("span.opcion-texto", "Jugar solo", h("small", "Pruebas sueltas y récords")),
+          { type: "button", onclick: () => conPerfil(() => irParty()) },
+          h("span.icono", "📺"),
+          h("span.opcion-texto", "Unirse a modo PARTY", h("small", "Con el código de la TV")),
           h("span.opcion-flecha", { "aria-hidden": "true" }, "›")
         ),
         avisoSolo
@@ -105,7 +113,9 @@ function conPerfil(siguiente) {
   else editarPerfil(siguiente);
 }
 
-// ------------------------------------------------------------------ partida y solo
+// ------------------------------------------------------------------ batalla, partida y solo
+const batalla = () => crearBatalla({ app, perfil, mostrar, alVolver: inicio });
+
 function irParty(aviso = "") {
   pantallaCompleta();
   const p = pantallaGrupo({
@@ -242,11 +252,14 @@ if (mismoSitio && !carcasa && "serviceWorker" in navigator && window.isSecureCon
 // El QR de la TV lleva #party: quien lo escanea entra directo a la partida.
 const sala = carcasa?.salaInicial ?? null;
 const directo = location.hash.includes("party") || sala;
+// El QR de una Batalla lleva #b=123456: quien lo escanea entra directo a esa sala.
+const salaBatalla = codigoBatalla(location.hash);
 const paraInstalar = /instalar/.test(location.hash + location.search);
 if (location.hash) history.replaceState(null, "", location.pathname);
 
 function arrancar() {
-  if (directo) conPerfil(() => irPartyDirecto(sala));
+  if (salaBatalla) conPerfil(() => batalla().entrarSala(salaBatalla));
+  else if (directo) conPerfil(() => irPartyDirecto(sala));
   // La primera vez, lo primero es crear tu perfil.
   else if (!perfil) editarPerfil(inicio);
   else inicio();

@@ -1,7 +1,12 @@
 // PULSADOR · la TV muestra una pregunta; el primero que pulsa responde en voz alta
 // y el presentador decide desde su mando si acierta (✔) o falla (✘).
 // Si falla, ese jugador ya no puede pulsar en esa pregunta y los demás sí.
-import { elegirDefiniciones } from "../lexico.js";
+import { elegirDefiniciones, clave } from "../lexico.js";
+
+// Batalla (sin presentador): quien pulsa tiene unos segundos para escribir la respuesta y se comprueba sola.
+const PARA_RESPONDER = 5000;
+const SIN_PULSAR = 30000; // si nadie pulsa en este tiempo, se pasa a la siguiente pregunta
+const normal = (t) => clave(String(t ?? "").trim());
 import { nivelDificultad } from "../util.js";
 
 // Según el nivel (fácil, medio, difícil): segundos para leer, palabras y largo de las cuentas.
@@ -58,14 +63,45 @@ export default {
   nombre: "Pulsador",
   categoria: "pulsador",
   duracion: 120,
-  breve: "Pulsa el primero y responde en voz alta.",
-  descripcion: "El primero que pulse responde en voz alta. El presentador dice si acierta. Si fallas, ya no puedes pulsar en esa pregunta.",
+  breve: "Pulsa el primero y responde.",
+  descripcion: "El primero que pulse responde. En PARTY lo dice en voz alta y el presentador decide; en una Batalla tiene 5 segundos para escribirlo. Si fallas, pierdes un punto y ya no puedes pulsar en esa pregunta.",
 
   crear({ azar, config, inicio = Date.now() }) {
     const tipos = config?.pulsadorTipos?.length ? config.pulsadorTipos : ["definicion", "calculo", "revuelto"];
     const d = nivelDificultad(config);
     const lectura = LECTURA[d + 1];
-    return { preguntas: preguntas(azar, azar.barajar(tipos), 40, d), lectura, i: 0, abre: inicio + lectura, pulsado: null, bloqueados: [], anterior: null, aciertos: {} };
+    return { preguntas: preguntas(azar, azar.barajar(tipos), 40, d), lectura, i: 0, abre: inicio + lectura, pulsado: null, bloqueados: [], anterior: null, aciertos: {}, fallos: {}, auto: Boolean(config?.pulsadorAuto), vistos: [] };
+  },
+
+  /** En Batalla la sala nos refresca a menudo (para la cuenta de 5 s y para pasar de pregunta solos). */
+  tic(config) {
+    return config?.pulsadorAuto ? 400 : 0;
+  },
+
+  /** Batalla: se acabó el tiempo para responder, o nadie pulsa, o ya han fallado todos → se sigue solo. */
+  revisar(ronda) {
+    if (!ronda.auto || !ronda.preguntas[ronda.i]) return;
+    const ahora = Date.now();
+    if (ronda.pulsado && ahora > ronda.pulsado.hasta) this.fallar(ronda, ronda.pulsado.id, null);
+    const todos = ronda.vistos.length && ronda.vistos.every((id) => ronda.bloqueados.includes(id));
+    if (!ronda.pulsado && (todos || ahora > ronda.abre + SIN_PULSAR)) this.siguiente(ronda, null, false);
+  },
+
+  siguiente(ronda, quien, ok, texto = null) {
+    const p = ronda.preguntas[ronda.i];
+    ronda.anterior = { n: ronda.i, solucion: p.solucion, quien, ok, texto };
+    ronda.i++;
+    ronda.abre = Date.now() + (ronda.lectura ?? 3000);
+    ronda.pulsado = null;
+    ronda.bloqueados = [];
+  },
+
+  fallar(ronda, id, texto) {
+    // Fallar resta un punto (así no se pulsa a lo loco) y ya no puede pulsar en esta pregunta.
+    ronda.fallos[id] = (ronda.fallos[id] ?? 0) + 1;
+    ronda.bloqueados.push(id);
+    ronda.pulsado = null;
+    ronda.ultimoFallo = { id, texto, n: (ronda.ultimoFallo?.n ?? 0) + 1 };
   },
 
   publica(ronda) {
@@ -76,7 +112,12 @@ export default {
   },
 
   vistaJugador(ronda, id) {
+    if (!ronda.vistos.includes(id)) ronda.vistos.push(id);
+    this.revisar(ronda);
     return {
+      auto: ronda.auto,
+      ultimoFallo: ronda.ultimoFallo ?? null,
+      fallos: ronda.fallos[id] ?? 0,
       i: ronda.i,
       abre: ronda.abre,
       pregunta: this.publica(ronda),
@@ -88,6 +129,7 @@ export default {
   },
 
   vistaTV(ronda) {
+    this.revisar(ronda);
     return {
       i: ronda.i,
       abre: ronda.abre,
@@ -105,8 +147,20 @@ export default {
   },
 
   accion(ronda, id, msg) {
+    this.revisar(ronda);
+    if (msg.a === "responder") {
+      // Batalla: la respuesta escrita de quien pulsó (un intento).
+      const p = ronda.preguntas[ronda.i];
+      if (!ronda.auto || !p || ronda.pulsado?.id !== id) return false;
+      const ok = p.tipo === "calculo" ? Number(String(msg.texto ?? "").replace(",", ".")) === Number(p.solucion) : normal(msg.texto) === normal(p.solucion);
+      if (ok) {
+        ronda.aciertos[id] = (ronda.aciertos[id] ?? 0) + 1;
+        this.siguiente(ronda, id, true, String(msg.texto ?? ""));
+      } else this.fallar(ronda, id, String(msg.texto ?? "").slice(0, 30));
+      return true;
+    }
     if (msg.a !== "pulsar" || ronda.pulsado || ronda.bloqueados.includes(id) || !ronda.preguntas[ronda.i] || Date.now() < ronda.abre - 150) return false;
-    ronda.pulsado = { id, t: Date.now() };
+    ronda.pulsado = { id, t: Date.now(), hasta: ronda.auto ? Date.now() + PARA_RESPONDER : null };
     return true;
   },
 

@@ -1224,3 +1224,37 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   .cm > .cm-centro { grid-area: centro; }
   .cm > .cm-responder { grid-area: resp; align-self: center; }
 }
+/* Pulsador en Batalla: escribir la respuesta */
+.pul-responder { display: flex; flex-direction: column; gap: 0.5rem; }
+.pul-responder-cabeza { display: flex; justify-content: space-between; align-items: center; }
+.pul-cuenta { font-family: var(--fuente-ficha); font-weight: 900; font-size: 1.4rem; color: var(--oro); }
+.pul-escrito { min-height: 3rem; display: flex; align-items: center; justify-content: center; border-radius: var(--radio); background: #17346f; border: 2px solid rgba(160, 190, 255, 0.25); font-family: var(--fuente-ficha); font-size: 1.6rem; font-weight: 900; letter-spacing: 0.08em; }
+/* Batalla: sala del anfitrión, código y QR */
+.batalla-sala { gap: 0.7rem; overflow-y: auto; }
+.batalla-host { display: flex; flex-direction: column; gap: 0.7rem; flex: 1; min-height: 0; }
+.batalla-host .sel-caja { min-height: 26rem; }
+.batalla-codigo { display: flex; align-items: center; gap: 0.9rem; padding: 0.7rem; }
+.batalla-qr { flex: none; width: 6.5rem; aspect-ratio: 1; border-radius: 0.6rem; overflow: hidden; background: #fff; }
+.batalla-qr svg { width: 100%; height: 100%; display: block; }
+.batalla-codigo-texto { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.batalla-codigo-texto small { font-size: 0.72rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texto-suave); }
+.batalla-codigo-texto b { font-family: var(--fuente-ficha); font-size: 2rem; letter-spacing: 0.08em; color: var(--oro); }
+.batalla-codigo-texto .suave { font-size: 0.8rem; line-height: 1.3; }
+.batalla-gente { display: flex; flex-direction: column; gap: 0.4rem; }
+.batalla-controles { display: flex; flex-direction: column; gap: 0.6rem; width: 100%; }
+.batalla-tiempos { display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: center; align-items: center; }
+.batalla-siguiente { margin-top: 0.6rem; }
+.batalla-menu { gap: 1rem; }
+.batalla-intro { text-align: center; }
+.batalla-opciones { display: flex; flex-direction: column; gap: 0.8rem; }
+.batalla-op { display: flex; flex-direction: column; gap: 0.35rem; }
+/* Batalla (anfitrión): todo en una columna que se desplaza; la lista de juegos con su alto propio */
+.pantalla.batalla-sala { overflow-y: auto; }
+.batalla-sala .batalla-host { flex: none; min-height: 0; }
+.batalla-sala .batalla-host .sel-caja { flex: none; height: min(34rem, 78dvh); min-height: 0; }
+.batalla-gente { flex: none; padding-bottom: 1rem; }
+.batalla-gente .lista-mini { display: flex; flex-direction: column; gap: 0.35rem; }
+.batalla-gente .item { display: flex; align-items: center; gap: 0.6rem; padding: 0.4rem 0.7rem; text-align: left; }
+.batalla-gente .item .avatar { font-size: 0.7rem; }
+.batalla-gente .item .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; }
+.batalla-gente::before { content: "En la sala"; font-size: 0.72rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texto-suave); }

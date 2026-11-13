@@ -157,6 +157,59 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     if (localStorage.getItem("nyp-vista-juegos") === "cuadricula") vista = "cuadricula";
   } catch {}
   const botonVista = h("button.sel-vista-btn", { type: "button", onclick: () => cambiarVista() });
+  // 🎲 Un juego al azar: la ruleta gira sola (o en la cuadrícula se van iluminando casillas) hasta pararse en uno.
+  const botonDado = h("button.sel-vista-btn.sel-dado", { type: "button", title: "Un juego al azar", "aria-label": "Elegir un juego al azar", onclick: () => sortear() }, "🎲");
+  let sorteando = false;
+  function sortear() {
+    if (sorteando || n < 2) return;
+    sorteando = true;
+    botonDado.classList.add("girando");
+    let destino = Math.floor(Math.random() * (n - 1));
+    if (destino >= sel) destino++;
+    const final = () => {
+      sorteando = false;
+      botonDado.classList.remove("girando");
+      navigator.vibrate?.([20, 40, 60]);
+    };
+    if (vista === "cuadricula") {
+      // Casillas que se iluminan al azar, cada vez más despacio, sin enseñar su ficha; la última es la elegida.
+      const saltos = 16;
+      let k = 0, previa = -1, espera = 60;
+      const paso = () => {
+        casillas.forEach((c) => c.classList.remove("sorteo"));
+        if (k === saltos) {
+          ir(destino, false);
+          casillas[destino].classList.add("sorteo-fin");
+          setTimeout(() => casillas[destino].classList.remove("sorteo-fin"), 900);
+          return final();
+        }
+        let i;
+        do i = Math.floor(Math.random() * n);
+        while (i === previa || (k === saltos - 1 && i === destino));
+        previa = i;
+        casillas[i].classList.add("sorteo");
+        navigator.vibrate?.(4);
+        k++;
+        espera *= 1.17;
+        setTimeout(paso, espera);
+      };
+      return paso();
+    }
+    // Ruleta: dos vueltas y lo que falte hasta el elegido, frenando poco a poco.
+    const total = (((destino - sel) % n) + n) % n + n * 2;
+    let hechos = 0;
+    const paso = () => {
+      if (hechos === total) {
+        fichaLuego(0);
+        return final();
+      }
+      mover(1, { espera: null });
+      hechos++;
+      const t = hechos / total;
+      setTimeout(paso, 35 + 420 * t * t * t); // de muy deprisa a despacio
+    };
+    paso();
+  }
   function cambiarVista(v = vista === "rueda" ? "cuadricula" : "rueda", guardar = true) {
     vista = v;
     rueda.classList.toggle("oculto", vista !== "rueda");
@@ -337,8 +390,10 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
 
   // Rehacer la ficha cuesta (sobre todo en iPhone): mientras giras deprisa, se espera a que pares un momento.
   let fichaPendiente = null;
+  // espera: 0 = ya; null = todavía no (la lista sigue girando: la ficha se pinta cuando se pare).
   function fichaLuego(espera) {
     clearTimeout(fichaPendiente);
+    if (espera === null) return void (contador.textContent = `${sel + 1} / ${n}`);
     if (!espera) return pintarFicha();
     contador.textContent = `${sel + 1} / ${n}`;
     fichaPendiente = setTimeout(pintarFicha, espera);
@@ -394,7 +449,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       pos += vel * dt;
       const entero = Math.round(pos);
       pos -= entero;
-      if (entero) mover(entero, { desfase: pos, espera: 160 });
+      if (entero) mover(entero, { desfase: pos, espera: null }); // la ficha, solo en el juego donde se pare
       else colocar(pos);
       if (Math.abs(vel) < 0.0025) return fin();
       inercia = requestAnimationFrame(paso);
@@ -464,7 +519,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       if (entero) {
         actual -= entero;
         objetivo -= entero;
-        mover(entero, { desfase: actual, espera: 160 });
+        mover(entero, { desfase: actual, espera: null });
       } else colocar(actual);
       if (Math.abs(objetivo - actual) < 0.004 && objetivo === Math.round(objetivo)) {
         animRueda = null;
@@ -530,7 +585,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     h("div.sel-lado", ficha, atajos),
     h(
       "div.sel-lista",
-      h("div.sel-titulo", h("span.sel-titulo-texto", "Elige juego"), h("span.sel-titulo-der", contador, botonVista)),
+      h("div.sel-titulo", h("span.sel-titulo-texto", "Elige juego"), h("span.sel-titulo-der", contador, botonDado, botonVista)),
       rueda,
       cuadricula,
       jugarAbajo,

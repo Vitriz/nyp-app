@@ -68,9 +68,14 @@ function vestir(el, j) {
   return el;
 }
 
+/** Batalla multijugador: fotos de los jugadores que llegaron aparte (id → data URL). */
+export const fotosMemoria = {};
+
 export function avatar(j, extra = "") {
   const estilo = { "--c": j.color, ...(j.colorTexto ? { color: j.colorTexto } : {}), ...(j.contorno ? { "--contorno": j.contorno } : {}) };
   if (j.contorno) extra += ".con-contorno";
+  // «mem:id:versión»: foto de una Batalla, guardada en fotosMemoria (si aún no ha llegado, iniciales).
+  if (j.foto?.startsWith("mem:")) j = { ...j, foto: fotosMemoria[j.foto.split(":")[1]] ?? null };
   if (j.foto) {
     const src = j.foto.startsWith("data:") ? j.foto : new URL(j.foto, servidor.base).href;
     // Recorte (con fondo transparente): la cabeza sale por encima del círculo de color.
