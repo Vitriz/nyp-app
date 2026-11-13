@@ -640,3 +640,20 @@ html, body { height: 100dvh; }
 .pendiente small { color: #f6c9c5; font-weight: 800; }
 .pendiente b { font-family: var(--fuente-ficha); font-size: 1.5rem; letter-spacing: 0.04em; }
 .pendiente p { margin: 0; font-size: 1rem; color: var(--texto-suave); }
+
+/* ---------- llegar al resultado: objetivo + tu mejor al lado; lo hecho, del mismo tamaño que los huecos ---------- */
+.lr-arriba { display: flex; align-items: flex-end; justify-content: center; gap: 0.7rem; }
+.lr-arriba .lr-objetivo { flex: none; }
+.lr-mejor-tarjeta {
+  flex: none; min-width: 5.2rem; display: flex; flex-direction: column; align-items: center; gap: 0.05rem; padding: 0.35rem 0.7rem 0.4rem;
+  border-radius: 0.9rem; background: rgba(6, 18, 56, 0.45); border: 2px solid var(--borde-suave); margin-bottom: 0.15rem;
+}
+.lr-mejor-tarjeta small { font-size: 0.72rem; font-weight: 800; color: var(--texto-suave); white-space: nowrap; }
+.lr-mejor-tarjeta b { font-family: var(--fuente-ficha); font-size: 1.6rem; line-height: 1.1; max-width: 6rem; white-space: nowrap; overflow: hidden; }
+.lr2 .lr-mejor-pasos { min-height: 0; }
+.lr-hecha { pointer-events: none; }
+.lr-hecha .lr-hueco { cursor: default; height: 3.1rem; font-size: 1.5rem; animation: none; }
+.lr-hecha .lr-hueco-op { height: auto; }
+.lr-res-hecho { background: linear-gradient(180deg, #e3f6fb, #b9e5f1) !important; }
+.lr-res-hecho.exacto { background: linear-gradient(180deg, #c9f2dc, var(--bien)) !important; }
+.lr2 .lr-historial { gap: 0.4rem; }
