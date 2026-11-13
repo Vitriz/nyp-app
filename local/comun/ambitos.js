@@ -10,6 +10,23 @@ export const ICONOS_AMBITO = {
   Música: "🎵", Pintura: "🎨", Psicología: "🧠", Química: "⚗️", Religión: "⛪", Tauromaquia: "🐂", Zoología: "🦁",
 };
 
+/** Ventana para elegir un número (p. ej. cuántas operaciones). Devuelve el número o null. */
+export function elegirNumero(titulo, valores, defecto) {
+  return new Promise((ok) => {
+    const cerrar = (v) => (capa.remove(), ok(v));
+    const capa = h(
+      "div.capa-movil",
+      { onclick: (ev) => ev.target === capa && cerrar(null) },
+      h(
+        "div.caja.tarjeta",
+        h("div.records-cabeza", h("h2", titulo), h("button.icono-btn", { type: "button", onclick: () => cerrar(null), "aria-label": "Cerrar" }, "✕")),
+        h("div.elegir-numero", valores.map((v) => h(`button.boton${v === defecto ? ".acento" : ".suave"}.grande`, { type: "button", onclick: () => cerrar(v) }, String(v))))
+      )
+    );
+    document.body.append(capa);
+  });
+}
+
 /** Ventana para elegir tema, al azar o de todos los temas. Devuelve el tema, "azar", "todos" o null si se cierra. */
 export function elegirAmbito(lista) {
   return new Promise((ok) => {

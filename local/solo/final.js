@@ -132,8 +132,10 @@ export function casillasFinal(meta, ronda, j) {
   } catch {
     filas = [];
   }
+  // Con 3 casillas o más, todas en una sola fila (--n columnas).
   return h(
-    "div.final-datos",
+    `div.final-datos${filas.length >= 3 ? ".en-fila" : ""}`,
+    { style: { "--n": filas.length } },
     filas.map(([ico, etq, val, tono], k) =>
       h(`div.final-dato${tono ? `.${tono}` : ""}`, { style: { animationDelay: `${250 + k * 70}ms` } }, h("span.final-dato-ico", ico), h("b.final-dato-valor", String(val)), h("small", etq))
     )

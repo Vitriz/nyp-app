@@ -114,6 +114,9 @@ export function bannerFijo(j) {
     capa.classList.add("sin-transicion");
     capa.classList.remove("cerrado");
     const abierto = [ban.offsetWidth, ban.offsetHeight];
+    // El nombre se encoge desde su ancho real: así el cierre es un solo movimiento, sin pausa al principio.
+    const nombre = ban.querySelector(".banner-nombre");
+    capa.style.setProperty("--nombre-ancho", `${Math.ceil(nombre?.scrollWidth ?? 0) + 2}px`);
     capa.classList.add("cerrado");
     const cerrado = [ban.offsetWidth, ban.offsetHeight];
     capa.classList.toggle("cerrado", estado === "cerrado");

@@ -5,6 +5,7 @@ import { calmarFondo } from "../comun/fondo.js";
 import { actualizarPaquete } from "../solo/paquete.js";
 import { mensajeRecords, guardarFamilia } from "../comun/familia.js";
 import { selectorJuegos } from "../solo/selector.js";
+import { elegirAmbito, elegirNumero } from "../comun/ambitos.js";
 import { svgQR } from "../comun/qr.js";
 
 /**
@@ -165,11 +166,23 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
   function barraSuperior(e, { reloj, plegar = false } = {}) {
     if (reloj) return barraJuego(e, reloj);
     const pts = h(`span.pts${plegar ? ".plegar" : ""}`);
+    // Batalla: arriba, la sala (y si eres el anfitrión); al tocarla se abre el QR para invitar.
+    const chipSala =
+      batalla && e.batalla?.codigo && !plegar
+        ? h(
+            "button.batalla-chip",
+            { type: "button", onclick: () => ventanaQR(estado ?? e), title: "Ver el QR para invitar" },
+            h("small", e.esHost ? "👑 Eres el anfitrión" : "Sala"),
+            h("b", codigoBonito(e.batalla.codigo)),
+            h("span.batalla-chip-qr", "▦")
+          )
+        : null;
     // El hueco del banner fijo: abierto, o cerrado en círculo en la cuenta atrás (se va a jugar).
     const el = h(
       "div.barra-sup",
       banFijo(e.yo).hueco(plegar ? "cerrado" : "abierto"),
-      pts,
+      chipSala,
+      batalla ? null : pts,
       reloj?.el,
       h("button.icono-btn", { type: "button", onclick: preguntarSalir, "aria-label": "Salir de la partida" }, "✕")
     );
@@ -187,24 +200,63 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
   const enlaceSala = (codigo) => `${new URL("./", location.href).href.split("#")[0]}#b=${codigo}`;
   const codigoBonito = (c) => `${c.slice(0, 3)} ${c.slice(3)}`;
 
-  /** Tarjeta con el código y el QR de la sala, para que se unan los demás. */
-  function tarjetaCodigo(e) {
+  /** Ventana con el QR y el código de la sala, para que se unan los demás. */
+  function ventanaQR(e) {
     const c = e.batalla?.codigo ?? "";
-    const qr = h("div.batalla-qr");
+    const qr = h("div.batalla-qr.grande");
     try {
       qr.innerHTML = svgQR(enlaceSala(c));
     } catch {}
-    return h(
-      "div.batalla-codigo.tarjeta",
-      qr,
-      h("div.batalla-codigo-texto", h("small", "Código de la sala"), h("b", codigoBonito(c)), h("span.suave", "En «Batalla multijugador → Unirse», o escaneando el QR"))
+    const cerrar = () => capa.remove();
+    const capa = h(
+      "div.capa-movil.capa-qr-sala",
+      { onclick: (ev) => ev.target === capa && cerrar() },
+      h(
+        "div.caja.tarjeta",
+        h("div.records-cabeza", h("h2", "📲 Invitar a la sala"), h("button.icono-btn", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
+        qr,
+        h("div.batalla-codigo-texto", h("small", "Código de la sala"), h("b", codigoBonito(c)), h("span.suave", "Que lo escaneen, o que entren en «Batalla multijugador → Unirse a sala» y escriban el código."))
+      )
     );
+    document.body.append(capa);
   }
 
-  /** Selector de juegos del anfitrión (con los que se pueden jugar en la sala). */
+  // Tiempo y nivel del anfitrión: como en «Jugar solo», uno para todos los juegos y se recuerda.
+  const NIVELES = ["facil", "normal", "dificil"];
+  const NOMBRES_NIVEL = { facil: "Fácil", normal: "Medio", dificil: "Difícil" };
+  const ajustes = (() => {
+    try {
+      return { seg: 60, nv: "normal", ...JSON.parse(almacen.leer("nyp-batalla-ajustes") ?? "{}") };
+    } catch {
+      return { seg: 60, nv: "normal" };
+    }
+  })();
+  const guardarAjustes = () => almacen.guardar("nyp-batalla-ajustes", JSON.stringify(ajustes));
+
+  /** Selector de juegos del anfitrión: exactamente el de «Jugar solo» (tiempo, nivel, ayuda, dado…). */
   function selectorHost(e) {
     const juegos = (e.catalogo ?? []).filter((j) => j.disponible && (e.sala?.juegos ?? []).includes(j.id));
-    return selectorJuegos({ juegos, textoJugar: "Elegir este juego ▶", alJugar: (j) => host("elegir", { juego: j.id }) });
+    return selectorJuegos({
+      juegos,
+      tiempo: { lista: TIEMPOS, de: () => (TIEMPOS.includes(ajustes.seg) ? ajustes.seg : 60), fijar: (j, s) => ((ajustes.seg = s), guardarAjustes()) },
+      nivel: { lista: NIVELES, nombres: NOMBRES_NIVEL, de: () => ajustes.nv, fijar: (j, nv) => ((ajustes.nv = nv), guardarAjustes()) },
+      conAyuda: true,
+      alJugar: async (j) => {
+        const pedido = { juego: j.id, segundos: TIEMPOS.includes(ajustes.seg) ? ajustes.seg : 60, dificultad: ajustes.nv };
+        // Igual que en solo: Cálculo mental sin límite pregunta cuántas operaciones; los juegos con tema, el tema.
+        if (j.id === "calculo-mental" && !pedido.segundos) {
+          const n = await elegirNumero("🧠 ¿Cuántas operaciones?", [5, 8, 12, 16, 20], 8);
+          if (!n) return;
+          pedido.operaciones = n;
+        }
+        if (j.ambitos?.length) {
+          const ambito = await elegirAmbito(j.ambitos);
+          if (!ambito) return;
+          pedido.ambito = ambito;
+        }
+        host("elegir", pedido);
+      },
+    });
   }
 
   function tituloEnFichas(texto) {
@@ -222,7 +274,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
       const mensaje = h("p.suave", "Esperando al presentador…");
       // Batalla: el anfitrión ve el código para invitar y elige el juego; los demás, quién hay en la sala.
       const esHostBatalla = batalla && e.esHost;
-      const panelHost = esHostBatalla ? h("div.batalla-host", tarjetaCodigo(e), selectorHost(e)) : null;
+      const panelHost = esHostBatalla ? h("div.batalla-host", selectorHost(e)) : null;
       const el = esHostBatalla
         ? h("section.batalla-sala", barra.el, panelHost, h("div.batalla-gente", puesto, lista))
         : h("section", barra.el, h("div.espera", grande.el, mensaje, equipos, puesto, lista));
@@ -294,13 +346,11 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
     presentacion(e) {
       const barra = barraSuperior(e);
       const info = h("p.suave");
-      // Batalla: el anfitrión elige el tiempo y empieza (o vuelve a elegir otro juego).
-      const tiempos = h("div.batalla-tiempos");
+      // Batalla: el anfitrión empieza (o vuelve a elegir otro juego). El tiempo y el nivel ya los eligió en la lista.
       const controles =
         batalla && e.esHost
           ? h(
               "div.batalla-controles",
-              tiempos,
               h(
                 "div.pl-botones",
                 h("button.boton.suave", { type: "button", onclick: () => host("volver") }, "← Otro juego"),
@@ -317,12 +367,8 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
         el,
         actualizar: (e) => {
           barra.actualizar(e);
-          info.textContent = `${e.juego.duracion ? textoSegundos(e.juego.duracion) : "Sin límite de tiempo"} · ${batalla && !e.esHost ? "esperando a que empiece…" : "¡prepárate!"}`;
-          if (controles)
-            tiempos.replaceChildren(
-              h("span.suave", "Tiempo:"),
-              ...TIEMPOS.map((s) => h(`button.boton.suave.mini${s === e.juego.duracion ? ".elegida" : ""}`, { type: "button", onclick: () => host("duracion", { segundos: s }) }, textoSegundos(s)))
-            );
+          const nivel = batalla ? ` · ${NOMBRES_NIVEL[e.sala?.dificultad] ?? ""}` : "";
+          info.textContent = `${e.juego.duracion ? textoSegundos(e.juego.duracion) : "Sin límite de tiempo"}${nivel} · ${batalla && !e.esHost ? "esperando a que empiece…" : "¡prepárate!"}`;
         },
       };
     },

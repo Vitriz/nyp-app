@@ -3,9 +3,10 @@
 // resultado («× = 80»: los números de la zona, multiplicados, dan 80). El número va siempre centrado.
 import { h } from "../../comun/ui.js";
 
-// Colores suaves para las zonas: dos zonas que se tocan nunca tienen el mismo.
-const COLORES = ["#ffe3c2", "#d4ecff", "#dff5d6", "#f3dcff", "#fff4b8", "#ffd9e2", "#d2f4f1"];
-const BORDES = ["#c98a3c", "#4f8fd1", "#5aa457", "#9a63c4", "#c2a020", "#d0607d", "#3a9f96"];
+// Colores de las zonas: bien distintos entre sí y sin verdes ni rojos (esos son para «bien» y «mal»).
+// Dos zonas que se tocan nunca tienen el mismo color.
+const COLORES = ["#bcd7ff", "#ffe98a", "#dcc8ff", "#f5d7b0", "#c7cde0", "#a8e4f5"];
+const BORDES = ["#3d74c9", "#b8941a", "#7a52c7", "#b07a3a", "#5d6886", "#2d8fb0"];
 
 function colorear(n, jaulas, de) {
   const vecinas = jaulas.map(() => new Set());

@@ -8,8 +8,6 @@ import { pantallaGrupo } from "./grupo.js";
 import { leerPaquete } from "../solo/paquete.js";
 import { codigoLibre, atenderSala, conectarBatalla, conectarLocal, leer } from "../comun/tiemporeal.js";
 
-const DIFICULTADES = { facil: "Fácil", normal: "Medio", dificil: "Difícil" };
-const METAS = [[30, "30"], [50, "50"], [75, "75"], [100, "100"], [0, "∞"]];
 
 /** El código de una Batalla en un texto (6 cifras, o un enlace con #b=123456). */
 export function codigoBatalla(texto) {
@@ -27,17 +25,20 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
   const cabecera = (titulo, volver) =>
     h("div.barra-sup", h("button.icono-btn", { type: "button", onclick: volver, "aria-label": "Volver" }, "←"), h("span.nombre", titulo));
 
+  const avisoMenu = h("div.pl-aviso.mal");
   function menu() {
+    avisoMenu.textContent = "";
     mostrar(
       h(
         "section.batalla-menu",
         cabecera("⚔️ Batalla multijugador", alVolver),
         h("p.suave.batalla-intro", "Juega con tus amigos desde vuestros móviles, sin TV. Uno crea la sala y los demás se unen con el código."),
+        avisoMenu,
         h(
           "div.inicio-opciones",
           h(
             "button.boton.acento.opcion",
-            { type: "button", onclick: opciones },
+            { type: "button", onclick: () => crearSala({ dificultad: "normal", meta: 50 }, avisoMenu) },
             h("span.icono", "🏠"),
             h("span.opcion-texto", "Crear sala", h("small", "Tú eliges los juegos y das paso")),
             h("span.opcion-flecha", { "aria-hidden": "true" }, "›")
@@ -55,33 +56,7 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
   }
 
   // ---------------------------------------------------------------- crear
-  function opciones() {
-    const o = { dificultad: "normal", meta: 50 };
-    const cuerpo = h("div.batalla-opciones");
-    const fila = (etq, lista, actual, fijar) =>
-      h(
-        "div.batalla-op",
-        h("span.etiqueta", etq),
-        h("div.records-opciones", lista.map(([v, t]) => h(`button.records-op${v === actual ? ".elegida" : ""}`, { type: "button", onclick: () => (fijar(v), pintar()) }, t)))
-      );
-    const pintar = () =>
-      cuerpo.replaceChildren(
-        fila("Dificultad", Object.entries(DIFICULTADES), o.dificultad, (v) => (o.dificultad = v)),
-        fila("Puntos para ganar", METAS, o.meta, (v) => (o.meta = v))
-      );
-    pintar();
-    const aviso = h("div.pl-aviso.mal");
-    mostrar(
-      h(
-        "section.batalla-menu",
-        cabecera("🏠 Crear sala", menu),
-        cuerpo,
-        aviso,
-        h("button.boton.acento.grande", { type: "button", onclick: () => crearSala(o, aviso) }, "Crear la sala ▶")
-      )
-    );
-  }
-
+  // La sala se crea directamente: el tiempo y el nivel se eligen en cada juego, como en «Jugar solo».
   async function crearSala(o, aviso) {
     aviso.className = "pl-aviso suave";
     aviso.textContent = "Creando la sala…";

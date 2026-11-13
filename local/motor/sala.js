@@ -312,7 +312,14 @@ export class Sala {
       case "elegir":
         if (["lobby", "clasificacion", "presentacion"].includes(f)) {
           if (this.campeon) this.#reiniciarPuntos();
+          // Batalla: el anfitrión elige como en «Jugar solo»: tiempo, nivel (y tema u operaciones) en cada juego.
+          if (this.enNavegador) {
+            if (TIEMPOS.includes(msg.segundos)) this.config.duraciones[msg.juego] = msg.segundos;
+            if (["facil", "normal", "dificil"].includes(msg.dificultad)) this.config.dificultad = msg.dificultad;
+            if ([5, 8, 12, 16, 20].includes(Number(msg.operaciones))) this.config.operaciones = Number(msg.operaciones);
+          }
           this.#presentar(msg.juego);
+          if (this.enNavegador && typeof msg.ambito === "string" && msg.ambito.length <= 30 && this.juego?.ambitos?.length) this.config.ambito = msg.ambito;
         }
         break;
       case "aleatorio":
