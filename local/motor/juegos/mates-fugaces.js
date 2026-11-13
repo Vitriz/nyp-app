@@ -47,7 +47,7 @@ export default {
   categoria: "numeros",
   duracion: 60,
   breve: "Resuelve operaciones rápidas, una tras otra.",
-  descripcion: "Van apareciendo operaciones. Escribe el resultado y pulsa OK. Si una se te atraganta, pásala. Gana quien acierte más.",
+  descripcion: "Van apareciendo operaciones. Escribe el resultado y pulsa OK. Si una se te atraganta, pásala. Cada acierto suma 1 y cada fallo resta ½. Gana quien sume más.",
 
   crear({ azar, config }) {
     // Fácil: sumas y restas más tiempo y techo más bajo; difícil: empieza más arriba y sube antes.
@@ -101,9 +101,10 @@ export default {
   resultados(ronda, ids) {
     return ids.map((id) => {
       const j = ronda.jugadores[id];
+      // Cada fallo resta medio punto: así no compensa probar números al azar.
       return {
         id,
-        valor: j && j.aciertos > 0 ? j.aciertos : null,
+        valor: j && j.aciertos > 0 ? j.aciertos - j.fallos * 0.5 : null,
         corto: j ? `${j.aciertos} ${j.aciertos === 1 ? "acierto" : "aciertos"}` : "",
         texto: j ? `${j.aciertos} ${j.aciertos === 1 ? "acierto" : "aciertos"}${j.fallos ? ` · ${j.fallos} ${j.fallos === 1 ? "fallo" : "fallos"}` : ""}` : "No jugó",
       };

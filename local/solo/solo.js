@@ -6,6 +6,7 @@ import { leerPaquete, diccionarioIncluido, desbloquearDiccionario, actualizarInc
 import { campoTexto } from "../comun/teclado.js";
 import { selectorJuegos, ICONOS, textoSegundos, textoRecord } from "./selector.js";
 import { leerFamilia, idMovil } from "../comun/familia.js";
+import { subirLuego, leerJugadores, jugadoresGuardados } from "../comun/nube.js";
 import { comprobarHazanas, tarjetaHazanas, ventanaHazanas, celebrarHazanas } from "./hazanas.js";
 import { elegirAmbito } from "../comun/ambitos.js";
 import { estudioGrupos } from "../juegos/conexiones/piezas.js";
@@ -161,6 +162,12 @@ export function entrarSolo({ app, perfil, alSalir }) {
               if (r === false) return;
               if (r) return preparar({ ...meta, ambito: g.ronda.ambito, dificultad: g.meta.dificultad }, r);
             }
+            // Cálculo mental sin límite de tiempo: ¿cuántas operaciones?
+            if (j.id === "calculo-mental" && !meta.duracion) {
+              const n = await elegirNumero("🧠 ¿Cuántas operaciones?", [5, 8, 12, 16, 20], 8);
+              if (!n) return;
+              meta.operaciones = n;
+            }
             // Juegos con tema: primero se elige el tema (todos, al azar o uno).
             if (j.ambitos?.length) {
               const ambito = await elegirAmbito(j.ambitos);
@@ -175,108 +182,105 @@ export function entrarSolo({ app, perfil, alSalir }) {
     });
   }
 
-  /** Récords: «Míos» (cada juego con su mejor marca y las de cada tiempo y nivel) y «Familia» (clasificación). */
+  /**
+   * Récords: arriba se elige el tiempo y el nivel; «Míos» enseña cada juego con tu récord para esa
+   * combinación y «Familia» la clasificación de todos (de la nube; sin internet, la última que se descargó).
+   */
   function verRecords(juegos) {
     const records = leerRecords();
-    // Las claves antiguas (solo el juego) son del tiempo normal y nivel medio.
-    const partes = (k, j) => {
-      const [, seg, nv = "normal"] = k.split("@");
-      return { seg: seg ? Number(seg) : j.duracion, nv };
-    };
-    const delJuego = (recs, j) =>
-      Object.entries(recs ?? {})
-        .filter(([k]) => k.split("@")[0] === j.id)
-        .map(([k, r]) => ({ ...partes(k, j), r }));
+    let seg = tiempoValido(leerTiempos()["*"] ?? 60);
+    let nv = leerNiveles()["*"] ?? "normal";
+    let vista = "mios";
+    // Récord de una persona (sus records) para un juego con el tiempo y nivel elegidos.
+    const recordPara = (recs, j) => recordDe(recs ?? {}, { ...j, duracionBase: j.duracion }, seg, nv);
 
     function vistaMios() {
-      const filas = juegos.map((j) => {
-        const marcas = delJuego(records, j).sort((a, b) => a.seg - b.seg || NIVELES.indexOf(a.nv) - NIVELES.indexOf(b.nv));
-        const mejor = marcas.reduce((m, x) => (!m || x.r.valor > m.r.valor ? x : m), null);
-        return { j, marcas, mejor };
-      });
-      filas.sort((a, b) => Boolean(b.mejor) - Boolean(a.mejor));
-      return filas.map(({ j, marcas, mejor }, i) =>
-        h(
-          `div.record-fila${mejor ? "" : ".sin"}`,
-          { style: { animationDelay: `${60 + i * 40}ms` } },
-          h("span.ico", ICONOS[j.id] ?? "🎲"),
-          h("b", j.nombre),
-          h("span.mejor", mejor ? textoRecord(mejor.r) : "—"),
+      const filas = juegos.map((j) => ({ j, r: recordPara(records, j) }));
+      const con = filas.filter((x) => x.r).length;
+      return [
+        h("p.familia-nota", `${con} de ${filas.length} juegos con récord en ${textoSegundos(seg)} · ${NOMBRES_NIVEL[nv]}`),
+        ...filas.map(({ j, r }, i) =>
           h(
-            "div.marcas",
-            marcas.length ? marcas.map((m) => h("span", `${textoSegundos(m.seg)} · ${NOMBRES_NIVEL[m.nv] ?? m.nv}: ${textoRecord(m.r)}`)) : h("span", "Aún sin récord")
+            `div.record-fila${r ? "" : ".sin"}`,
+            { style: { animationDelay: `${40 + i * 30}ms` } },
+            h("span.ico", ICONOS[j.id] ?? "🎲"),
+            h("b", j.nombre),
+            h("span.mejor", r ? textoRecord(r) : "—"),
+            h("div.marcas", h("span", r?.fecha ? `Conseguido el ${r.fecha.split("-").reverse().join("/")}` : "Aún sin récord en esta combinación"))
           )
-        )
-      );
+        ),
+      ];
     }
 
     function vistaFamilia() {
-      const fam = leerFamilia(perfil);
+      const nube = jugadoresGuardados();
       const yoId = idMovil();
+      // La nube (si se ha podido descargar alguna vez); si no, la copia que dejó PARTY.
+      const gente = nube?.lista?.length
+        ? Object.fromEntries(nube.lista.map((p) => [p.id, p]))
+        : leerFamilia(perfil).jugadores;
+      gente[yoId] = { ...(gente[yoId] ?? {}), nombre: perfil.nombre, color: perfil.color, records };
       const bloques = [];
       for (const j of juegos) {
-        // Por cada tiempo y nivel, el mejor de cada persona.
-        const grupos = new Map();
-        for (const [pid, p] of Object.entries(fam.jugadores)) {
-          for (const m of delJuego(p.records, j)) {
-            const clave = `${m.seg}@${m.nv}`;
-            const g = grupos.get(clave) ?? { seg: m.seg, nv: m.nv, gente: new Map() };
-            const antes = g.gente.get(pid);
-            if (!antes || m.r.valor > antes.r.valor) g.gente.set(pid, { p, r: m.r, yo: pid === yoId });
-            grupos.set(clave, g);
-          }
-        }
-        if (!grupos.size) continue;
-        const lista = [...grupos.values()].sort((a, b) => a.seg - b.seg || NIVELES.indexOf(a.nv) - NIVELES.indexOf(b.nv));
+        const lista = Object.entries(gente)
+          .map(([pid, p]) => ({ p, r: recordPara(p.records, j), yo: pid === yoId }))
+          .filter((x) => x.r)
+          .sort((a, b) => b.r.valor - a.r.valor)
+          .slice(0, 5);
+        if (!lista.length) continue;
         bloques.push(
           h(
             "div.familia-juego",
-            { style: { animationDelay: `${60 + bloques.length * 50}ms` } },
+            { style: { animationDelay: `${40 + bloques.length * 40}ms` } },
             h("div.familia-titulo", h("span.ico", ICONOS[j.id] ?? "🎲"), h("b", j.nombre)),
-            lista.map((g) =>
-              h(
-                "div.familia-grupo",
-                h("small", `${textoSegundos(g.seg)} · ${NOMBRES_NIVEL[g.nv] ?? g.nv}`),
-                h(
-                  "ol.familia-podio",
-                  [...g.gente.values()]
-                    .sort((a, b) => b.r.valor - a.r.valor)
-                    .slice(0, 5)
-                    .map((x, k, todos) => {
-                      // Empate: mismo puesto (y misma medalla).
-                      const puesto = todos.findIndex((y) => y.r.valor === x.r.valor);
-                      return h(
-                        `li${x.yo ? ".yo" : ""}`,
-                        h("span.medalla", ["🥇", "🥈", "🥉"][puesto] ?? `${puesto + 1}º`),
-                        h("span.familia-nombre", { style: { "--c": x.p.color ?? "#5fb7d0" } }, x.p.nombre),
-                        h("span.familia-marca", textoRecord(x.r))
-                      );
-                    })
-                )
-              )
+            h(
+              "ol.familia-podio",
+              lista.map((x, k, todos) => {
+                const puesto = todos.findIndex((y) => y.r.valor === x.r.valor);
+                return h(
+                  `li${x.yo ? ".yo" : ""}`,
+                  h("span.medalla", ["🥇", "🥈", "🥉"][puesto] ?? `${puesto + 1}º`),
+                  h("span.familia-nombre", { style: { "--c": x.p.color ?? "#5fb7d0" } }, x.p.nombre),
+                  h("span.familia-marca", textoRecord(x.r))
+                );
+              })
             )
           )
         );
       }
+      const fecha = nube?.fecha ? new Date(nube.fecha) : null;
       const nota = h(
         "p.familia-nota",
-        fam.recibida
-          ? `Se actualiza cada vez que te conectas a PARTY. Última vez: ${fam.recibida.split("-").reverse().join("/")}.`
-          : "Conéctate una vez a PARTY para ver los récords de los demás."
+        fecha ? `☁️ Clasificación de toda la familia · actualizada ${fecha.toLocaleDateString("es-ES")} ${fecha.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}` : "☁️ Conéctate a internet para ver la clasificación de toda la familia."
       );
-      return bloques.length ? [nota, ...bloques] : [nota, h("p.suave", "Todavía no hay récords.")];
+      return bloques.length ? [nota, ...bloques] : [nota, h("p.suave", `Nadie tiene récord todavía en ${textoSegundos(seg)} · ${NOMBRES_NIVEL[nv]}.`)];
+    }
+
+    // Filtros: tiempo y nivel (en casillas).
+    const filtros = h("div.records-filtros");
+    function pintarFiltros() {
+      const fila = (etq, valores, actual, texto, fijar) =>
+        h(
+          "div.records-filtro",
+          h("span.etiqueta", etq),
+          h("div.records-opciones", valores.map((v) => h(`button.records-op${v === actual ? ".elegida" : ""}`, { type: "button", onclick: () => (fijar(v), pintar()) }, texto(v))))
+        );
+      filtros.replaceChildren(
+        fila("Tiempo", TIEMPOS, seg, (v) => (!v ? "∞" : v < 60 ? `${v}s` : v % 60 ? `${v}s` : `${v / 60}m`), (v) => (seg = v)),
+        fila("Nivel", NIVELES, nv, (v) => NOMBRES_NIVEL[v], (v) => (nv = v))
+      );
     }
 
     const lista = h("div.records-lista");
     const pestanas = h(
       "div.records-pestanas",
       { role: "tablist" },
-      [["mios", "Míos"], ["familia", "👨‍👩‍👧 Familia"]].map(([id, texto]) => h("button.records-pestana", { type: "button", role: "tab", "data-id": id, onclick: () => ver(id) }, texto))
+      [["mios", "Míos"], ["familia", "👨‍👩‍👧 Familia"]].map(([id, texto]) => h("button.records-pestana", { type: "button", role: "tab", "data-id": id, onclick: () => ((vista = id), pintar()) }, texto))
     );
-    function ver(id) {
-      pestanas.querySelectorAll(".records-pestana").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.id === id)));
-      lista.replaceChildren(...(id === "mios" ? vistaMios() : vistaFamilia()));
-      lista.scrollTop = 0;
+    function pintar() {
+      pintarFiltros();
+      pestanas.querySelectorAll(".records-pestana").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.id === vista)));
+      lista.replaceChildren(...(vista === "mios" ? vistaMios() : vistaFamilia()));
     }
     const cerrar = () => capa.remove();
     const capa = h(
@@ -286,11 +290,16 @@ export function entrarSolo({ app, perfil, alSalir }) {
         "div.caja.tarjeta",
         h("div.records-cabeza", h("h2", "🏆 Récords"), h("button.icono-btn", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
         pestanas,
+        filtros,
         lista
       )
     );
-    ver("mios");
+    pintar();
     document.body.append(capa);
+    // Se descarga la clasificación actual de la nube y, si estás en «Familia», se repinta.
+    leerJugadores()
+      .then(() => capa.isConnected && vista === "familia" && pintar())
+      .catch(() => {});
   }
 
   async function sinDiccionario() {
@@ -353,6 +362,23 @@ export function entrarSolo({ app, perfil, alSalir }) {
   }
 
   /** Preparar y cuenta atrás en la misma pantalla: mientras, el banner se cierra y solo queda tu icono. */
+  /** Ventana para elegir un número (p. ej. cuántas operaciones). Devuelve el número o null. */
+  function elegirNumero(titulo, valores, defecto) {
+    return new Promise((ok) => {
+      const cerrar = (v) => (capa.remove(), ok(v));
+      const capa = h(
+        "div.capa-movil",
+        { onclick: (ev) => ev.target === capa && cerrar(null) },
+        h(
+          "div.caja.tarjeta",
+          h("div.records-cabeza", h("h2", titulo), h("button.icono-btn", { type: "button", onclick: () => cerrar(null), "aria-label": "Cerrar" }, "✕")),
+          h("div.elegir-numero", valores.map((v) => h(`button.boton${v === defecto ? ".acento" : ".suave"}.grande`, { type: "button", onclick: () => cerrar(v) }, String(v))))
+        )
+      );
+      document.body.append(capa);
+    });
+  }
+
   // Crucigrama sin límite de tiempo: si lo dejas a medias, se guarda para seguirlo otro día.
   const GUARDADO = "nyp-crucigrama-guardado";
   const leerGuardado = () => {
@@ -397,7 +423,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
       const previsto = Date.now() + 4000;
       const ronda = guardada
         ? { ...guardada.ronda, inicio: previsto - (guardada.ronda.transcurrido ?? 0) }
-        : impl.crear({ azar: motor.util.crearAzar(Date.now()), config: { pulsadorTipos: [], dificultad: meta.dificultad ?? "normal", ambito: meta.ambito, solo: true }, duracion, inicio: previsto });
+        : impl.crear({ azar: motor.util.crearAzar(Date.now()), config: { pulsadorTipos: [], dificultad: meta.dificultad ?? "normal", ambito: meta.ambito, operaciones: meta.operaciones, solo: true }, duracion, inicio: previsto });
       impl.vistaJugador(ronda, yo.id);
       // La cuenta atrás empieza al acabar de preparar: así el 3 dura lo mismo que el 2 y el 1.
       const retraso = Math.max(0, Date.now() - (previsto - 4000));
@@ -527,6 +553,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
   }
 
   function resultado(meta, r, resumen = null, hazanas = [], datos = null) {
+    subirLuego(idMovil(), perfil, 2500); // récords y hazañas nuevos, a la nube
     setTimeout(() => document.querySelectorAll(".bloqueo-final button").forEach((b) => (b.disabled = false)), 1500);
     const anterior = apuntar(meta, r);
     const record = r.valor != null && (!anterior || r.valor > anterior.valor);

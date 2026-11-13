@@ -9,6 +9,7 @@ export function crearRejilla({ filas, cols, rejilla, ecs = [] }, { conHuecos = t
   const el = h("div.lab", { style: { gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${filas}, 1fr)`, "--cols": cols, "--filas": filas } });
   const nodos = new Map();
   const info = new Map(rejilla.map((x) => [x.k, x]));
+  const bandas = [];
   // Caminos: una banda de color por operación, detrás de las casillas; sus signos van del mismo color.
   ecs.forEach((celdas, n) => {
     const a = info.get(celdas[0]), b = info.get(celdas[celdas.length - 1]);
@@ -18,6 +19,7 @@ export function crearRejilla({ filas, cols, rejilla, ecs = [] }, { conHuecos = t
     banda.style.gridRow = `${Math.min(a.r, b.r) + 1} / ${Math.max(a.r, b.r) + 2}`;
     banda.style.gridColumn = `${Math.min(a.c, b.c) + 1} / ${Math.max(a.c, b.c) + 2}`;
     el.append(banda);
+    bandas[n] = banda;
     for (const k of [celdas[1], celdas[3]]) info.get(k) && (info.get(k).color = color);
   });
   for (const x of rejilla) {
@@ -41,12 +43,20 @@ export function crearRejilla({ filas, cols, rejilla, ecs = [] }, { conHuecos = t
     /** Colorea las operaciones completas: bien o mal. */
     marcar(ecs, valorDe) {
       for (const n of nodos.values()) n.classList.remove("bien", "mal");
-      for (const celdas of ecs) {
+      bandas.forEach((b) => b?.classList.remove("hecha"));
+      const bien = new Set();
+      ecs.forEach((celdas, i) => {
         const [a, b, c] = [valorDe(celdas[0]), valorDe(celdas[2]), valorDe(celdas[4])];
-        if (a == null || b == null || c == null) continue;
+        if (a == null || b == null || c == null) return;
         const ok = OPS[info.get(celdas[1]).texto]?.(a, b) === c;
-        for (const k of celdas) nodos.get(k).classList.add(ok ? "bien" : "mal");
-      }
+        // Cuenta correcta: su camino se pone verde (y sus casillas, aunque compartan con otra que esté mal).
+        bandas[i]?.classList.toggle("hecha", ok);
+        for (const k of celdas) {
+          if (ok) bien.add(k);
+          nodos.get(k).classList.remove("mal");
+          nodos.get(k).classList.add(ok || bien.has(k) ? "bien" : "mal");
+        }
+      });
     },
     valorDado(k) {
       const t = info.get(k)?.texto;

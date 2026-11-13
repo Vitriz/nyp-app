@@ -172,12 +172,14 @@ export default {
       if (!m) return { id, valor: null, texto: "No jugó" };
       const detalle = (m.pasos ?? []).map((t) => ({ t, k: "paso" }));
       if (m.dist === 0) {
-        // Exacto: lo que cuenta es el tiempo (siempre por delante de quien no llegó).
+        // Exacto: gana quien usó menos pasos y, con los mismos, quien llegó antes (siempre por delante de quien no llegó).
         const ms = ronda.jugadores[id].ms ?? 0;
+        const n = m.pasos?.length ?? 0;
         const t = `${(ms / 1000).toFixed(1).replace(".", ",")} s`;
-        return { id, valor: 1e7 - ms, texto: `¡Exacto! en ${t}`, corto: t, detalle, pasos: m.pasos?.length ?? 0 };
+        return { id, valor: 1e8 - n * 1e6 - Math.min(ms, 999999), texto: `¡Exacto! en ${n} ${n === 1 ? "paso" : "pasos"} · ${t}`, corto: `${n} ${n === 1 ? "paso" : "pasos"} · ${t}`, detalle, pasos: n };
       }
-      return { id, valor: -m.dist, texto: `${m.valor} (a ${m.dist})`, corto: `a ${m.dist}`, detalle, pasos: m.pasos?.length ?? 0 };
+      // Sin llegar: gana el más cerca; a igual distancia, el de menos pasos.
+      return { id, valor: -m.dist - (m.pasos?.length ?? 0) * 0.01, texto: `${m.valor} (a ${m.dist})`, corto: `a ${m.dist}`, detalle, pasos: m.pasos?.length ?? 0 };
     });
   },
 

@@ -15,7 +15,14 @@ export function montar(cuerpo, e, ctx) {
 
   const teclado = tecladoNumerico(pulsar);
 
-  const raiz = h("div.mf", h("div.mf-cont", "Aciertos", contador), h("div.mf-op", texto), resp, pasar, teclado);
+  // Racha: aciertos seguidos sin fallar (desde 3 se enseña con su fueguito).
+  let racha = 0;
+  const rachaEl = h("span.mf-racha.oculto");
+  const pintarRacha = () => {
+    rachaEl.classList.toggle("oculto", racha < 3);
+    rachaEl.textContent = `🔥 ${racha} seguidas`;
+  };
+  const raiz = h("div.mf", h("div.mf-cont", "Aciertos", contador, rachaEl), h("div.mf-op", texto), resp, pasar, teclado);
   cuerpo.append(raiz);
 
   function mostrarOp(animar = true) {
@@ -54,6 +61,9 @@ export function montar(cuerpo, e, ctx) {
     if (valor === ops[i].r) {
       aciertos++;
       i++;
+      racha++;
+      pintarRacha();
+      if (racha >= 3) reiniciarAnim(rachaEl, "rebote");
       contador.textContent = aciertos;
       reiniciarAnim(contador, "rebote");
       resp.classList.add("bien");
@@ -65,6 +75,8 @@ export function montar(cuerpo, e, ctx) {
         mostrarOp();
       }, 160);
     } else {
+      racha = 0;
+      pintarRacha();
       reiniciarAnim(resp, "sacudir");
       navigator.vibrate?.([30, 40, 30]);
       respuesta = "";
@@ -76,6 +88,8 @@ export function montar(cuerpo, e, ctx) {
     if (i >= ops.length) return;
     ctx.enviar({ a: "pasar", i });
     i++;
+    racha = 0;
+    pintarRacha();
     mostrarOp();
   });
 

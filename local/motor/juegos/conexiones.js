@@ -112,7 +112,7 @@ export default {
   breve: "Encuentra los 4 grupos de 4 palabras.",
   descripcion: "Hay 16 palabras que forman 4 grupos de 4 con algo en común. Elige 4 y comprueba. Con 4 fallos se acaba el tablero y sale otro. Gana quien encuentre más grupos.",
 
-  crear({ azar, config }) {
+  crear({ azar, config, inicio = Date.now() }) {
     const d = nivelDificultad(config);
     const datos = cargarConexiones();
     // Las palabras comunes vienen con los datos (así no hace falta el diccionario).
@@ -123,7 +123,7 @@ export default {
       const t = tablero(azar, d, datos, comunes);
       if (t) tableros.push(t);
     }
-    return { tableros, jugadores: {} };
+    return { tableros, inicio, jugadores: {} };
   },
 
   estadoJugador(ronda, id) {
@@ -178,6 +178,7 @@ export default {
     if (max === 4) {
       j.hallados.push(de[0]);
       j.grupos++;
+      j.ms = Math.max(0, Date.now() - (ronda.inicio ?? Date.now())); // cuándo encontró el último grupo (desempate)
       j.ultimo = { n, ok: true };
     } else {
       j.fallos++;
@@ -197,7 +198,8 @@ export default {
       if (!j || (!j.grupos && !j.fallosTotal)) return { id, valor: null, texto: "No jugó" };
       return {
         id,
-        valor: j.grupos ? j.grupos * 100 - j.fallosTotal : null,
+        // Más grupos; luego menos fallos; y si aún empatan, quien encontró su último grupo antes.
+        valor: j.grupos ? j.grupos * 100 - j.fallosTotal + 0.99 * (1 - Math.min(j.ms ?? 3.6e6, 3.6e6) / 3.6e6) : null,
         texto: `${j.grupos} ${j.grupos === 1 ? "grupo" : "grupos"} · ${j.fallosTotal} ${j.fallosTotal === 1 ? "fallo" : "fallos"}`,
         corto: `${j.grupos} ${j.grupos === 1 ? "grupo" : "grupos"}`,
       };

@@ -96,6 +96,7 @@ export default {
       bloqueados: ronda.bloqueados,
       anterior: ronda.anterior,
       aciertos: ronda.aciertos,
+      fallos: ronda.fallos ?? {},
     };
   },
 
@@ -127,6 +128,9 @@ export default {
         return true;
       case "fallo":
         if (!ronda.pulsado) return false;
+        // Fallar resta un punto (así no se pulsa a lo loco).
+        ronda.fallos = ronda.fallos ?? {};
+        ronda.fallos[ronda.pulsado.id] = (ronda.fallos[ronda.pulsado.id] ?? 0) + 1;
         ronda.bloqueados.push(ronda.pulsado.id);
         ronda.pulsado = null;
         return true;
@@ -144,7 +148,10 @@ export default {
   resultados(ronda, ids) {
     return ids.map((id) => {
       const n = ronda.aciertos[id] ?? 0;
-      return { id, valor: n > 0 ? n : null, texto: `${n} ${n === 1 ? "acierto" : "aciertos"}`, corto: `${n} ${n === 1 ? "acierto" : "aciertos"}` };
+      const f = ronda.fallos?.[id] ?? 0;
+      const puntos = n - f;
+      const txtFallos = f ? ` · ${f} ${f === 1 ? "fallo" : "fallos"}` : "";
+      return { id, valor: n || f ? puntos : null, texto: `${puntos} ${Math.abs(puntos) === 1 ? "punto" : "puntos"} (${n} ${n === 1 ? "acierto" : "aciertos"}${txtFallos})`, corto: `${puntos} pts` };
     });
   },
 

@@ -2,6 +2,30 @@
 import { h, avatar } from "../../comun/ui.js";
 import { tarjetasJugadores, expresionColor } from "../comun/util.js";
 
+// Timbre distinto para cada jugador (nota y sonido propios), con el audio del navegador.
+let audio = null;
+const NOTAS = [523.25, 659.25, 783.99, 587.33, 698.46, 880, 493.88, 622.25, 739.99, 830.61];
+const FORMAS = ["square", "triangle", "sawtooth", "sine"];
+function timbre(i) {
+  try {
+    audio ??= new (window.AudioContext || window.webkitAudioContext)();
+    const f = NOTAS[Math.max(0, i) % NOTAS.length];
+    const t0 = audio.currentTime;
+    for (const [k, mult] of [[0, 1], [1, 1.5]]) {
+      const o = audio.createOscillator();
+      const g = audio.createGain();
+      o.type = FORMAS[Math.max(0, i) % FORMAS.length];
+      o.frequency.value = f * mult;
+      g.gain.setValueAtTime(0.0001, t0 + k * 0.12);
+      g.gain.exponentialRampToValueAtTime(0.25, t0 + k * 0.12 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + k * 0.12 + 0.28);
+      o.connect(g).connect(audio.destination);
+      o.start(t0 + k * 0.12);
+      o.stop(t0 + k * 0.12 + 0.3);
+    }
+  } catch {}
+}
+
 export function pintarPregunta(p) {
   if (!p) return [h("p.pul-texto", "¡Se acabaron las preguntas!")];
   const partes = [h("span.etiqueta.pul-titulo", p.titulo)];
@@ -22,7 +46,7 @@ export function montar(cuerpo, e, ctx) {
   const tarjetas = tarjetasJugadores(caja, ctx, (e, id) => {
     const d = e.datos;
     if (!d) return null;
-    return { valor: d.aciertos[id] ?? 0, extra: d.bloqueados.includes(id) ? "✘" : "" };
+    return { valor: (d.aciertos[id] ?? 0) - (d.fallos?.[id] ?? 0), extra: d.bloqueados.includes(id) ? "✘" : "" };
   });
   let ultimaI = -1, ultimoPulsado = null, capa = null, anteriorVisto = -1;
   let d = e.datos;
@@ -61,6 +85,7 @@ export function montar(cuerpo, e, ctx) {
       capa = null;
       const j = e.jugadores.find((x) => x.id === pid);
       if (j) {
+        timbre(e.jugadores.findIndex((x) => x.id === pid));
         capa = h("div.pul-capa", h("div.caja", avatar(j), h("b", j.nombre), h("span", "¡Responde en voz alta!")));
         caja.append(capa);
         const r = capa.getBoundingClientRect();

@@ -2,6 +2,7 @@
 import { h } from "../comun/ui.js";
 import { crearRejilla } from "../juegos/kenken/rejilla.js";
 import { rangoDe } from "../juegos/paraulogico/movil.js";
+import { crearRejilla as rejillaLaberinto } from "../juegos/laberinto/rejilla.js";
 
 /** KenKen: ¿cada casilla tiene el número de la solución? (si lo resolvió, todo vale) */
 const kkBien = (j, ronda) => ronda.solucion.map((v, k) => j.ms != null || j.valores[k] === v);
@@ -142,6 +143,7 @@ export function casillasFinal(meta, ronda, j) {
 /** Algo más que enseñar al final (de momento, la solución del KenKen marcando lo que tenías bien). */
 export function extraFinal(meta, ronda, j) {
   if (meta.id === "paraulogico") return finalTutifruti(ronda, j);
+  if (meta.id === "laberinto") return finalLaberinto(ronda, j);
   if (meta.id !== "kenken" || !ronda?.solucion) return null;
   const rejilla = crearRejilla(ronda);
   rejilla.poner(ronda.solucion);
@@ -156,6 +158,30 @@ export function extraFinal(meta, ronda, j) {
     "div.final-kk.tarjeta",
     h("small", j.ms != null ? "¡Resuelto! Así quedó el tablero" : "La solución"),
     rejilla.el,
+    h("div.kk-leyenda", h("span", h("i", { style: { background: "#9be0bd" } }), "Lo tenías bien"), h("span", h("i", { style: { background: "#f6b1a8" } }), "Lo tenías mal (tachado, tu número)"))
+  );
+}
+
+/** Laberinto: la solución completa; lo que pusiste bien en verde y lo que no, en rojo (tachado, tu número). */
+function finalLaberinto(ronda, j) {
+  if (!ronda?.valores) return null;
+  const r = rejillaLaberinto({ filas: ronda.filas, cols: ronda.cols, rejilla: ronda.rejilla, ecs: ronda.ecs.map((e) => e.celdas) }, { conHuecos: false });
+  const huecos = new Set(ronda.huecos);
+  const nodos = [...r.el.children].filter((n) => !n.classList.contains("lab-camino"));
+  for (const x of ronda.rejilla) {
+    if (!huecos.has(x.k)) continue;
+    const n = nodos.find((el) => el.style.gridRow === String(x.r + 1) && el.style.gridColumn === String(x.c + 1));
+    if (!n) continue;
+    const sol = ronda.valores[x.k];
+    const tuyo = j.puestos?.[x.k];
+    n.textContent = String(sol);
+    n.classList.add("lleno", tuyo == null ? "sol-vacia" : Number(tuyo) === Number(sol) ? "sol-bien" : "sol-mal");
+    if (tuyo != null && Number(tuyo) !== Number(sol)) n.append(h("span.lab-tuyo", String(tuyo)));
+  }
+  return h(
+    "div.final-kk.final-lab.tarjeta",
+    h("small", j.ms != null ? "¡Completo! Así quedó" : "La solución"),
+    r.el,
     h("div.kk-leyenda", h("span", h("i", { style: { background: "#9be0bd" } }), "Lo tenías bien"), h("span", h("i", { style: { background: "#f6b1a8" } }), "Lo tenías mal (tachado, tu número)"))
   );
 }

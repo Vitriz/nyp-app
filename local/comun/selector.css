@@ -505,3 +505,14 @@
 .sel-atajo-teclas { display: flex; gap: 0.2rem; }
 .sel-atajo small { font-size: 0.72rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: #bcd0f5; }
 .sel-atajo span.sel-atajo-teclas { margin: 0; }
+
+/* Récords: filtros de tiempo y nivel en casillas */
+.records-filtros { display: flex; flex-direction: column; gap: 0.4rem; }
+.records-filtro { display: grid; grid-template-columns: 3.6rem 1fr; align-items: center; gap: 0.5rem; }
+.records-filtro .etiqueta { font-size: 0.68rem; letter-spacing: 0.08em; }
+.records-opciones { display: flex; gap: 0.25rem; padding: 0.25rem; border-radius: 0.8rem; background: rgba(6, 18, 56, 0.5); }
+.records-op {
+  appearance: none; flex: 1; min-width: 0; border: none; border-radius: 0.55rem; padding: 0.4rem 0.1rem; cursor: pointer; white-space: nowrap;
+  font: inherit; font-family: var(--fuente-ficha); font-weight: 900; font-size: 0.85rem; color: #dbe6ff; background: transparent;
+}
+.records-op.elegida { background: linear-gradient(180deg, #fff, var(--ficha-2)); color: var(--ficha-texto); box-shadow: 0 0.12rem 0 rgba(4, 12, 40, 0.5); }

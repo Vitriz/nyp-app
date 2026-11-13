@@ -374,10 +374,12 @@ export function pasosEnFichas(titulo, pasos, objetivo = null, clase = "") {
   return h(
     `div.pasos-fichas.tarjeta${clase}`,
     h("small", titulo),
-    pasos.map((t) => {
+    // Los pasos van apareciendo uno detrás de otro, como si se resolviera delante de ti.
+    pasos.map((t, k) => {
       const [a, op, b, , r] = String(t).split(" ");
       return h(
-        "div.lr-paso.ultimo",
+        "div.lr-paso.ultimo.paso-animado",
+        { style: { animationDelay: `${300 + k * 450}ms` } },
         h("span.ficha.mini", a),
         h("span.lr-paso-op", op),
         h("span.ficha.mini", b),

@@ -5,6 +5,8 @@ import { cargarPerfil, pantallaPerfil } from "./perfil.js";
 import { entrarParty } from "./party.js";
 import { pantallaGrupo, resolverSala } from "./grupo.js";
 import { actualizarPaquete } from "../solo/paquete.js";
+import { subirLuego } from "../comun/nube.js";
+import { idMovil } from "../comun/familia.js";
 
 vigilarEncaje(); // ningún número se sale de su casilla
 
@@ -17,6 +19,8 @@ const carcasa = window.NYP_CARCASA ?? null;
 const baseLocal = carcasa ? carcasa.baseLocal ?? null : servidor.base;
 
 let perfil = cargarPerfil();
+// Copia en la nube al abrir la app (perfil, récords y hazañas): si no hay internet, no pasa nada.
+if (perfil) subirLuego(idMovil(), perfil, 4000);
 let instalador = null;
 let estadoPaquete = null; // null | "preparando" | "descargando" | "listo" | "error"
 
@@ -87,6 +91,7 @@ function editarPerfil(despues) {
       titulo: perfil ? "Tu perfil" : "Crea tu perfil",
       alGuardar: (p) => {
         perfil = p;
+        subirLuego(idMovil(), perfil);
         despues();
       },
       alVolver: perfil ? inicio : null,

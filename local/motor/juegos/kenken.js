@@ -61,6 +61,50 @@ function operacion(azar, valores) {
   return { op, objetivo: op === "+" ? valores.reduce((x, y) => x + y, 0) : valores.reduce((x, y) => x * y, 1) };
 }
 
+/**
+ * Cuántas soluciones tiene el tablero (se para en `limite`). Se rellena jaula a jaula (las pequeñas
+ * primero) y se descartan pronto los caminos imposibles. Devuelve null si tarda demasiado (no se sabe).
+ */
+export function contarSoluciones(n, jaulasLista, limite = 2, maxNodos = 250000) {
+  const orden = [...jaulasLista].sort((a, b) => a.celdas.length - b.celdas.length);
+  const celdas = orden.flatMap((j) => j.celdas.map((k) => ({ k, j })));
+  const v = new Array(n * n).fill(0);
+  const fila = new Array(n).fill(0), col = new Array(n).fill(0);
+  let nodos = 0, cuenta = 0;
+  const posible = (j) => {
+    // Con las celdas que ya tiene la jaula, ¿aún puede llegar a su resultado?
+    const x = j.celdas.map((k) => v[k]).filter(Boolean);
+    const faltan = j.celdas.length - x.length;
+    if (!faltan) return jaulaBien(j, v);
+    if (j.op === "+") {
+      const suma = x.reduce((a, b) => a + b, 0);
+      return suma + faltan <= j.objetivo && suma + faltan * n >= j.objetivo;
+    }
+    if (j.op === "×") return j.objetivo % x.reduce((a, b) => a * b, 1) === 0;
+    return true;
+  };
+  function paso(i) {
+    if (cuenta >= limite || ++nodos > maxNodos) return;
+    if (i === celdas.length) return void cuenta++;
+    const { k, j } = celdas[i];
+    const r = Math.floor(k / n), c = k % n;
+    for (let x = 1; x <= n; x++) {
+      const bit = 1 << x;
+      if (fila[r] & bit || col[c] & bit) continue;
+      v[k] = x;
+      fila[r] |= bit;
+      col[c] |= bit;
+      if (posible(j)) paso(i + 1);
+      fila[r] &= ~bit;
+      col[c] &= ~bit;
+      v[k] = 0;
+      if (cuenta >= limite) return;
+    }
+  }
+  paso(0);
+  return nodos > maxNodos ? null : cuenta;
+}
+
 /** ¿Cumple la jaula? (con todas sus celdas llenas) */
 export function jaulaBien(j, valores) {
   const v = j.celdas.map((k) => valores[k]);
@@ -96,10 +140,19 @@ export default {
 
   crear({ azar, config, inicio = Date.now() }) {
     const { n, maxJaula } = NIVELES[nivelDificultad(config) + 1];
-    const sol = cuadradoLatino(azar, n).flat();
-    const { de, lista } = jaulas(azar, n, maxJaula);
-    const js = lista.map((celdas) => ({ celdas, ...operacion(azar, celdas.map((k) => sol[k])) }));
-    return { n, solucion: sol, jaulas: js, de, inicio, jugadores: {} };
+    // Se generan tableros hasta dar con uno de solución única (así la solución guardada es la única que vale).
+    let mejor = null;
+    for (let intento = 0; intento < 40; intento++) {
+      const sol = cuadradoLatino(azar, n).flat();
+      const { de, lista } = jaulas(azar, n, maxJaula);
+      const js = lista.map((celdas) => ({ celdas, ...operacion(azar, celdas.map((k) => sol[k])) }));
+      mejor ??= { sol, de, js };
+      if (contarSoluciones(n, js) === 1) {
+        mejor = { sol, de, js };
+        break;
+      }
+    }
+    return { n, solucion: mejor.sol, jaulas: mejor.js, de: mejor.de, inicio, jugadores: {} };
   },
 
   estadoJugador(ronda, id) {

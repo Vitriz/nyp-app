@@ -33,6 +33,7 @@ function cadenaUnaVez(azar, nivel, PASOS) {
   const inicio = v;
   const ops = [];
   const pasos = [String(v)];
+  const valores = [v]; // el resultado tras cada paso (para enseñar el camino si fallas)
   const vistos = new Set([v]);
   const INVERSA = { "+": "-", "-": "+", "*": "/", "/": "*" };
   for (let k = 1; k < PASOS; k++) {
@@ -54,9 +55,10 @@ function cadenaUnaVez(azar, nivel, PASOS) {
     v = op === "+" ? v + n : op === "-" ? v - n : op === "*" ? v * n : v / n;
     pasos.push(`${SIMBOLO[op]} ${n}`);
     ops.push([op, n]);
+    valores.push(v);
     vistos.add(v);
   }
-  return { pasos, expresion: expresion(inicio, ops), r: v, limpia };
+  return { pasos, valores, expresion: expresion(inicio, ops), r: v, limpia };
 }
 
 export default {
@@ -72,9 +74,11 @@ export default {
     const d = nivelDificultad(config);
     // Fácil: 3 operaciones y más tiempo para cada una; difícil: 5 y menos tiempo.
     const pasos = [4, 5, 6][d + 1];
-    // Sin límite de tiempo: 8 operaciones a su ritmo normal.
-    if (duracion >= SIN_LIMITE_MS) duracion = 8 * [25000, 18750, 15000][d + 1];
-    const n = Math.max(1, Math.min(8, Math.round(duracion / [25000, 18750, 15000][d + 1])));
+    // Sin límite de tiempo: las operaciones que se elijan (8 si no se dice), a su ritmo normal.
+    const ritmo = [25000, 18750, 15000][d + 1];
+    const elegidas = [5, 8, 12, 16, 20].includes(Number(config?.operaciones)) ? Number(config.operaciones) : 8;
+    if (duracion >= SIN_LIMITE_MS) duracion = elegidas * ritmo;
+    const n = Math.max(1, Math.min(20, Math.round(duracion / ritmo)));
     const tramo = duracion / n;
     const cadenas = [];
     for (let k = 0; k < n; k++) {
@@ -95,6 +99,7 @@ export default {
     return ronda.cadenas.map((c) => ({
       pasos: c.pasos, expresion: c.expresion, t0: c.t0, intervalo: c.intervalo, finPasos: c.finPasos, fin: c.fin,
       resultado: ahora > c.fin ? c.r : null,
+      valores: ahora > c.fin ? c.valores : null, // el camino, solo cuando ya se ve la solución
     }));
   },
 

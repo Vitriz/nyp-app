@@ -53,10 +53,19 @@ export function montar(cuerpo, e, ctx) {
         grande.replaceChildren(h("div.cm-expresion.apagada", expresionColor(m.c.pasos), h("span.cm-igual", " = ?")), h("span.cm-texto", "Respuesta enviada"), h("span.ficha.cm-paso", String(r.valor)));
       } else {
         const ok = r && r.valor === m.c.resultado;
+        // Si fallas (o no contestas), el camino paso a paso para ver dónde se torció.
+        const camino =
+          !ok && m.c.valores?.length > 1
+            ? h(
+                "div.cm-camino",
+                m.c.valores.slice(1).map((v, k) => h("span.cm-camino-paso", { style: { animationDelay: `${k * 120}ms` } }, `${m.c.valores[k]} ${m.c.pasos[k + 1]} = `, h("b", String(v))))
+              )
+            : null;
         grande.replaceChildren(
           h("div.cm-expresion.apagada", expresionColor(m.c.pasos), h("span.cm-igual", " =")),
-          h(`span.cm-texto${ok ? ".bien" : ""}`, r ? (ok ? "✔ ¡Correcto!" : "✘ Era") : "Era"),
-          h("span.ficha.cm-paso", String(m.c.resultado ?? "…"))
+          h(`span.cm-texto${ok ? ".bien" : ""}`, r ? (ok ? "✔ ¡Correcto!" : `✘ Pusiste ${r.valor}; era`) : "Era"),
+          h("span.ficha.cm-paso", String(m.c.resultado ?? "…")),
+          camino
         );
       }
     }

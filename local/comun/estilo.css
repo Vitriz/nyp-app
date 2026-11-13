@@ -480,3 +480,9 @@ html, body {
   font-style: normal; display: grid; place-items: center; width: 1.4em; height: 1.4em; border-radius: 50%;
   background: var(--zona-borde, #23407a); color: #fff; font-family: var(--fuente-ficha); font-weight: 900;
 }
+/* Llegar al resultado: la solución aparece paso a paso */
+.paso-animado { animation: paso-entra 420ms cubic-bezier(0.25, 1.35, 0.45, 1) both; }
+@keyframes paso-entra { from { opacity: 0; transform: translateY(0.5rem) scale(0.9); } }
+@media (prefers-reduced-motion: reduce) { .paso-animado { animation: none; } }
+/* Laberinto: el camino de una cuenta correcta se pone verde */
+.lab > .lab-camino.hecha { background: color-mix(in srgb, #6cc49a 70%, transparent); box-shadow: 0 0 0.6rem rgba(108, 196, 154, 0.7); }
