@@ -1040,3 +1040,9 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   font-family: var(--fuente-ficha); font-weight: 900; line-height: 1.05; text-align: center; white-space: nowrap; word-break: normal;
   font-size: min(1.05rem, calc(90cqw / (var(--n) * 0.72)));
 }
+/* Revuelto: la casilla de palabras y el botón Pasar nunca se pisan */
+.rv-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; }
+.rv-marcas { flex: 0 1 auto; }
+.rv-chip { flex-direction: row; align-items: baseline; gap: 0.5rem; padding: 0.4rem 0.8rem; white-space: nowrap; }
+.rv-chip small { font-size: 0.7rem; }
+.rv3 .rv-pasar { flex: none; width: auto; max-width: 45%; white-space: nowrap; }

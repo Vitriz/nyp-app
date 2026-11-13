@@ -132,23 +132,24 @@ export function entrarSolo({ app, perfil, alSalir }) {
           nivel: {
             lista: NIVELES,
             nombres: NOMBRES_NIVEL,
-            de: (j) => niveles[j.id] ?? "normal",
+            // Un solo nivel y un solo tiempo para todos los juegos (no cambian al moverte por la lista).
+            de: () => niveles["*"] ?? "normal",
             fijar: (j, nv) => {
-              niveles[j.id] = nv;
+              niveles["*"] = nv;
               almacen.guardar("nyp-niveles", JSON.stringify(niveles));
             },
           },
           tiempo: {
             lista: TIEMPOS,
-            de: (j) => tiempoValido(tiempos[j.id] ?? j.duracion),
+            de: () => tiempoValido(tiempos["*"] ?? 60),
             fijar: (j, s) => {
-              tiempos[j.id] = s;
+              tiempos["*"] = s;
               almacen.guardar("nyp-tiempos", JSON.stringify(tiempos));
             },
           },
           conAyuda: true,
           alJugar: async (j) => {
-            const meta = { ...j, duracion: tiempoValido(tiempos[j.id] ?? j.duracion), dificultad: niveles[j.id] ?? "normal" };
+            const meta = { ...j, duracion: tiempoValido(tiempos["*"] ?? 60), dificultad: niveles["*"] ?? "normal" };
             // Crucigrama: primero se elige el tema (o al azar).
             if (j.ambitos?.length) {
               const ambito = await elegirAmbito(j.ambitos);

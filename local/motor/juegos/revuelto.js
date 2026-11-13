@@ -12,7 +12,7 @@ export default {
   breve: "Separa las letras mezcladas en dos palabras.",
   descripcion: "Las 12 letras de dos palabras están mezcladas. Lee las dos definiciones, escribe una de las palabras y comprueba. Cada letra se usa una vez.",
 
-  crear({ azar, config }) {
+  crear({ azar, config, inicio = Date.now() }) {
     const d = nivelDificultad(config);
     // Las dos palabras suman siempre 12 letras: así las fichas ocupan siempre lo mismo.
     const pares = [[[5, 7], [6, 6]], [[4, 8], [5, 7], [6, 6]], [[4, 8], [5, 7], [6, 6]]][d + 1];
@@ -28,7 +28,7 @@ export default {
       if (a.clave === b.clave) continue;
       revueltos.push({ palabras: azar.barajar([a, b]), letras: azar.barajar([...(a.clave + b.clave)]) });
     }
-    return { revueltos, jugadores: {} };
+    return { revueltos, inicio, jugadores: {} };
   },
 
   estadoJugador(ronda, id) {
@@ -41,6 +41,7 @@ export default {
     return {
       i: j.i,
       total: ronda.revueltos.length,
+      totalPalabras: ronda.revueltos.length * 2,
       aciertos: j.aciertos,
       anterior: j.anterior,
       actual: r && {
@@ -81,6 +82,8 @@ export default {
     if (k < 0) return false;
     j.resueltas[k] = true;
     j.aciertos++;
+    // Todas las palabras: se apunta cuánto tardó (el récord es «¡COMPLETO!» y el tiempo).
+    if (j.aciertos === ronda.revueltos.length * 2) j.ms = Math.max(0, Date.now() - (ronda.inicio ?? Date.now()));
     if (j.resueltas.every(Boolean)) siguiente();
     return true;
   },
@@ -97,7 +100,14 @@ export default {
       // El revuelto en el que estaba: las resueltas en verde y las que faltaban, en rojo.
       const enCurso = r ? r.palabras.map((p, k) => ({ t: p.forma, ok: j.resueltas[k] })) : [];
       const detalle = [...(j.hechas ?? []), ...enCurso].map((x) => ({ t: x.t, k: x.ok ? "bien" : "mal" }));
-      return { id, valor: j.aciertos > 0 ? j.aciertos : null, texto: `${j.aciertos} ${j.aciertos === 1 ? "palabra" : "palabras"}`, corto: `${j.aciertos} ${j.aciertos === 1 ? "palabra" : "palabras"}`, detalle };
+      const total = ronda.revueltos.length * 2;
+      if (j.ms != null) {
+        const s = Math.round(j.ms / 1000);
+        const tiempo = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+        // Completo: gana siempre a cualquier cuenta de palabras; entre completos, el más rápido.
+        return { id, valor: 1e7 - j.ms, texto: `¡COMPLETO! en ${tiempo}`, corto: `¡COMPLETO! ${tiempo}`, detalle };
+      }
+      return { id, valor: j.aciertos > 0 ? j.aciertos : null, texto: `${j.aciertos} / ${total} palabras`, corto: `${j.aciertos} / ${total}`, detalle };
     });
   },
 

@@ -15,14 +15,9 @@ export function montar(cuerpo, e, ctx) {
   let gastadas = new Set();
   let ordenadas = false;
 
-  // Cabecera en casillas: qué revuelto es (n / total) y cuántas palabras llevas.
-  const numero = h("b");
+  // Cabecera: una sola casilla con las palabras que llevas de todas las que hay (0 / 40).
   const cuenta = h("b");
-  const marcas = h(
-    "div.rv-marcas",
-    h("span.rv-chip", h("small", "Revuelto"), numero),
-    h("span.rv-chip.ok", h("small", "Palabras"), cuenta)
-  );
+  const marcas = h("div.rv-marcas", h("span.rv-chip.ok", h("small", "Palabras"), cuenta));
   const pasar = botonMantener("⏭ Pasar", () => ctx.enviar({ a: "pasar", i: d.i }), { clase: ".suave.rv-pasar", ms: 800 });
   pasar.setAttribute("title", "Mantén pulsado para pasar a otro revuelto");
   const tarjetas = h("div.rv-defs");
@@ -135,8 +130,7 @@ export function montar(cuerpo, e, ctx) {
   }
 
   function pintarMarcas() {
-    numero.textContent = `${d.i + 1} / ${d.total ?? 20}`;
-    cuenta.textContent = String(d.aciertos);
+    cuenta.textContent = `${d.aciertos} / ${d.totalPalabras ?? (d.total ?? 20) * 2}`;
   }
 
   function pintar(animar = false) {

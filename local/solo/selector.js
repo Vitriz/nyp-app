@@ -113,9 +113,9 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
   const casillas = juegos.map((j, i) =>
     h(
       `button.sel-casilla.${j.categoria}${j.bloqueado ? ".bloqueado" : ""}`,
-      { type: "button", "data-i": i, title: j.nombre, "aria-label": j.nombre, onclick: () => ir(i) },
-      h("span", j.bloqueado ? "🔒" : ICONOS[j.id] ?? "🎲"),
-      h("span.sel-casilla-jugar", { "aria-hidden": "true" }, "▶")
+      // Tocar una casilla solo la elige; se juega con el botón de abajo (así no se empieza sin querer).
+      { type: "button", "data-i": i, title: j.nombre, "aria-label": j.nombre, onclick: () => ir(i, false) },
+      h("span", j.bloqueado ? "🔒" : ICONOS[j.id] ?? "🎲")
     )
   );
   const cuadricula = h("div.sel-cuadricula", { role: "listbox", "aria-label": "Juegos" }, casillas);
@@ -128,6 +128,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     vista = v;
     rueda.classList.toggle("oculto", vista !== "rueda");
     cuadricula.classList.toggle("oculto", vista !== "cuadricula");
+    jugarAbajo.classList.toggle("oculto", vista !== "cuadricula");
     botonVista.textContent = vista === "rueda" ? "▦" : "☰";
     botonVista.title = vista === "rueda" ? "Ver todos en cuadrícula" : "Ver como ruleta";
     botonVista.setAttribute("aria-label", botonVista.title);
@@ -139,6 +140,9 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       if (vista === "cuadricula") casillas[sel].scrollIntoView({ block: "nearest" });
     }
   }
+
+  // En la cuadrícula, el botón de jugar va abajo (con el nombre del juego elegido).
+  const jugarAbajo = h("button.boton.acento.grande.sel-jugar-abajo", { type: "button", onclick: () => elegir() });
 
   // ---- ficha del juego elegido
   const ficha = h("div.sel-ficha.tarjeta");
@@ -227,6 +231,8 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       setTimeout(() => esta.playState !== "finished" && esta.cancel(), 320);
     }
     contador.textContent = `${sel + 1} / ${n}`;
+    jugarAbajo.classList.toggle("bloqueado", Boolean(j.bloqueado));
+    jugarAbajo.replaceChildren(h("span.sel-jugar-icono", j.bloqueado ? "🔓" : "▶"), h("span.sel-jugar-nombre", j.bloqueado ? `Desbloquear ${j.nombre}` : `Jugar · ${j.nombre}`));
   }
 
   function cambiarTiempo(s) {
@@ -433,9 +439,10 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     h("div.sel-lado", ficha),
     h(
       "div.sel-lista",
-      h("div.sel-titulo", h("span", "Elige juego"), h("span.sel-titulo-der", contador, botonVista)),
+      h("div.sel-titulo", h("span.sel-titulo-texto", "🎮 Elige juego"), h("span.sel-titulo-der", contador, botonVista)),
       rueda,
       cuadricula,
+      jugarAbajo,
       h("p.sel-ayuda", tiempo ? `↑ ↓ juego · ← → tiempo${nivel ? " · 1 2 3 nivel" : ""}${conAyuda ? " · ? ayuda" : ""} · Enter para jugar` : "↑ ↓ para elegir · Enter para jugar")
     )
     )
