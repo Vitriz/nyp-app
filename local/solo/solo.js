@@ -1,5 +1,5 @@
 // Modo solo: los mismos juegos que en PARTY, ejecutados en el propio móvil, con récords personales.
-import { h, cambiarPantalla, banner, avatar, crearReloj, textoCuenta, piezaCuenta, detalleJugador, confeti, contarHasta, finalLlegar } from "../comun/ui.js";
+import { h, cambiarPantalla, banner, avatar, crearReloj, textoCuenta, piezaCuenta, detalleJugador, confeti, contarHasta, finalLlegar, palabraPendiente } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { almacen } from "../comun/conexion.js";
 import { leerPaquete, diccionarioIncluido, desbloquearDiccionario, actualizarIncluido } from "./paquete.js";
@@ -442,7 +442,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
     const anterior = apuntar(meta, r);
     const record = r.valor != null && (!anterior || r.valor > anterior.valor);
     if (record) navigator.vibrate?.([60, 60, 120]);
-    const textoR = h("p", r.texto);
+    const textoR = h("p.final-marca", r.texto);
     if (record) {
       // Récord nuevo: confeti dorado y la marca contando hasta su número.
       setTimeout(() => confeti(), 250);
@@ -451,17 +451,24 @@ export function entrarSolo({ app, perfil, alSalir }) {
     mostrar({
       el: h(
         "section",
-        barra(),
+        // El juego y sus ajustes, al lado del perfil (así abajo queda sitio para lo importante).
+        barra(h("div.barra-titulo", h("b", meta.nombre), h("small", `${textoSegundos(meta.duracion)} · ${NOMBRES_NIVEL[meta.dificultad ?? "normal"]}`))),
         h(
-          "div.espera",
-          h("span.suave", `${meta.nombre} · ${meta.duracion} s · ${NOMBRES_NIVEL[meta.dificultad ?? "normal"]}`),
-          h(`div.puesto-grande.aparece${record ? ".copa-record" : ""}`, record ? "🏆" : r.valor != null ? "👏" : "🙂"),
-          h(`h1${record ? ".titulo-record" : ""}`, record ? (anterior ? "¡Nuevo récord!" : "¡Primer récord!") : r.valor != null ? "¡Bien jugado!" : "Esta vez no ha salido"),
-          textoR,
-          meta.id === "llegar-resultado" ? null : detalleJugador(r.detalle, { clase: ".mis-respuestas" }),
-          anterior && !record ? h("p.suave", `Tu récord: ${anterior.texto}`) : null,
-          anterior && !record && meta.id === "llegar-resultado" ? detalleJugador(anterior.detalle, { clase: ".mis-respuestas.record" }) : null,
-          anterior && record ? h("p.suave", `Antes: ${anterior.texto}`) : null,
+          "div.espera.final-solo",
+          h(
+            "div.final-cabeza",
+            h(`div.puesto-grande.final-icono.aparece${record ? ".copa-record" : ""}`, record ? "🏆" : r.valor != null ? "👏" : "🙂"),
+            h(
+              "div.final-textos",
+              h(`h1${record ? ".titulo-record" : ""}`, record ? (anterior ? "¡Nuevo récord!" : "¡Primer récord!") : r.valor != null ? "¡Bien jugado!" : "Esta vez no ha salido"),
+              textoR,
+              anterior && !record ? h("small", `Tu récord: ${anterior.texto}`) : null,
+              anterior && record ? h("small", `Antes: ${anterior.texto}`) : null
+            )
+          ),
+          // La palabra que faltó sale aparte (en su tarjeta), no repetida entre las respuestas.
+          meta.id === "llegar-resultado" ? null : detalleJugador(r.pendiente ? r.detalle?.slice(0, -1) : r.detalle, { clase: ".mis-respuestas" }),
+          palabraPendiente(r.pendiente),
           solucion(meta, resumen, r)
         ),
         h(

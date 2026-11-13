@@ -86,9 +86,13 @@ export default {
   resultados(ronda, ids) {
     return ids.map((id) => {
       const j = ronda.jugadores[id];
-      if (!j || j.i === 0) return { id, valor: null, texto: "No jugó" };
+      if (!j) return { id, valor: null, texto: "No jugó" };
+      // La palabra en la que estaba cuando se acabó el tiempo también se enseña (sin resolver).
+      const w = ronda.palabras[j.i];
+      const pendiente = w ? { forma: w.forma, definicion: w.definicion } : null;
+      const detalle = [...(j.hechas ?? []), ...(pendiente ? [{ t: pendiente.forma, k: "mal" }] : [])];
       const p = j.pistas ? ` · ${j.pistas} ${j.pistas === 1 ? "pista" : "pistas"}` : "";
-      return { id, valor: j.puntos > 0 ? j.puntos : null, texto: `${j.aciertos} ${j.aciertos === 1 ? "acierto" : "aciertos"}${p}`, detalle: j.hechas ?? [] };
+      return { id, valor: j.puntos > 0 ? j.puntos : null, texto: `${j.aciertos} ${j.aciertos === 1 ? "acierto" : "aciertos"}${p}`, detalle, pendiente };
     });
   },
 

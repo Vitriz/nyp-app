@@ -90,9 +90,10 @@ export default {
   resultados(ronda, ids) {
     return ids.map((id) => {
       const j = ronda.jugadores[id];
-      if (!j || (j.i === 0 && !j.aciertos)) return { id, valor: null, texto: "No jugó" };
+      if (!j) return { id, valor: null, texto: "No jugó" };
       const r = ronda.revueltos[j.i];
-      const enCurso = r ? r.palabras.filter((_, k) => j.resueltas[k]).map((p) => ({ t: p.forma, ok: true })) : [];
+      // El revuelto en el que estaba: las resueltas en verde y las que faltaban, en rojo.
+      const enCurso = r ? r.palabras.map((p, k) => ({ t: p.forma, ok: j.resueltas[k] })) : [];
       const detalle = [...(j.hechas ?? []), ...enCurso].map((x) => ({ t: x.t, k: x.ok ? "bien" : "mal" }));
       return { id, valor: j.aciertos > 0 ? j.aciertos : null, texto: `${j.aciertos} ${j.aciertos === 1 ? "palabra" : "palabras"}`, detalle };
     });

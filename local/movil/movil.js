@@ -1,10 +1,12 @@
 // App NYP del móvil: inicio (perfil · jugar en grupo con PARTY · jugar solo).
 import { iniciarFondo } from "../comun/fondo.js";
-import { h, cambiarPantalla, banner, servidor } from "../comun/ui.js";
+import { h, cambiarPantalla, banner, servidor, vigilarEncaje } from "../comun/ui.js";
 import { cargarPerfil, pantallaPerfil } from "./perfil.js";
 import { entrarParty } from "./party.js";
 import { pantallaGrupo, resolverSala } from "./grupo.js";
 import { actualizarPaquete } from "../solo/paquete.js";
+
+vigilarEncaje(); // ningún número se sale de su casilla
 
 iniciarFondo({ espaciado: 30 });
 const app = document.getElementById("app");

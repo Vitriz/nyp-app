@@ -349,3 +349,7 @@ html, body {
 @keyframes reloj-tic { 0% { transform: scale(1.22); } 35% { transform: scale(0.97); } 100% { transform: scale(1); } }
 @keyframes reloj-tiembla { 20%, 60% { translate: -0.12rem 0; } 40%, 80% { translate: 0.12rem 0; } }
 @media (prefers-reduced-motion: reduce) { .reloj.apuro.tic, .reloj.ultimos.tic { animation: none; } }
+
+/* ---------- casillas: nunca más pequeñas que su contenido ---------- */
+.ficha { flex-shrink: 0; box-sizing: border-box; white-space: nowrap; }
+.encaja-txt { display: inline-block; white-space: nowrap; line-height: 1; }

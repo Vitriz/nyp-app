@@ -253,10 +253,10 @@ export function contarHasta(el, texto) {
  * Pasos de Llegar al resultado ("9 × 7 = 63") como filas de fichas pequeñas.
  * titulo: encima; objetivo: para marcar en verde cuando se llega.
  */
-export function pasosEnFichas(titulo, pasos, objetivo = null) {
+export function pasosEnFichas(titulo, pasos, objetivo = null, clase = "") {
   if (!pasos?.length) return null;
   return h(
-    "div.pasos-fichas.tarjeta",
+    `div.pasos-fichas.tarjeta${clase}`,
     h("small", titulo),
     pasos.map((t) => {
       const [a, op, b, , r] = String(t).split(" ");
@@ -278,13 +278,61 @@ export function finalLlegar(resumen, detalle) {
   const mios = (detalle ?? []).map((x) => x.t);
   const ultimo = mios.at(-1)?.split(" = ")[1];
   const exacto = ultimo != null && Number(ultimo) === resumen.objetivo;
+  // Lo tuyo en verde si llegaste y en rojo si no; la solución, aparte y en verde.
   return h(
     "div.final-llegar",
-    pasosEnFichas(exacto ? `Así llegaste a ${resumen.objetivo}` : "Tus pasos (lo más cerca)", mios, resumen.objetivo),
+    pasosEnFichas(exacto ? `✔ Así llegaste a ${resumen.objetivo}` : `✘ Tus pasos: te quedaste en ${ultimo ?? "—"}`, mios, resumen.objetivo, exacto ? ".bien" : ".mal"),
     !exacto && resumen.pasos?.length
-      ? pasosEnFichas(resumen.exacta ? `Una forma de llegar a ${resumen.objetivo}` : `Lo más cerca posible: ${resumen.valor}`, resumen.pasos, resumen.objetivo)
+      ? pasosEnFichas(resumen.exacta ? `Una forma de llegar a ${resumen.objetivo}` : `Lo más cerca posible: ${resumen.valor}`, resumen.pasos, resumen.objetivo, ".solucion")
       : null
   );
+}
+
+/** La palabra que se quedó sin resolver al acabar el tiempo (Definición). */
+export function palabraPendiente(p) {
+  if (!p) return null;
+  return h("div.pendiente.tarjeta", h("small", "✘ Te faltó esta"), h("b", p.forma.toUpperCase()), h("p", p.definicion));
+}
+
+// ------------------------------------------------------------------ que nada se salga de su casilla
+// Las fichas crecen con su contenido; pero si una casilla tiene ancho fijo (rejillas, huecos…) y el
+// número no cabe, se encoge solo el texto (la casilla mantiene su tamaño). Vale para toda la app.
+const CASILLAS = ".ficha, .lr-hueco, .tecla-l, .encaja";
+
+function encajar(el) {
+  if (!el.isConnected || el.children.length > 1) return;
+  let txt = el.firstElementChild;
+  if (txt && (txt.tagName !== "SPAN" || txt.children.length)) return; // casillas con más cosas dentro: no se tocan
+  const ancho = el.clientWidth;
+  if (!ancho) return;
+  if (txt) txt.style.fontSize = "";
+  if (el.scrollWidth <= ancho + 1) return;
+  if (!txt) {
+    if (!el.textContent.trim()) return;
+    txt = h("span.encaja-txt", el.textContent);
+    el.replaceChildren(txt);
+  }
+  const cs = getComputedStyle(el);
+  const libre = ancho - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const mide = txt.offsetWidth; // tamaño real (sin contar animaciones de escala)
+  if (mide > libre && libre > 0) txt.style.fontSize = `${Math.max(40, Math.floor((libre / mide) * 96))}%`;
+}
+
+let pendienteEncaje = false;
+function encajarTodo() {
+  if (pendienteEncaje) return;
+  pendienteEncaje = true;
+  setTimeout(() => {
+    pendienteEncaje = false;
+    document.querySelectorAll(CASILLAS).forEach(encajar);
+  }, 30);
+}
+
+/** Se llama una vez al arrancar la app (móvil o TV). */
+export function vigilarEncaje() {
+  new MutationObserver(encajarTodo).observe(document.body, { subtree: true, childList: true, characterData: true });
+  addEventListener("resize", encajarTodo);
+  encajarTodo();
 }
 
 export function textoPuesto(p) {

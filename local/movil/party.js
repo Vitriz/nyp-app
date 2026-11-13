@@ -1,6 +1,6 @@
 // Modo partida: conectado a PARTY (la TV). Esperar, jugar y ver resultados.
 import { conectar, almacen } from "../comun/conexion.js";
-import { h, cambiarPantalla, avatar, banner, crearReloj, textoPuesto, textoCuenta, piezaCuenta, servidor, detalleJugador, finalLlegar } from "../comun/ui.js";
+import { h, cambiarPantalla, avatar, banner, crearReloj, textoPuesto, textoCuenta, piezaCuenta, servidor, detalleJugador, finalLlegar, palabraPendiente } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { actualizarPaquete } from "../solo/paquete.js";
 import { mensajeRecords, guardarFamilia } from "../comun/familia.js";
@@ -307,7 +307,8 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
           h("h1", mio?.puesto ? `${mio.puesto}º puesto` : "Esta vez no has puntuado"),
           h("p", mio?.texto ?? ""),
           mio?.puntos ? h("p.suave", `+${mio.puntos} puntos`) : null,
-          e.juego.id === "llegar-resultado" ? finalLlegar(e.resumen, mio?.detalle) : detalleJugador(mio?.detalle, { clase: ".mis-respuestas" }),
+          e.juego.id === "llegar-resultado" ? finalLlegar(e.resumen, mio?.detalle) : detalleJugador(mio?.pendiente ? mio.detalle?.slice(0, -1) : mio?.detalle, { clase: ".mis-respuestas" }),
+          palabraPendiente(mio?.pendiente),
           h(
             "div.lista-mini",
             (e.resultados ?? []).slice(0, 8).map((r) =>
