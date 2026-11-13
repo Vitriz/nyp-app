@@ -152,6 +152,26 @@ export function botonMantener(texto, alConfirmar, { ms = 900, clase = "" } = {})
   return b;
 }
 
+/** Cuenta atrás de 4 s: "3", "2", "1" (un segundo cada uno) y "¡YA!" el último segundo. */
+export function textoCuenta(restanteMs) {
+  return restanteMs > 1000 ? String(Math.max(1, Math.min(3, Math.ceil((restanteMs - 1000) / 1000)))) : "¡YA!";
+}
+
+/**
+ * Lo que respondió un jugador: [{ t, k }] con k = bien | mal | pista | tuti | mejor | paso.
+ * max: cuántas se enseñan como mucho (el resto, "+N").
+ */
+export function detalleJugador(detalle, { max = Infinity, clase = "" } = {}) {
+  if (!detalle?.length) return null;
+  const vistos = detalle.slice(0, max);
+  const resto = detalle.length - vistos.length;
+  return h(
+    `div.respuestas${clase}`,
+    vistos.map((x) => h(`span.det.det-${x.k ?? "bien"}`, x.k === "mal" ? "✘ " : x.k === "pista" ? "💡 " : x.k === "mejor" ? "🏆 " : "", x.t)),
+    resto > 0 ? h("span.det.det-mas", `+${resto}`) : null
+  );
+}
+
 export function textoPuesto(p) {
   return p == null ? "–" : `${p}º`;
 }

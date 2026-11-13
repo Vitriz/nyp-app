@@ -286,3 +286,23 @@ html, body {
 
 /* Banners: el icono (foto o iniciales) más grande, asomando un poco del banner */
 .banner .avatar { width: 2.9em; height: 2.9em; margin: -0.35em 0 -0.35em -0.3em; box-shadow: 0 0.12em 0.35em rgba(4, 12, 40, 0.5); }
+
+/* ---------- operaciones con paréntesis de colores (Cálculo mental, Pulsador) ---------- */
+.ex-op, .ex-par { color: var(--c, inherit); }
+.ex-op { white-space: nowrap; }
+.ex-ini { white-space: nowrap; }
+.ex-par { font-weight: 900; }
+.apagada { opacity: 0.6; }
+.ex-lista { font-family: var(--fuente-ficha); font-weight: 800; }
+
+/* ---------- respuestas de cada jugador en los resultados ---------- */
+.respuestas { display: flex; flex-wrap: wrap; gap: 0.3em; }
+.det {
+  display: inline-flex; align-items: center; padding: 0.12em 0.55em; border-radius: 999px; font-weight: 800; font-size: 0.85em;
+  background: rgba(108, 196, 154, 0.18); border: 1.5px solid rgba(108, 196, 154, 0.55); color: #d9f5e6; white-space: nowrap;
+}
+.det-mal { background: rgba(232, 106, 98, 0.14); border-color: rgba(232, 106, 98, 0.5); color: #f6c9c5; }
+.det-pista { background: rgba(240, 212, 85, 0.12); border-color: rgba(240, 212, 85, 0.45); color: #f6e7a8; }
+.det-tuti, .det-mejor { background: linear-gradient(180deg, #ffe48a, #f0c64a); border-color: #f0c64a; color: #3a2a00; }
+.det-paso { background: rgba(120, 160, 255, 0.14); border-color: var(--borde-suave); color: var(--texto); font-variant-numeric: tabular-nums; }
+.det-mas { background: transparent; border-style: dashed; border-color: var(--borde-suave); color: var(--texto-suave); }

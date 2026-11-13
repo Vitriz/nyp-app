@@ -1,6 +1,6 @@
 // Modo partida: conectado a PARTY (la TV). Esperar, jugar y ver resultados.
 import { conectar, almacen } from "../comun/conexion.js";
-import { h, cambiarPantalla, avatar, banner, crearReloj, textoPuesto, servidor } from "../comun/ui.js";
+import { h, cambiarPantalla, avatar, banner, crearReloj, textoPuesto, textoCuenta, servidor, detalleJugador } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { actualizarPaquete } from "../solo/paquete.js";
 
@@ -249,8 +249,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
       const el = h("section", barraSuperior(e).el, caja);
       let ultimo = null;
       const reloj = setInterval(() => {
-        const s = Math.ceil((estado.fin - con.ahora()) / 1000);
-        const t = s > 0 ? String(Math.min(3, s)) : "¡YA!";
+        const t = textoCuenta(estado.fin - con.ahora());
         if (t !== ultimo) {
           ultimo = t;
           caja.replaceChildren(h("span.ficha.cuenta-num.aparece", t));
@@ -302,10 +301,15 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
           h("h1", mio?.puesto ? `${mio.puesto}º puesto` : "Esta vez no has puntuado"),
           h("p", mio?.texto ?? ""),
           mio?.puntos ? h("p.suave", `+${mio.puntos} puntos`) : null,
+          detalleJugador(mio?.detalle, { clase: ".mis-respuestas" }),
           h(
             "div.lista-mini",
-            (e.resultados ?? []).slice(0, 5).map((r) =>
-              h(`div.item.tarjeta${r.id === e.yo.id ? ".yo" : ""}`, h("span", textoPuesto(r.puesto)), avatar(r), h("span.n", r.nombre), h("span.suave", r.texto))
+            (e.resultados ?? []).slice(0, 8).map((r) =>
+              h(
+                `div.item.tarjeta${r.id === e.yo.id ? ".yo" : ""}`,
+                h("div.item-fila", h("span", textoPuesto(r.puesto)), avatar(r), h("span.n", r.nombre), h("span.suave", r.texto)),
+                r.id === e.yo.id ? null : detalleJugador(r.detalle, { max: 8 })
+              )
             )
           )
         )

@@ -55,7 +55,7 @@ export default {
   },
 
   estadoJugador(ronda, id) {
-    return (ronda.jugadores[id] ??= { mejor: null, ultimo: null, intentos: 0, listo: false });
+    return (ronda.jugadores[id] ??= { mejor: null, ultimo: null, intentos: 0, listo: false, validas: [] });
   },
 
   vistaJugador(ronda, id) {
@@ -89,6 +89,7 @@ export default {
     else if (!esValida(clave(c))) motivo = "No está en el diccionario";
     else ok = true;
     j.ultimo = { n: j.intentos, palabra: c, ok, motivo, forma: ok ? formaVisible(c) : null };
+    if (ok && !j.validas.includes(c)) j.validas.push(c);
     if (ok && (!j.mejor || c.length > j.mejor.largo)) j.mejor = { clave: c, forma: formaVisible(c), largo: c.length };
     if (ok) j.ultimo.mejora = j.mejor.clave === c;
     return true;
@@ -103,7 +104,10 @@ export default {
       const j = ronda.jugadores[id];
       if (!j) return { id, valor: null, texto: "No jugó" };
       if (!j.mejor) return { id, valor: null, texto: "Sin palabra válida" };
-      return { id, valor: j.mejor.largo, texto: `${j.mejor.forma.toUpperCase()} · ${j.mejor.largo}` };
+      const detalle = [...(j.validas ?? [])]
+        .sort((a, b) => b.length - a.length)
+        .map((c) => ({ t: `${formaVisible(c)} · ${c.length}`, k: c === j.mejor.clave ? "mejor" : "bien" }));
+      return { id, valor: j.mejor.largo, texto: `${j.mejor.forma.toUpperCase()} · ${j.mejor.largo}`, detalle };
     });
   },
 

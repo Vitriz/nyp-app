@@ -1,12 +1,12 @@
 // Pulsador · TV: la pregunta en grande y, cuando alguien pulsa, su nombre bien visible.
 import { h, avatar } from "../../comun/ui.js";
-import { tarjetasJugadores } from "../comun/util.js";
+import { tarjetasJugadores, expresionColor } from "../comun/util.js";
 
 export function pintarPregunta(p) {
   if (!p) return [h("p.pul-texto", "¡Se acabaron las preguntas!")];
   const partes = [h("span.etiqueta.pul-titulo", p.titulo)];
-  // Las operaciones se hacen en orden: las flechas lo dejan claro (6 → − 3 → × 3 no es 6 − 9).
-  if (p.tipo === "calculo") partes.push(h("div.pul-fichas", p.pasos.flatMap((x, i) => [i ? h("span.pul-flecha", "→") : null, h("span.ficha", x)])));
+  // Los paréntesis (cada operación de un color) dejan claro el orden: ((6 − 3) × 3) no es 6 − 9.
+  if (p.tipo === "calculo") partes.push(h("div.cm-expresion.pul-expresion", expresionColor(p.pasos), h("span.cm-igual", " = ?")));
   if (p.tipo === "revuelto") partes.push(h("div.pul-fichas", p.letras.map((l) => h("span.ficha", l.toUpperCase()))));
   if (p.texto) partes.push(h("p.pul-texto", p.texto));
   if (p.pista) partes.push(h("span.pul-pista.suave", p.pista));
@@ -16,7 +16,8 @@ export function pintarPregunta(p) {
 export function montar(cuerpo, e, ctx) {
   const pregunta = h("div.pul-pregunta");
   const anterior = h("div.pul-anterior");
-  const caja = h("div.pul-tv", pregunta, anterior);
+  const cuentaLeer = h("div.pul-leer");
+  const caja = h("div.pul-tv", pregunta, cuentaLeer, anterior);
   cuerpo.append(caja);
   const tarjetas = tarjetasJugadores(caja, ctx, (e, id) => {
     const d = e.datos;
@@ -24,9 +25,19 @@ export function montar(cuerpo, e, ctx) {
     return { valor: d.aciertos[id] ?? 0, extra: d.bloqueados.includes(id) ? "✘" : "" };
   });
   let ultimaI = -1, ultimoPulsado = null, capa = null, anteriorVisto = -1;
+  let d = e.datos;
+  // Unos segundos para leer: hasta entonces no se puede pulsar.
+  const reloj = setInterval(() => {
+    const falta = d?.pregunta ? (d.abre ?? 0) - ctx.ahora() : 0;
+    const txt = falta > 0 ? `Leed la pregunta… ${Math.ceil(falta / 1000)}` : d?.pregunta && !d.pulsado ? "¡Ya se puede pulsar!" : "";
+    if (cuentaLeer.textContent !== txt) {
+      cuentaLeer.textContent = txt;
+      cuentaLeer.classList.toggle("abierto", falta <= 0);
+    }
+  }, 100);
 
   function actualizar(e) {
-    const d = e.datos;
+    d = e.datos;
     if (!d) return;
     if (d.i !== ultimaI) {
       ultimaI = d.i;
@@ -60,5 +71,5 @@ export function montar(cuerpo, e, ctx) {
   }
 
   actualizar(e);
-  return { actualizar };
+  return { actualizar, desmontar: () => clearInterval(reloj) };
 }

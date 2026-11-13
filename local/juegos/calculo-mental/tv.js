@@ -1,6 +1,6 @@
 // Cálculo mental · TV: la cadena en grande, sincronizada con los móviles.
 import { h } from "../../comun/ui.js";
-import { tarjetasJugadores, momentoCadena, reiniciarAnim } from "../comun/util.js";
+import { tarjetasJugadores, momentoCadena, reiniciarAnim, expresionColor } from "../comun/util.js";
 
 export function montar(cuerpo, e, ctx) {
   let d = e.datos;
@@ -28,10 +28,10 @@ export function montar(cuerpo, e, ctx) {
       else if (m.fase === "pasos") {
         grande.replaceChildren(h("span.ficha", m.c.pasos[m.paso]));
         reiniciarAnim(grande.firstChild, "aparece");
-      } else if (m.fase === "responder") grande.replaceChildren(h("div.cm-expresion-tv", m.c.expresion ?? m.c.pasos.join(" "), h("span.cm-igual", " = ?")));
+      } else if (m.fase === "responder") grande.replaceChildren(h("div.cm-expresion-tv", expresionColor(m.c.pasos), h("span.cm-igual", " = ?")));
       else
         grande.replaceChildren(
-          h("div.cm-expresion-tv.suave", m.c.expresion ?? m.c.pasos.join(" "), " ="),
+          h("div.cm-expresion-tv.apagada", expresionColor(m.c.pasos), h("span.cm-igual", " =")),
           h("span.ficha", String(m.c.resultado ?? "…"))
         );
     }
@@ -57,6 +57,6 @@ export function resumen(r) {
     "div.pl-resumen.tarjeta.aparece",
     { style: { animationDelay: "900ms" } },
     h("span.etiqueta", "Las operaciones eran"),
-    h("div.df-lista-tv", r.cadenas.map((c) => h("div.df-item-tv", h("span", c.expresion ?? c.pasos.join(" → ")), h("b", `= ${c.r}`))))
+    h("div.df-lista-tv", r.cadenas.map((c) => h("div.df-item-tv", h("span.ex-lista", expresionColor(c.pasos)), h("b", `= ${c.r}`))))
   );
 }

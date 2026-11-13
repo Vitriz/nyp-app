@@ -1,5 +1,6 @@
-// REVUELTO · dos definiciones y las letras de las dos palabras mezcladas.
+// REVUELTO · dos definiciones y las 12 letras de las dos palabras mezcladas.
 // Todos reciben la misma serie de revueltos. Cada palabra encontrada cuenta 1.
+// No se dice ni el tipo de palabra ni su largo: solo que entre las dos suman 12 letras.
 import { clave, elegirDefiniciones } from "../lexico.js";
 import { huella, nivelDificultad } from "../util.js";
 
@@ -8,21 +9,29 @@ export default {
   nombre: "Revuelto",
   categoria: "palabras",
   duracion: 90,
-  descripcion: "Las letras de dos palabras están mezcladas. Lee las dos definiciones y encuentra las palabras. Cada letra se usa una vez.",
+  descripcion: "Las 12 letras de dos palabras están mezcladas. Lee las dos definiciones, escribe una de las palabras y comprueba. Cada letra se usa una vez.",
 
   crear({ azar, config }) {
     const d = nivelDificultad(config);
-    const defs = elegirDefiniciones(azar, 40, [{ largoMin: 4, largoMax: 5, nivelMax: 1 }, { largoMin: 4, largoMax: 7, nivelMax: 1 }, { largoMin: 5, largoMax: 8, nivelMax: 2 }][d + 1]);
+    // Las dos palabras suman siempre 12 letras: así las fichas ocupan siempre lo mismo.
+    const pares = [[[5, 7], [6, 6]], [[4, 8], [5, 7], [6, 6]], [[4, 8], [5, 7], [6, 6]]][d + 1];
+    const defs = elegirDefiniciones(azar, 160, { largoMin: 4, largoMax: 8, nivelMax: d > 0 ? 2 : 1 });
+    const porLargo = new Map();
+    for (const x of defs) porLargo.set(x.clave.length, [...(porLargo.get(x.clave.length) ?? []), x]);
     const revueltos = [];
-    for (let k = 0; k + 1 < defs.length; k += 2) {
-      const [a, b] = [defs[k], defs[k + 1]];
-      revueltos.push({ palabras: [a, b], letras: azar.barajar([...(a.clave + b.clave)]) });
+    for (let intento = 0; revueltos.length < 20 && intento < 300; intento++) {
+      const [la, lb] = azar.elegir(pares);
+      const A = porLargo.get(la), B = porLargo.get(lb);
+      if (!A?.length || !B?.length || (la === lb && A.length < 2)) continue;
+      const a = A.pop(), b = B.pop();
+      if (a.clave === b.clave) continue;
+      revueltos.push({ palabras: azar.barajar([a, b]), letras: azar.barajar([...(a.clave + b.clave)]) });
     }
     return { revueltos, jugadores: {} };
   },
 
   estadoJugador(ronda, id) {
-    return (ronda.jugadores[id] ??= { i: 0, resueltas: [false, false], aciertos: 0, anterior: null });
+    return (ronda.jugadores[id] ??= { i: 0, resueltas: [false, false], aciertos: 0, anterior: null, hechas: [] });
   },
 
   vistaJugador(ronda, id) {
@@ -34,10 +43,9 @@ export default {
       anterior: j.anterior,
       actual: r && {
         letras: r.letras,
+        // Sin tipo de palabra ni largo: solo la definición y la huella para comprobar al momento.
         palabras: r.palabras.map((p, k) => ({
           definicion: p.definicion,
-          categoria: p.categoria,
-          largo: p.clave.length,
           h: huella(p.clave),
           resuelta: j.resueltas[k] ? p.forma : null,
         })),
@@ -57,6 +65,7 @@ export default {
     if (!r || msg.i !== j.i) return false;
     const siguiente = () => {
       j.anterior = { n: j.i, formas: r.palabras.map((p) => p.forma), resueltas: [...j.resueltas] };
+      j.hechas.push(...r.palabras.map((p, k) => ({ t: p.forma, ok: j.resueltas[k] })));
       j.i++;
       j.resueltas = [false, false];
     };
@@ -82,7 +91,10 @@ export default {
     return ids.map((id) => {
       const j = ronda.jugadores[id];
       if (!j || (j.i === 0 && !j.aciertos)) return { id, valor: null, texto: "No jugó" };
-      return { id, valor: j.aciertos > 0 ? j.aciertos : null, texto: `${j.aciertos} ${j.aciertos === 1 ? "palabra" : "palabras"}` };
+      const r = ronda.revueltos[j.i];
+      const enCurso = r ? r.palabras.filter((_, k) => j.resueltas[k]).map((p) => ({ t: p.forma, ok: true })) : [];
+      const detalle = [...(j.hechas ?? []), ...enCurso].map((x) => ({ t: x.t, k: x.ok ? "bien" : "mal" }));
+      return { id, valor: j.aciertos > 0 ? j.aciertos : null, texto: `${j.aciertos} ${j.aciertos === 1 ? "palabra" : "palabras"}`, detalle };
     });
   },
 

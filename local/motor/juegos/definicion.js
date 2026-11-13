@@ -22,7 +22,7 @@ export default {
   },
 
   estadoJugador(ronda, id) {
-    return (ronda.jugadores[id] ??= { i: 0, aciertos: 0, pistas: 0, puntos: 0, reveladas: 0, anterior: null });
+    return (ronda.jugadores[id] ??= { i: 0, aciertos: 0, pistas: 0, puntos: 0, reveladas: 0, anterior: null, hechas: [] });
   },
 
   vistaJugador(ronda, id) {
@@ -56,6 +56,7 @@ export default {
     if (!w || msg.i !== j.i) return false;
     const siguiente = (ok) => {
       j.anterior = { n: j.i, forma: w.forma, ok };
+      j.hechas.push({ t: w.forma, k: ok ? (j.reveladas ? "pista" : "bien") : "mal" });
       j.i++;
       j.reveladas = 0;
     };
@@ -87,7 +88,7 @@ export default {
       const j = ronda.jugadores[id];
       if (!j || j.i === 0) return { id, valor: null, texto: "No jugó" };
       const p = j.pistas ? ` · ${j.pistas} ${j.pistas === 1 ? "pista" : "pistas"}` : "";
-      return { id, valor: j.puntos > 0 ? j.puntos : null, texto: `${j.aciertos} ${j.aciertos === 1 ? "acierto" : "aciertos"}${p}` };
+      return { id, valor: j.puntos > 0 ? j.puntos : null, texto: `${j.aciertos} ${j.aciertos === 1 ? "acierto" : "aciertos"}${p}`, detalle: j.hechas ?? [] };
     });
   },
 

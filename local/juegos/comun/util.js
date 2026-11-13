@@ -113,6 +113,25 @@ export function tecladoNumerico(alPulsar) {
   return el;
 }
 
+/** Colores de las operaciones, siempre en el mismo orden (arcoíris): verde, azul, morado, rosa, naranja, amarillo. */
+export const COLORES_OPS = ["#5fd68e", "#5aaaf2", "#ae8ef5", "#f47fb0", "#f5a05a", "#f0d455"];
+
+/**
+ * ["500", "+ 50", "÷ 2", "+ 15"] -> (((500 + 50) ÷ 2) + 15) con cada operación (y sus paréntesis) de un color.
+ * Devuelve los trozos para meter en un contenedor.
+ */
+export function expresionColor(pasos) {
+  const ops = pasos.slice(1);
+  const color = (k) => ({ style: { "--c": COLORES_OPS[k % COLORES_OPS.length] } });
+  const abre = [];
+  for (let k = ops.length - 1; k >= 0; k--) abre.push(h("span.ex-par", color(k), "("));
+  return [
+    h("span.ex-ini", abre, pasos[0]),
+    // Un espacio normal entre operación y operación: si no cabe, la línea se parte por ahí.
+    ...ops.flatMap((o, k) => [" ", h("span.ex-op", color(k), o.replace(" ", "\u00a0"), h("span.ex-par", ")"))]),
+  ];
+}
+
 /** Estado de una cadena de Cálculo mental en un instante dado. */
 export function momentoCadena(cadenas, ahora) {
   for (let k = 0; k < cadenas.length; k++) {

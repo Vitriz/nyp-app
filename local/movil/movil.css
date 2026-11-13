@@ -511,3 +511,53 @@ html, body { height: 100dvh; }
 .barra-sup .banner .avatar { width: 3.1em; height: 3.1em; margin: -0.4em 0 -0.4em -0.35em; }
 .banner-grande .avatar { width: 3.3em; height: 3.3em; }
 .barra-sup { min-height: 3.4rem; }
+
+/* Tecla Mayús del teclado de nombres */
+.tecla-l.mayus { flex: 1.4; max-width: 3.6rem; background: var(--superficie-2); color: var(--texto); border-color: var(--borde-suave); }
+.tecla-l.mayus.activa { background: linear-gradient(180deg, #8fd0ff, var(--acento)); color: #0b2546; }
+.tecla-l.mayus.bloqueada { background: linear-gradient(180deg, #ffe08a, var(--oro)); color: #3a2a00; }
+
+/* Pulsador: unos segundos para leer */
+.pul-boton.leyendo { filter: grayscale(0.7) brightness(0.8); }
+.pul-boton.leyendo span { font-size: 1.6em; }
+
+/* ---------- revuelto: definiciones arriba, una sola línea en medio y las 12 letras abajo ---------- */
+.rv3 { gap: 0.6rem; }
+.rv-arriba { display: flex; flex-direction: column; gap: 0.45rem; }
+.rv-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.rv-numero { font-weight: 800; color: var(--texto-suave); font-size: 0.95rem; }
+.rv-pasar { min-height: 2.5rem; padding: 0.2rem 0.9rem; font-size: 0.95rem; }
+.rv3 .rv-tarjeta { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.55rem 0.75rem; }
+.rv3 .rv-num { flex: none; margin-top: 0.1rem; }
+.rv3 .rv-texto { flex: 1; min-width: 0; }
+.rv3 .rv-def { margin: 0; }
+.rv3 .rv-tarjeta.resuelta .rv-def { color: var(--texto-suave); font-size: 0.95rem; font-weight: 700; }
+.rv-sol { display: block; color: var(--bien); font-size: 1.35rem; font-weight: 900; letter-spacing: 0.04em; }
+.rv-tarjeta.acierto { animation: rebote 420ms var(--curva); }
+.rv-medio { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 0.4rem; min-height: 4.5rem; }
+.rv-linea {
+  display: flex; justify-content: center; align-items: center; gap: 0.2rem; min-height: 3.6rem; padding: 0.35rem;
+  border-radius: var(--radio); background: #17346f; border: 2px solid rgba(160, 190, 255, 0.25);
+  font-size: min(1.9rem, calc((var(--ancho) - 3rem) / 12 / 1.15));
+}
+.rv-escrita { width: 1.15em; height: 1.3em; font-size: 1em; padding: 0; cursor: pointer; }
+.rv-marcador { font-size: 1rem; color: var(--texto-suave); font-weight: 700; }
+.rv-abajo { display: flex; flex-direction: column; gap: 0.55rem; }
+.rv3 .rv-letras { margin-top: 0; }
+
+/* ---------- llegar al resultado: objetivo arriba, números y operaciones abajo ---------- */
+.lr-objetivo { flex-direction: column; gap: 0.25rem; }
+.lr-objetivo .lr-numero { width: auto; min-width: 3.2em; height: auto; padding: 0.05em 0.4em; font-size: 3.2rem; line-height: 1.15; text-align: center; display: grid; place-items: center; }
+.lr-mejor-caja { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; }
+.lr-mejor-pasos { font-size: 0.85rem; font-weight: 700; text-align: center; color: var(--texto); font-variant-numeric: tabular-nums; }
+.lr-abajo { display: flex; flex-direction: column; gap: 0.6rem; margin-top: auto; }
+.lr .lr-historial { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+/* Resultados: tus respuestas y las de los demás */
+.mis-respuestas { justify-content: center; font-size: 1rem; max-width: 100%; }
+.mis-respuestas.record { opacity: 0.75; font-size: 0.9rem; }
+.lista-mini .item { flex-direction: column; align-items: stretch; gap: 0.35rem; }
+.lista-mini .item-fila { display: flex; align-items: center; gap: 0.7rem; }
+.lista-mini .item .respuestas { font-size: 0.8rem; }
+.espera { justify-content: safe center; overflow-y: auto; }
+.rv3 .fila-acciones .pl-comprobar { white-space: nowrap; font-size: 1.1rem; }

@@ -95,7 +95,12 @@ export default {
       const j = ronda.jugadores[id];
       if (!j || !j.encontradas.length) return { id, valor: null, texto: j ? "Ninguna palabra" : "No jugó" };
       const n = j.encontradas.length;
-      return { id, valor: j.puntos, texto: `${n} ${n === 1 ? "palabra" : "palabras"} · ${j.puntos} en el panal` };
+      const tutis = j.encontradas.filter((e) => e.tuti).length;
+      const detalle = [...j.encontradas]
+        .sort((a, b) => b.tuti - a.tuti || b.pts - a.pts)
+        .map((e) => ({ t: `${e.tuti ? "🌈 " : ""}${e.forma} +${e.pts}`, k: e.tuti ? "tuti" : "bien" }));
+      const extra = tutis ? ` · ${tutis} ${tutis === 1 ? "tuti" : "tutis"}` : "";
+      return { id, valor: j.puntos, texto: `${n} ${n === 1 ? "palabra" : "palabras"} · ${j.puntos} puntos${extra}`, detalle };
     });
   },
 

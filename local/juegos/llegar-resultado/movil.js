@@ -21,6 +21,7 @@ export function montar(cuerpo, e, ctx) {
   let mejorAlcanzado = e.datos.mejor ?? null; // cuenta lo mejor que hayas llegado a tener, aunque luego deshagas
 
   const mejor = h("div.lr-mejor");
+  const mejorPasos = h("div.lr-mejor-pasos");
   const aviso = h("div.pl-aviso");
   const fichas = h("div.lr-fichas");
   const botonesOp = h(
@@ -34,13 +35,11 @@ export function montar(cuerpo, e, ctx) {
   cuerpo.append(
     h(
       "div.lr",
-      h("div.lr-objetivo", h("span.suave", "Objetivo"), h("span.ficha.oscura", String(objetivo))),
-      mejor,
-      fichas,
-      botonesOp,
-      aviso,
+      h("div.lr-objetivo", h("span.suave", "Objetivo"), h("span.ficha.oscura.lr-numero", String(objetivo))),
+      h("div.lr-mejor-caja", mejor, mejorPasos),
       historial,
-      h("div.pl-botones", deshacer, borrar)
+      aviso,
+      h("div.lr-abajo", fichas, botonesOp, h("div.pl-botones", deshacer, borrar))
     )
   );
 
@@ -57,19 +56,22 @@ export function montar(cuerpo, e, ctx) {
     return { lista, pasos };
   }
 
+  /** Lo más cerca que se ha llegado con las operaciones de ahora, con los pasos que llevan a ese número. */
   function mejorLocal() {
     if (!ops.length) return null;
     let m = null;
-    let lista = [...base];
-    const todos = [...base];
+    let lista = base.map((v) => ({ v, pasos: [] }));
+    const todos = [...lista];
     for (const o of ops) {
-      const r = operar(lista[o.a], o.op, lista[o.b]);
-      lista = [...lista.filter((_, k) => k !== o.a && k !== o.b), r];
-      todos.push(r);
+      const a = lista[o.a], b = lista[o.b];
+      const r = operar(a.v, o.op, b.v);
+      const nuevo = { v: r, pasos: [...a.pasos, ...b.pasos, `${a.v} ${SIMBOLO[o.op]} ${b.v} = ${r}`] };
+      lista = [...lista.filter((_, k) => k !== o.a && k !== o.b), nuevo];
+      todos.push(nuevo);
     }
-    for (const v of todos) {
-      const d = Math.abs(v - objetivo);
-      if (!m || d < m.dist) m = { valor: v, dist: d };
+    for (const x of todos) {
+      const d = Math.abs(x.v - objetivo);
+      if (!m || d < m.dist) m = { valor: x.v, dist: d, pasos: x.pasos };
     }
     return m;
   }
@@ -107,6 +109,9 @@ export function montar(cuerpo, e, ctx) {
       m ? h("span", m.dist === 0 ? "🎉 ¡Exacto!" : `Tu mejor: ${m.valor} (a ${m.dist})`) : h("span.suave", "Toca un número para empezar")
     );
     mejor.classList.toggle("exacto", m?.dist === 0);
+    // Si has deshecho, se sigue viendo cómo llegaste a tu mejor resultado.
+    const enPantalla = m?.pasos?.length && m.pasos.every((p) => pasos.includes(p));
+    mejorPasos.replaceChildren(...(m?.pasos?.length && !enPantalla ? [h("span.suave", "Así llegaste: "), m.pasos.join(" · ")] : []));
     deshacer.disabled = !ops.length;
   }
 

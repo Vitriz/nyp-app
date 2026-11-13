@@ -5,7 +5,8 @@ import { teclasFisicas } from "../../comun/teclas.js";
 
 export function montar(cuerpo, e, ctx) {
   const pregunta = h("div.pul-m-pregunta");
-  const boton = h("button.pul-boton", { type: "button" }, h("span", "¡PULSA!"));
+  const textoBoton = h("span", "¡PULSA!");
+  const boton = h("button.pul-boton", { type: "button" }, textoBoton);
   const estadoTxt = h("div.pul-m-estado");
   const aciertos = h("span.ficha", "0");
   cuerpo.append(h("div.pul-m", h("div.mf-cont", "Aciertos", aciertos), pregunta, h("div.pul-m-centro", boton), estadoTxt));
@@ -27,22 +28,35 @@ export function montar(cuerpo, e, ctx) {
     boton.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true }));
   });
 
-  function actualizar(e) {
+  let ultimoE = e;
+  // Unos segundos para leer la pregunta: el botón cuenta 3, 2, 1 y luego se puede pulsar.
+  const reloj = setInterval(() => d && actualizar(ultimoE, true), 150);
+
+  function actualizar(e, soloReloj = false) {
+    ultimoE = e;
     d = e.datos;
     if (!d) return;
+    const falta = (d.abre ?? 0) - ctx.ahora();
     aciertos.textContent = d.aciertos;
-    if (d.i !== ultimaI) {
+    if (!soloReloj && d.i !== ultimaI) {
       ultimaI = d.i;
       pregunta.replaceChildren(...pintarPregunta(d.pregunta));
     }
     const yo = e.yo.id;
     const quien = d.pulsado ? e.jugadores.find((j) => j.id === d.pulsado.id) : null;
-    boton.classList.remove("pulsado", "mio", "otro");
-    if (d.pulsado?.id === yo) {
+    const esperando = boton.classList.contains("pulsado");
+    boton.classList.remove("pulsado", "mio", "otro", "leyendo");
+    textoBoton.textContent = "¡PULSA!";
+    if (d.pregunta && falta > 0 && !d.pulsado) {
+      boton.disabled = true;
+      boton.classList.add("leyendo");
+      textoBoton.textContent = String(Math.ceil(falta / 1000));
+      estadoTxt.textContent = "Lee la pregunta…";
+    } else if (d.pulsado?.id === yo) {
       boton.disabled = true;
       boton.classList.add("mio");
       estadoTxt.textContent = "🎤 ¡Has sido el primero! Responde en voz alta";
-      navigator.vibrate?.([60, 40, 60]);
+      if (!soloReloj) navigator.vibrate?.([60, 40, 60]);
     } else if (quien) {
       boton.disabled = true;
       boton.classList.add("otro");
@@ -53,9 +67,10 @@ export function montar(cuerpo, e, ctx) {
     } else {
       boton.disabled = !d.pregunta;
       estadoTxt.textContent = d.anterior ? `Era: ${d.anterior.solucion.toUpperCase()}` : "Pulsa cuando sepas la respuesta";
+      if (soloReloj && esperando) boton.classList.add("pulsado"); // esperando la respuesta del servidor
     }
   }
 
   actualizar(e);
-  return { actualizar };
+  return { actualizar: (e) => actualizar(e), desmontar: () => clearInterval(reloj) };
 }

@@ -108,7 +108,8 @@ export default {
       const j = ronda.jugadores[id];
       if (!j) return { id, valor: null, texto: "No jugó" };
       const n = j.encontradas.length;
-      return { id, valor: n > 0 ? n : null, texto: `${n} de ${ronda.palabras.length} palabras` };
+      const detalle = j.encontradas.map((e) => ({ t: ronda.palabras[e.k].forma, k: "bien" }));
+      return { id, valor: n > 0 ? n : null, texto: `${n} de ${ronda.palabras.length} palabras`, detalle };
     });
   },
 

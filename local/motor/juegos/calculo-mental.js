@@ -121,7 +121,12 @@ export default {
       const ok = r.filter((x) => x.ok);
       const ms = ok.reduce((a, x) => a + x.ms, 0);
       const seg = ok.length ? ` · ${(ms / 1000).toFixed(1).replace(".", ",")} s` : "";
-      return { id, valor: ok.length ? ok.length * 1e6 - ms : null, texto: `${ok.length} de ${ronda.cadenas.length}${seg}` };
+      const todas = ronda.jugadores[id]?.respuestas ?? [];
+      const detalle = ronda.cadenas.map((c, k) => {
+        const x = todas[k];
+        return { t: x ? `${k + 1}. ${x.valor}${x.ok ? "" : ` (era ${c.r})`}` : `${k + 1}. —`, k: x?.ok ? "bien" : "mal" };
+      });
+      return { id, valor: ok.length ? ok.length * 1e6 - ms : null, texto: `${ok.length} de ${ronda.cadenas.length}${seg}`, detalle };
     });
   },
 

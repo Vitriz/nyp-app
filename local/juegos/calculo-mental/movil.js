@@ -1,6 +1,6 @@
 // Cálculo mental · móvil: la operación entera (con sus paréntesis) y el teclado para responder.
 import { h } from "../../comun/ui.js";
-import { tecladoNumerico, momentoCadena, reiniciarAnim } from "../comun/util.js";
+import { tecladoNumerico, momentoCadena, reiniciarAnim, expresionColor } from "../comun/util.js";
 
 export function montar(cuerpo, e, ctx) {
   let d = e.datos;
@@ -47,13 +47,14 @@ export function montar(cuerpo, e, ctx) {
         grande.replaceChildren(h("span.ficha.cm-paso", m.c.pasos[m.paso]));
         reiniciarAnim(grande.firstChild, "aparece");
       } else if (m.fase === "responder" && !r) {
-        grande.replaceChildren(h("div.cm-expresion", m.c.expresion ?? m.c.pasos.join(" "), h("span.cm-igual", " = ?")));
+        grande.replaceChildren(h("div.cm-expresion", expresionColor(m.c.pasos), h("span.cm-igual", " = ?")));
         resp.textContent = respuesta || " ";
       } else if (r && m.c.resultado == null) {
-        grande.replaceChildren(h("span.cm-texto", "Respuesta enviada"), h("span.ficha.cm-paso", String(r.valor)));
+        grande.replaceChildren(h("div.cm-expresion.apagada", expresionColor(m.c.pasos), h("span.cm-igual", " = ?")), h("span.cm-texto", "Respuesta enviada"), h("span.ficha.cm-paso", String(r.valor)));
       } else {
         const ok = r && r.valor === m.c.resultado;
         grande.replaceChildren(
+          h("div.cm-expresion.apagada", expresionColor(m.c.pasos), h("span.cm-igual", " =")),
           h(`span.cm-texto${ok ? ".bien" : ""}`, r ? (ok ? "✔ ¡Correcto!" : "✘ Era") : "Era"),
           h("span.ficha.cm-paso", String(m.c.resultado ?? "…"))
         );

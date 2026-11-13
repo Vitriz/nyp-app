@@ -3,6 +3,8 @@
 // Si falla, ese jugador ya no puede pulsar en esa pregunta y los demás sí.
 import { elegirDefiniciones } from "../lexico.js";
 
+const LECTURA = 3000; // ms para leer cada pregunta antes de poder pulsar
+
 function cadenaCalculo(azar) {
   let v = azar.entero(2, 12);
   const pasos = [String(v)];
@@ -49,9 +51,9 @@ export default {
   duracion: 180,
   descripcion: "El primero que pulse responde en voz alta. El presentador dice si acierta. Si fallas, ya no puedes pulsar en esa pregunta.",
 
-  crear({ azar, config }) {
+  crear({ azar, config, inicio = Date.now() }) {
     const tipos = config?.pulsadorTipos?.length ? config.pulsadorTipos : ["definicion", "calculo", "revuelto"];
-    return { preguntas: preguntas(azar, azar.barajar(tipos), 40), i: 0, pulsado: null, bloqueados: [], anterior: null, aciertos: {} };
+    return { preguntas: preguntas(azar, azar.barajar(tipos), 40), i: 0, abre: inicio + LECTURA, pulsado: null, bloqueados: [], anterior: null, aciertos: {} };
   },
 
   publica(ronda) {
@@ -64,6 +66,7 @@ export default {
   vistaJugador(ronda, id) {
     return {
       i: ronda.i,
+      abre: ronda.abre,
       pregunta: this.publica(ronda),
       pulsado: ronda.pulsado,
       bloqueado: ronda.bloqueados.includes(id),
@@ -75,6 +78,7 @@ export default {
   vistaTV(ronda) {
     return {
       i: ronda.i,
+      abre: ronda.abre,
       pregunta: this.publica(ronda),
       pulsado: ronda.pulsado,
       bloqueados: ronda.bloqueados,
@@ -88,7 +92,7 @@ export default {
   },
 
   accion(ronda, id, msg) {
-    if (msg.a !== "pulsar" || ronda.pulsado || ronda.bloqueados.includes(id) || !ronda.preguntas[ronda.i]) return false;
+    if (msg.a !== "pulsar" || ronda.pulsado || ronda.bloqueados.includes(id) || !ronda.preguntas[ronda.i] || Date.now() < ronda.abre - 150) return false;
     ronda.pulsado = { id, t: Date.now() };
     return true;
   },
@@ -99,6 +103,7 @@ export default {
     const siguiente = (quien, ok) => {
       ronda.anterior = { n: ronda.i, solucion: p.solucion, quien, ok };
       ronda.i++;
+      ronda.abre = Date.now() + LECTURA;
       ronda.pulsado = null;
       ronda.bloqueados = [];
     };

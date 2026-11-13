@@ -1,5 +1,5 @@
 // Modo solo: los mismos juegos que en PARTY, ejecutados en el propio móvil, con récords personales.
-import { h, cambiarPantalla, banner, avatar, crearReloj } from "../comun/ui.js";
+import { h, cambiarPantalla, banner, avatar, crearReloj, textoCuenta, detalleJugador } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { almacen } from "../comun/conexion.js";
 import { leerPaquete, diccionarioIncluido, desbloquearDiccionario, actualizarIncluido } from "./paquete.js";
@@ -59,7 +59,7 @@ function apuntar(meta, r) {
   const records = leerRecords();
   const anterior = recordDe(records, meta, meta.duracion);
   if (r.valor != null && (!anterior || r.valor > anterior.valor)) {
-    records[`${meta.id}@${meta.duracion}`] = { valor: r.valor, texto: r.texto, fecha: new Date().toISOString().slice(0, 10) };
+    records[`${meta.id}@${meta.duracion}`] = { valor: r.valor, texto: r.texto, detalle: r.detalle?.slice(0, 30) ?? null, fecha: new Date().toISOString().slice(0, 10) };
     almacen.guardar("nyp-records", JSON.stringify(records));
   }
   return anterior;
@@ -176,7 +176,7 @@ export function entrarSolo({ app, perfil, alSalir }) {
     // Dejamos pintar el mensaje antes de calcular (la primera vez tarda un poco).
     setTimeout(() => {
       const impl = motor.juegos.obtenerJuego(meta.id);
-      const inicio = Date.now() + 3500;
+      const inicio = Date.now() + 4000; // 3, 2, 1 y ¡YA!
       const duracion = meta.duracion * 1000;
       const ronda = impl.crear({ azar: motor.util.crearAzar(Date.now()), config: { pulsadorTipos: [] }, duracion, inicio });
       impl.vistaJugador(ronda, yo.id);
@@ -188,8 +188,8 @@ export function entrarSolo({ app, perfil, alSalir }) {
     const caja = h("div.espera");
     let ultimo = null;
     const t = setInterval(() => {
-      const s = Math.ceil((inicio - Date.now()) / 1000);
-      const txt = s > 0 ? String(Math.min(3, s)) : "¡YA!";
+      const s = inicio - Date.now();
+      const txt = textoCuenta(s);
       if (txt !== ultimo) {
         ultimo = txt;
         caja.replaceChildren(h("span.ficha.cuenta-num.aparece", txt));
@@ -299,7 +299,9 @@ export function entrarSolo({ app, perfil, alSalir }) {
           h("div.puesto-grande.aparece", record ? "🏆" : r.valor != null ? "👏" : "🙂"),
           h("h1", record ? (anterior ? "¡Nuevo récord!" : "¡Primer récord!") : r.valor != null ? "¡Bien jugado!" : "Esta vez no ha salido"),
           h("p", r.texto),
+          detalleJugador(r.detalle, { clase: ".mis-respuestas" }),
           anterior && !record ? h("p.suave", `Tu récord: ${anterior.texto}`) : null,
+          anterior && !record && meta.id === "llegar-resultado" ? detalleJugador(anterior.detalle, { clase: ".mis-respuestas.record" }) : null,
           anterior && record ? h("p.suave", `Antes: ${anterior.texto}`) : null,
           solucion(meta, resumen)
         ),
