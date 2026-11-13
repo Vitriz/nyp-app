@@ -912,3 +912,9 @@ html, body { height: 100dvh; }
 
 /* ---------- banner: la cara recortada sin círculo detrás ---------- */
 .banner .avatar.con-recorte { background: transparent; border-color: transparent; box-shadow: none; }
+
+/* La «y» del título también en su casilla, más pequeña y dorada */
+.titulo-nyp .ficha.titulo-y {
+  font-size: 0.72em; font-style: italic; line-height: 1; color: #6b4a00; margin: 0.1em 0;
+  background: linear-gradient(180deg, #fff6d6 0%, #f6dc85 55%, var(--oro) 100%); border-color: #5a3d00;
+}

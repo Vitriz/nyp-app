@@ -355,7 +355,7 @@ export function vigilarEncaje() {
 export function tituloJuego() {
   let i = 0;
   const fila = (palabra) => h("div.titulo-fila", [...palabra].map((l) => h("span.ficha", { style: { "--i": i++ } }, l)));
-  return h("div.titulo-nyp", { role: "heading", "aria-level": "1", "aria-label": "Números y Palabras" }, fila("NÚMEROS"), h("span.titulo-y", { style: { "--i": i++ } }, "y"), fila("PALABRAS"));
+  return h("div.titulo-nyp", { role: "heading", "aria-level": "1", "aria-label": "Números y Palabras" }, fila("NÚMEROS"), h("span.ficha.titulo-y", { style: { "--i": i++ } }, "y"), fila("PALABRAS"));
 }
 
 export function textoPuesto(p) {
