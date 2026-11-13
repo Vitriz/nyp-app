@@ -57,8 +57,8 @@ function ruedaValor(icono, etiqueta, alPaso) {
   return {
     el,
     /** textos: los valores ya escritos; i: el elegido. El valor rueda hacia arriba o abajo al cambiar. */
-    pintar(textos, i) {
-      const dir = ultimo == null || ultimo.textos !== textos.join() ? 0 : Math.sign(i - ultimo.i);
+    pintar(textos, i, animar = false) {
+      const dir = !animar || ultimo == null || ultimo.textos !== textos.join() ? 0 : Math.sign(i - ultimo.i);
       if (ultimo && ultimo.textos === textos.join() && ultimo.i === i) return;
       ultimo = { textos: textos.join(), i };
       ventana.replaceChildren(h(`span.sel-pil-valor${dir > 0 ? ".sube" : dir < 0 ? ".baja" : ""}`, textos[i] ?? ""));
@@ -79,12 +79,6 @@ export const textoSegundos = (s) => (s < 60 || s % 60 ? `${s} s` : `${s / 60} mi
  * textoJugar: texto del botón grande
  * alJugar(juego) / alDesbloquear(juego)
  */
-function reiniciar(el, clase) {
-  el.classList.remove(clase);
-  void el.offsetWidth;
-  el.classList.add(clase);
-}
-
 export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel = null, textoJugar = "¡Jugar! ▶", alJugar, alDesbloquear }) {
   const conRecords = recordDe != null;
   const segundosDe = (j) => tiempo?.de(j) ?? j.duracion;
@@ -114,15 +108,15 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
   const recordEl = h("p.sel-record");
 
   /** Solo las casillas de tiempo y nivel y el récord (sin rehacer la ficha: así no se corta el arrastre). */
-  function pintarAjustes() {
+  function pintarAjustes(animar = false) {
     const j = juegos[sel];
     const seg = segundosDe(j);
     const nv = nivelDe(j);
     if (ruedaTiempo) {
       const l = listaDe(j);
-      ruedaTiempo.pintar(l.map(textoSegundos), Math.max(0, l.indexOf(seg)));
+      ruedaTiempo.pintar(l.map(textoSegundos), Math.max(0, l.indexOf(seg)), animar);
     }
-    if (ruedaNivel) ruedaNivel.pintar(nivel.lista.map((x) => nivel.nombres[x]), Math.max(0, nivel.lista.indexOf(nv)));
+    if (ruedaNivel) ruedaNivel.pintar(nivel.lista.map((x) => nivel.nombres[x]), Math.max(0, nivel.lista.indexOf(nv)), animar);
     if (conRecords) {
       const r = recordDe(j, seg, nv);
       const donde = `${textoSegundos(seg)}${nivel ? ` · ${nivel.nombres[nv]}` : ""}`;
@@ -132,11 +126,13 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
           : [h("span.suave", `Aún sin récord en ${donde}`)])
       );
       recordEl.classList.toggle("con", Boolean(r));
-      reiniciar(recordEl, "cambia");
     }
   }
 
+  let animAltura = null;
   function pintarFicha() {
+    const antes = ficha.isConnected ? ficha.getBoundingClientRect().height : 0;
+    animAltura?.cancel();
     const j = juegos[sel];
     const seg = segundosDe(j);
     pintarAjustes();
@@ -160,7 +156,20 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       ),
       jugar
     );
-    reiniciar(ficha, "cambia");
+    // La caja pasa de su altura anterior a la nueva con suavidad; el contenido no parpadea.
+    const despues = ficha.getBoundingClientRect().height;
+    if (antes && Math.abs(antes - despues) > 1 && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      animAltura = ficha.animate([{ height: `${antes}px` }, { height: `${despues}px` }], { duration: 240, easing: "cubic-bezier(0.25, 0.8, 0.3, 1)" });
+      const esta = animAltura;
+      ficha.style.overflow = "hidden"; // solo mientras cambia de tamaño (si no, recorta la sombra de ¡Jugar!)
+      esta.onfinish = esta.oncancel = () => {
+        if (animAltura !== esta) return;
+        animAltura = null;
+        ficha.style.overflow = "";
+      };
+      // Por si el navegador no pinta (pantalla en segundo plano): nunca se queda a medias.
+      setTimeout(() => esta.playState !== "finished" && esta.cancel(), 320);
+    }
     contador.textContent = `${sel + 1} / ${n}`;
   }
 
@@ -170,7 +179,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     if (s === segundosDe(j)) return;
     tiempo.fijar(j, s);
     navigator.vibrate?.(5);
-    pintarAjustes();
+    pintarAjustes(true);
   }
   function pasoNivel(paso) {
     const j = juegos[sel];
@@ -180,7 +189,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     if (l[i] === nivelDe(j)) return;
     nivel.fijar(j, l[i]);
     navigator.vibrate?.(5);
-    pintarAjustes();
+    pintarAjustes(true);
   }
 
   function pasoTiempo(paso) {
@@ -280,7 +289,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     if (nivel && /^[1-9]$/.test(t) && nivel.lista[Number(t) - 1]) {
       const j = juegos[sel];
       if (!j.bloqueado) nivel.fijar(j, nivel.lista[Number(t) - 1]);
-      return pintarAjustes();
+      return pintarAjustes(true);
     }
     if (t === "OK" || t === " ") return elegir();
     return false;

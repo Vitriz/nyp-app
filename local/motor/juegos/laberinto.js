@@ -155,7 +155,7 @@ export default {
   duracion: 120,
   descripcion: "Completa las operaciones cruzadas con los números del banco. Cada operación se lee de izquierda a derecha o de arriba abajo.",
 
-  crear({ azar, config }) {
+  crear({ azar, config, inicio = Date.now() }) {
     const g = generar(azar, nivelDificultad(config));
     const lista = [...g.celdas.values()];
     const r0 = Math.min(...lista.map((x) => x.r)), c0 = Math.min(...lista.map((x) => x.c));
@@ -177,6 +177,7 @@ export default {
       ecs: g.ecs.map((e) => ({ celdas: e.celdas, op: e.op })),
       valores: Object.fromEntries(g.valores),
       huecos: [...g.huecos],
+      inicio,
       jugadores: {},
     };
   },
@@ -218,11 +219,14 @@ export default {
     }
     const j = this.estadoJugador(ronda, id);
     j.puestos = puestos;
+    const total = this.contables(ronda).length;
     const val = (k) => (huecos.has(k) ? puestos[k] : ronda.valores[k]);
     j.correctas = this.contables(ronda).filter((e) => {
       const [a, b, c] = [val(e.celdas[0]), val(e.celdas[2]), val(e.celdas[4])];
       return a != null && b != null && c != null && operar(a, e.op, b) === c;
     }).length;
+    // El récord del laberinto es el menor tiempo: se apunta cuándo lo completaste.
+    if (j.correctas === total && j.ms == null) j.ms = Math.max(0, Date.now() - (ronda.inicio ?? Date.now()));
     return true;
   },
 
@@ -235,7 +239,9 @@ export default {
     return ids.map((id) => {
       const j = ronda.jugadores[id];
       if (!j || !Object.keys(j.puestos).length) return { id, valor: null, texto: "No jugó" };
-      return { id, valor: j.correctas > 0 ? j.correctas : null, texto: j.correctas === total ? "¡Completo!" : `${j.correctas} de ${total} operaciones` };
+      // Completo: cuanto antes, mejor (siempre por encima de quien no lo completó).
+      if (j.ms != null) return { id, valor: 1e7 - j.ms, texto: `Completo en ${(j.ms / 1000).toFixed(1).replace(".", ",")} s` };
+      return { id, valor: j.correctas > 0 ? j.correctas : null, texto: `${j.correctas} de ${total} operaciones` };
     });
   },
 

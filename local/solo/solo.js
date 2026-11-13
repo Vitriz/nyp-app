@@ -5,6 +5,7 @@ import { almacen } from "../comun/conexion.js";
 import { leerPaquete, diccionarioIncluido, desbloquearDiccionario, actualizarIncluido } from "./paquete.js";
 import { campoTexto } from "../comun/teclado.js";
 import { selectorJuegos, ICONOS, textoSegundos } from "./selector.js";
+import { leerFamilia, idMovil } from "../comun/familia.js";
 
 const SIN_SOLO = new Set(["pulsador"]); // necesita presentador y más jugadores
 
@@ -145,48 +146,121 @@ export function entrarSolo({ app, perfil, alSalir }) {
     });
   }
 
-  /** Mis récords: cada juego con su mejor marca y las de cada tiempo y nivel. */
+  /** Récords: «Míos» (cada juego con su mejor marca y las de cada tiempo y nivel) y «Familia» (clasificación). */
   function verRecords(juegos) {
     const records = leerRecords();
-    const filas = juegos.map((j) => {
-      const marcas = [];
-      for (const [k, r] of Object.entries(records)) {
-        const [id, seg, nv = "normal"] = k.split("@");
-        if (id !== j.id) continue;
-        marcas.push({ seg: seg ? Number(seg) : j.duracion, nv, r });
+    // Las claves antiguas (solo el juego) son del tiempo normal y nivel medio.
+    const partes = (k, j) => {
+      const [, seg, nv = "normal"] = k.split("@");
+      return { seg: seg ? Number(seg) : j.duracion, nv };
+    };
+    const delJuego = (recs, j) =>
+      Object.entries(recs ?? {})
+        .filter(([k]) => k.split("@")[0] === j.id)
+        .map(([k, r]) => ({ ...partes(k, j), r }));
+
+    function vistaMios() {
+      const filas = juegos.map((j) => {
+        const marcas = delJuego(records, j).sort((a, b) => a.seg - b.seg || NIVELES.indexOf(a.nv) - NIVELES.indexOf(b.nv));
+        const mejor = marcas.reduce((m, x) => (!m || x.r.valor > m.r.valor ? x : m), null);
+        return { j, marcas, mejor };
+      });
+      filas.sort((a, b) => Boolean(b.mejor) - Boolean(a.mejor));
+      return filas.map(({ j, marcas, mejor }, i) =>
+        h(
+          `div.record-fila${mejor ? "" : ".sin"}`,
+          { style: { animationDelay: `${60 + i * 40}ms` } },
+          h("span.ico", ICONOS[j.id] ?? "🎲"),
+          h("b", j.nombre),
+          h("span.mejor", mejor ? mejor.r.texto : "—"),
+          h(
+            "div.marcas",
+            marcas.length ? marcas.map((m) => h("span", `${textoSegundos(m.seg)} · ${NOMBRES_NIVEL[m.nv] ?? m.nv}: ${m.r.texto}`)) : h("span", "Aún sin récord")
+          )
+        )
+      );
+    }
+
+    function vistaFamilia() {
+      const fam = leerFamilia(perfil);
+      const yoId = idMovil();
+      const bloques = [];
+      for (const j of juegos) {
+        // Por cada tiempo y nivel, el mejor de cada persona.
+        const grupos = new Map();
+        for (const [pid, p] of Object.entries(fam.jugadores)) {
+          for (const m of delJuego(p.records, j)) {
+            const clave = `${m.seg}@${m.nv}`;
+            const g = grupos.get(clave) ?? { seg: m.seg, nv: m.nv, gente: new Map() };
+            const antes = g.gente.get(pid);
+            if (!antes || m.r.valor > antes.r.valor) g.gente.set(pid, { p, r: m.r, yo: pid === yoId });
+            grupos.set(clave, g);
+          }
+        }
+        if (!grupos.size) continue;
+        const lista = [...grupos.values()].sort((a, b) => a.seg - b.seg || NIVELES.indexOf(a.nv) - NIVELES.indexOf(b.nv));
+        bloques.push(
+          h(
+            "div.familia-juego",
+            { style: { animationDelay: `${60 + bloques.length * 50}ms` } },
+            h("div.familia-titulo", h("span.ico", ICONOS[j.id] ?? "🎲"), h("b", j.nombre)),
+            lista.map((g) =>
+              h(
+                "div.familia-grupo",
+                h("small", `${textoSegundos(g.seg)} · ${NOMBRES_NIVEL[g.nv] ?? g.nv}`),
+                h(
+                  "ol.familia-podio",
+                  [...g.gente.values()]
+                    .sort((a, b) => b.r.valor - a.r.valor)
+                    .slice(0, 5)
+                    .map((x, k, todos) => {
+                      // Empate: mismo puesto (y misma medalla).
+                      const puesto = todos.findIndex((y) => y.r.valor === x.r.valor);
+                      return h(
+                        `li${x.yo ? ".yo" : ""}`,
+                        h("span.medalla", ["🥇", "🥈", "🥉"][puesto] ?? `${puesto + 1}º`),
+                        h("span.familia-nombre", { style: { "--c": x.p.color ?? "#5fb7d0" } }, x.p.nombre),
+                        h("span.familia-marca", x.r.texto)
+                      );
+                    })
+                )
+              )
+            )
+          )
+        );
       }
-      marcas.sort((a, b) => a.seg - b.seg || NIVELES.indexOf(a.nv) - NIVELES.indexOf(b.nv));
-      const mejor = marcas.reduce((m, x) => (!m || x.r.valor > m.r.valor ? x : m), null);
-      return { j, marcas, mejor };
-    });
-    filas.sort((a, b) => Boolean(b.mejor) - Boolean(a.mejor));
+      const nota = h(
+        "p.familia-nota",
+        fam.recibida
+          ? `Se actualiza cada vez que te conectas a PARTY. Última vez: ${fam.recibida.split("-").reverse().join("/")}.`
+          : "Conéctate una vez a PARTY para ver los récords de los demás."
+      );
+      return bloques.length ? [nota, ...bloques] : [nota, h("p.suave", "Todavía no hay récords.")];
+    }
+
+    const lista = h("div.records-lista");
+    const pestanas = h(
+      "div.records-pestanas",
+      { role: "tablist" },
+      [["mios", "Míos"], ["familia", "👨‍👩‍👧 Familia"]].map(([id, texto]) => h("button.records-pestana", { type: "button", role: "tab", "data-id": id, onclick: () => ver(id) }, texto))
+    );
+    function ver(id) {
+      pestanas.querySelectorAll(".records-pestana").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.id === id)));
+      lista.replaceChildren(...(id === "mios" ? vistaMios() : vistaFamilia()));
+      lista.scrollTop = 0;
+    }
     const cerrar = () => capa.remove();
     const capa = h(
       "div.capa-movil.capa-records",
       { onclick: (ev) => ev.target === capa && cerrar() },
       h(
         "div.caja.tarjeta",
-        h("div.records-cabeza", h("h2", "🏆 Mis récords"), h("button.icono-btn", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
-        h(
-          "div.records-lista",
-          filas.map(({ j, marcas, mejor }, i) =>
-            h(
-              `div.record-fila${mejor ? "" : ".sin"}`,
-              { style: { animationDelay: `${80 + i * 45}ms` } },
-              h("span.ico", ICONOS[j.id] ?? "🎲"),
-              h("b", j.nombre),
-              h("span.mejor", mejor ? mejor.r.texto : "—"),
-              h(
-                "div.marcas",
-                marcas.length
-                  ? marcas.map((m) => h("span", `${textoSegundos(m.seg)} · ${NOMBRES_NIVEL[m.nv] ?? m.nv}: ${m.r.texto}`))
-                  : h("span", "Aún sin récord")
-              )
-            )
-          )
-        )
+        h("div.records-cabeza", h("h2", "🏆 Récords"), h("button.icono-btn", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
+        pestanas,
+        lista
       )
     );
+    ver("mios");
     document.body.append(capa);
   }
 

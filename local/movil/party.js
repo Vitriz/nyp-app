@@ -3,6 +3,7 @@ import { conectar, almacen } from "../comun/conexion.js";
 import { h, cambiarPantalla, avatar, banner, crearReloj, textoPuesto, textoCuenta, piezaCuenta, servidor, detalleJugador } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { actualizarPaquete } from "../solo/paquete.js";
+import { mensajeRecords, guardarFamilia } from "../comun/familia.js";
 
 /**
  * app: contenedor; base: dirección del servidor PARTY; perfil: { nombre, color, colorTexto, foto }
@@ -70,12 +71,17 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete }) {
           el: h("section", h("div.espera", h("h1", "El presentador te ha sacado de la partida"), h("button.boton.grande", { onclick: salir }, "Volver al inicio"))),
         }));
         break;
+      case "recordsFamilia":
+        if (m.tabla?.jugadores) guardarFamilia(m.tabla);
+        break;
       case "estado":
         estado = m;
         if (m.yo && !paquetePedido) {
           paquetePedido = true;
           // Al volver a una partida con el mismo móvil, mandamos el perfil por si ha cambiado.
           con.enviar({ t: "perfil", ...perfil });
+          // Y nuestros récords de «Jugar solo», para la clasificación de la familia.
+          con.enviar(mensajeRecords(perfil));
           // Aprovechamos para descargar el diccionario del modo solo (en segundo plano).
           actualizarPaquete(base, alPaquete).catch(() => {});
         }

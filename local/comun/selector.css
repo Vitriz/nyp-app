@@ -7,8 +7,6 @@
 .sel-lista { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.3rem; }
 
 .sel-ficha { padding: 0.9rem 1rem 1rem; display: flex; flex-direction: column; gap: 0.7rem; background: #17346f; border-color: rgba(160, 190, 255, 0.28); }
-.sel-ficha.cambia { animation: sel-entra 260ms var(--curva); }
-@keyframes sel-entra { from { opacity: 0.3; transform: translateX(-0.6rem); } }
 .sel-cabeza { display: flex; align-items: center; gap: 0.8rem; }
 .sel-icono {
   flex: none; display: grid; place-items: center; width: 3.6rem; height: 3.6rem; font-size: 2rem; border-radius: 0.9rem;
@@ -80,22 +78,12 @@
 .sel-desc { -webkit-line-clamp: unset; display: block; }
 .sel-contador { color: var(--texto-suave); font-size: 0.95rem; }
 
-/* Al cambiar de juego: la ficha entra deslizando y el icono da un saltito */
-.sel-ficha.cambia { animation: sel-entra 320ms var(--curva); }
-@keyframes sel-entra { from { opacity: 0; transform: translateY(0.5rem); } }
-.sel-ficha.cambia .sel-icono { animation: sel-icono 520ms cubic-bezier(0.3, 1.7, 0.5, 1); }
-@keyframes sel-icono { 0% { transform: scale(0.5) rotate(-14deg); } 100% { transform: none; } }
-.sel-ficha.cambia .sel-nombre, .sel-ficha.cambia .sel-desc { animation: sel-texto 380ms var(--curva) both; }
-.sel-ficha.cambia .sel-desc { animation-delay: 60ms; }
-@keyframes sel-texto { from { opacity: 0; transform: translateX(-0.5rem); } }
 
 /* Tu récord: una línea, no una caja */
 .sel-record { margin: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 0.3rem; font-size: 0.98rem; font-weight: 700; min-height: 1.4em; }
 .sel-record b { color: var(--oro); font-weight: 900; }
 .sel-record small { color: var(--texto-suave); font-weight: 700; }
 .sel-record-copa { display: inline-block; }
-.sel-record.cambia { animation: sel-texto 300ms var(--curva); }
-.sel-record.con.cambia .sel-record-copa { animation: sel-icono 600ms cubic-bezier(0.3, 1.7, 0.5, 1); }
 
 /* Tiempo y nivel: dos píldoras en una fila  ⏱ ▲ 1 min ▼ */
 .sel-ajustes { display: flex; gap: 0.5rem; }
@@ -167,3 +155,28 @@
 /* Móvil estrecho: flechas más finas (pero altas, para el dedo) y sin el iconito */
 .sel-pil-flecha { width: 2.3rem; border-radius: 1.2rem; }
 @container (max-width: 30rem) { .sel-pil-icono { display: none; } .sel-pildora { padding: 0.2rem; } }
+
+/* Filas de «Mis récords»: entran escalonadas (deslizando, sin destello) */
+@keyframes sel-texto { from { opacity: 0.4; transform: translateY(0.4rem); } }
+
+/* Récords: pestañas «Míos» / «Familia» y la clasificación */
+.records-pestanas { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; padding: 0.25rem; border-radius: 999px; background: rgba(6, 18, 56, 0.45); }
+.records-pestana {
+  appearance: none; border: none; font: inherit; font-weight: 900; padding: 0.55rem; border-radius: 999px; cursor: pointer;
+  color: var(--texto-suave); background: transparent; transition: background 200ms, color 200ms;
+}
+.records-pestana[aria-selected="true"] { background: linear-gradient(180deg, #fff, var(--ficha-2)); color: var(--ficha-texto); }
+.familia-nota { margin: 0; font-size: 0.82rem; color: var(--texto-suave); font-weight: 700; }
+.familia-juego { display: flex; flex-direction: column; gap: 0.35rem; padding: 0.6rem 0.7rem; border-radius: 0.9rem; background: rgba(120, 160, 255, 0.1); animation: sel-texto 340ms var(--curva) both; }
+.familia-titulo { display: flex; align-items: center; gap: 0.5rem; font-size: 1.02rem; }
+.familia-titulo .ico { font-size: 1.3rem; }
+.familia-grupo small { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.04em; color: var(--texto-suave); }
+.familia-podio { list-style: none; margin: 0.15rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.familia-podio li { display: grid; grid-template-columns: 1.8rem 1fr auto; align-items: center; gap: 0.4rem; padding: 0.25rem 0.45rem; border-radius: 0.6rem; font-weight: 800; font-size: 0.92rem; }
+.familia-podio li.yo { background: rgba(233, 199, 90, 0.16); }
+.familia-podio .medalla { text-align: center; }
+.familia-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.familia-nombre::before { content: ""; display: inline-block; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--c); margin-right: 0.4rem; }
+.familia-marca { color: var(--oro); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .familia-juego { animation: none; } }
+.sel-ficha { flex-shrink: 0; } .sel-ficha > * { flex-shrink: 0; }
