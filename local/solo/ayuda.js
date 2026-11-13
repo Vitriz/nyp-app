@@ -34,6 +34,26 @@ const AYUDA = {
     puntos: "Gana quien resuelva más palabras; si empatan, quien terminó antes.",
     niveles: "Fácil: 8 palabras, más comunes y con definiciones más largas · Difícil: 12 palabras y definiciones más cortas.",
   },
+  conexiones: {
+    pasos: ["Hay 16 palabras que forman 4 grupos de 4 con algo en común.", "Toca 4 palabras y pulsa Comprobar. Si 3 son del mismo grupo te avisa: «¡A una de distancia!».", "Tienes 4 fallos por tablero; al terminar sale otro. ¡Ojo con las trampas: hay palabras que parecen de otro grupo!"],
+    puntos: "Gana quien encuentre más grupos (si empatan, quien falló menos).",
+    niveles: "Fácil: grupos de cosas (aves, muebles…) · Difícil: también temas (Música, Medicina…) y cómo se escriben (esconden un animal…).",
+  },
+  semantica: {
+    pasos: ["Hay una palabra secreta. Escribe cualquier palabra y pulsa Probar.", "Verás su puesto: el #1 es la secreta; cuanto más bajo, más cerca de su significado (🔥 caliente, 🧊 frío).", "Ve acercándote con palabras parecidas. Si te atascas, pide una 💡 pista."],
+    puntos: "Gana quien la encuentre con menos intentos y pistas; si nadie, quien se quede más cerca.",
+    niveles: "Fácil: 4 pistas · Medio: 3 · Difícil: 1.",
+  },
+  memoria: {
+    pasos: ["Mira las tarjetas mientras se acaba la barra: luego se tapan.", "Según la prueba: tócalas de menor a mayor, di dónde estaba una palabra o descubre cuál ha cambiado.", "Responde rápido: el tiempo también cuenta si hay empate."],
+    puntos: "Gana quien acierte más pruebas.",
+    niveles: "Fácil: 4 tarjetas y más tiempo · Difícil: 6 tarjetas y menos tiempo.",
+  },
+  kenken: {
+    pasos: ["En cada fila y columna van los números del 1 al N, sin repetir.", "Cada jaula (bordes gruesos) marca un número y una operación: sus números, con esa operación, tienen que dar ese número.", "Toca una casilla y luego el número. Los repetidos salen en rojo y las jaulas que cuadran, en verde."],
+    puntos: "Gana quien lo resuelva antes; si nadie, quien tenga más jaulas bien.",
+    niveles: "Fácil: 4×4 · Medio: 5×5 · Difícil: 6×6.",
+  },
   "calculo-mental": {
     pasos: ["Aparece una operación con paréntesis: cada operación tiene su color.", "Resuélvela de cabeza, de dentro hacia fuera.", "Escribe el resultado y pulsa OK. Solo hay un intento por operación."],
     puntos: "Gana quien acierte más; si empatan, quien respondió antes.",

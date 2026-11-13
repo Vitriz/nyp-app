@@ -10,6 +10,10 @@ import llegarResultado from "./llegar-resultado.js";
 import laberinto from "./laberinto.js";
 import pulsador from "./pulsador.js";
 import crucigrama from "./crucigrama.js";
+import kenken from "./kenken.js";
+import memoria from "./memoria.js";
+import conexiones from "./conexiones.js";
+import semantica from "./semantica.js";
 
 /*
  Interfaz de un juego (servidor):
@@ -24,7 +28,7 @@ import crucigrama from "./crucigrama.js";
 */
 
 const implementados = Object.fromEntries(
-  [matesFugaces, palabraLarga, definicion, sopa, revuelto, paraulogico, crucigrama, calculoMental, llegarResultado, laberinto, pulsador].map((j) => [j.id, j])
+  [matesFugaces, palabraLarga, definicion, sopa, revuelto, paraulogico, crucigrama, conexiones, semantica, memoria, calculoMental, llegarResultado, laberinto, kenken, pulsador].map((j) => [j.id, j])
 );
 
 const catalogo = [
@@ -34,10 +38,14 @@ const catalogo = [
   { id: "revuelto", nombre: "Revuelto", categoria: "palabras", duracion: 60 },
   { id: "paraulogico", nombre: "Tutifruti", categoria: "palabras", duracion: 120 },
   { id: "crucigrama", nombre: "Crucigrama", categoria: "palabras", duracion: 180 },
+  { id: "conexiones", nombre: "Conexiones", categoria: "palabras", duracion: 180 },
+  { id: "semantica", nombre: "Semántica", categoria: "palabras", duracion: 240 },
+  { id: "memoria", nombre: "Memoria fotográfica", categoria: "palabras", duracion: 90 },
   { id: "calculo-mental", nombre: "Cálculo mental", categoria: "numeros", duracion: 30 },
   { id: "llegar-resultado", nombre: "Llegar al resultado", categoria: "numeros", duracion: 60 },
   { id: "mates-fugaces", nombre: "Mates fugaces", categoria: "numeros", duracion: 60 },
   { id: "laberinto", nombre: "Laberinto de cálculos", categoria: "numeros", duracion: 120 },
+  { id: "kenken", nombre: "KenKen", categoria: "numeros", duracion: 120 },
   { id: "pulsador", nombre: "Pulsador", categoria: "pulsador", duracion: 180 },
 ];
 

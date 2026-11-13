@@ -14,6 +14,8 @@ let definiciones = [];
 let candidatas = null;
 let pangramas = null;
 let crucigrama = {};
+let conexiones = { categorias: [], miembros: {} };
+let semantica = null;
 
 /** Carga el paquete (objeto ya descomprimido). */
 export function preparar(p) {
@@ -27,6 +29,16 @@ export function preparar(p) {
   candidatas = null;
   pangramas = null;
   crucigrama = p.crucigrama ?? {};
+  conexiones = p.conexiones ?? { categorias: [], miembros: {} };
+  semantica = p.semantica ?? null;
+}
+
+export function cargarSemantica() {
+  return semantica;
+}
+
+export function cargarConexiones() {
+  return conexiones;
 }
 
 export function cargarCrucigrama() {

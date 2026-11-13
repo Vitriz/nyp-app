@@ -5,7 +5,7 @@ import { teclasFisicas } from "../comun/teclas.js";
 import { ventanaAyuda } from "./ayuda.js";
 
 export const ICONOS = {
-  "palabra-larga": "🔠", definicion: "📖", sopa: "🔍", revuelto: "🔀", paraulogico: "🐝", crucigrama: "✏️",
+  "palabra-larga": "🔠", definicion: "📖", sopa: "🔍", revuelto: "🔀", paraulogico: "🐝", crucigrama: "✏️", conexiones: "🧩", semantica: "🔥", memoria: "🧠", kenken: "🔢",
   "calculo-mental": "🧠", "llegar-resultado": "🎯", "mates-fugaces": "⚡", laberinto: "🧩", pulsador: "🔔",
 };
 const PASO = 3.9; // rem entre elementos de la rueda
