@@ -17,8 +17,9 @@ let ultimoId = null; // al volver, la rueda sigue en el último juego
  * alPaso(+1 | -1): pide pasar al siguiente o al anterior.
  */
 function ruedaValor(icono, etiqueta, alPaso) {
-  const arriba = h("button.sel-pil-flecha", { type: "button", "aria-label": `${etiqueta}: anterior` }, "▲");
-  const abajo = h("button.sel-pil-flecha", { type: "button", "aria-label": `${etiqueta}: siguiente` }, "▼");
+  // Izquierda ▼ baja (menos tiempo, más fácil); derecha ▲ sube.
+  const arriba = h("button.sel-pil-flecha", { type: "button", "aria-label": `${etiqueta}: bajar` }, "▼");
+  const abajo = h("button.sel-pil-flecha", { type: "button", "aria-label": `${etiqueta}: subir` }, "▲");
   const ventana = h("div.sel-pil-ventana", { role: "spinbutton", "aria-label": etiqueta });
   const el = h("div.sel-pildora", { title: etiqueta }, h("span.sel-pil-icono", { "aria-hidden": "true" }, icono), arriba, ventana, abajo);
   arriba.addEventListener("click", () => alPaso(-1));

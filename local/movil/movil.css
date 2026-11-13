@@ -874,3 +874,41 @@ html, body { height: 100dvh; }
 .sm .teclado-letras { margin-top: 0; }
 .cx-palabra span { font-size: min(1.1rem, 17cqw); }
 .cx-botones .boton { white-space: nowrap; }
+
+/* ---------- portada: título arriba, perfil en el centro y los botones abajo ---------- */
+.titulo-nyp { font-size: min(2.3rem, calc((var(--ancho) - 2.6rem) / 13.2)); }
+.inicio .banner-grande { font-size: 1.75rem; }
+.inicio { justify-content: space-between; gap: 1rem; padding-top: calc(env(safe-area-inset-top) + 1.6rem); }
+.inicio > .titulo-nyp { flex: none; }
+.inicio-perfil { flex: 1; justify-content: center; min-height: 7rem; }
+.inicio-opciones { flex: none; gap: 0.9rem; }
+.opcion {
+  position: relative; overflow: hidden; min-height: 5.4rem; padding: 0.8rem 1rem 0.8rem 0.85rem; gap: 1rem; border-radius: 1.3rem; font-size: 1.35rem;
+  box-shadow: 0 0.35rem 0 rgba(4, 12, 40, 0.55), 0 0.8rem 1.6rem rgba(4, 12, 40, 0.35);
+}
+.opcion::before { /* brillo que cruza el botón de vez en cuando */
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.35) 50%, transparent 65%);
+  transform: translateX(-120%); animation: opcion-brillo 5s ease-in-out infinite;
+}
+.opcion + .opcion::before { animation-delay: 2.5s; }
+@keyframes opcion-brillo { 0%, 70% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+.opcion .icono {
+  flex: none; width: 3.4rem; height: 3.4rem; display: grid; place-items: center; font-size: 2rem; border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.45); box-shadow: inset 0 -0.15rem 0 rgba(13, 37, 96, 0.15);
+}
+.opcion-texto { flex: 1; min-width: 0; }
+.opcion small { margin-top: 0.15rem; }
+.opcion-flecha { flex: none; font-size: 2.2rem; font-weight: 900; line-height: 1; opacity: 0.55; transition: transform 200ms var(--curva); }
+.opcion:active .opcion-flecha { transform: translateX(0.3rem); }
+.boton.acento.opcion { background: linear-gradient(160deg, #a6e4f2, var(--acento) 70%); }
+.boton.opcion:not(.acento) { background: linear-gradient(160deg, #ffffff, #dfe8ff 70%); }
+@media (prefers-reduced-motion: reduce) { .opcion::before { animation: none; display: none; } }
+
+/* ---------- colores del perfil: dos filas enteras y la rueda siempre abajo ---------- */
+.colores-perfil .paleta { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.55rem; overflow: visible; padding: 0.3rem; }
+.colores-perfil .paleta .color { flex: none; width: 100%; height: auto; aspect-ratio: 1; }
+.selector-color.rueda-fija .rueda-panel { margin-top: 0.2rem; }
+
+/* ---------- banner: la cara recortada sin círculo detrás ---------- */
+.banner .avatar.con-recorte { background: transparent; border-color: transparent; box-shadow: none; }

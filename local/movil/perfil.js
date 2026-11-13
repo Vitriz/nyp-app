@@ -99,7 +99,7 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, titulo = "Tu perfi
 
   const campo = campoTexto({ valor: p.nombre, max: 14, placeholder: "Toca las letras", alCambiar: (t) => ((p.nombre = t), pintarVista()) });
 
-  // Colores: una fila de colores y la rueda; arriba eliges qué pintas (fondo, letras o contorno).
+  // Colores: dos filas de colores y debajo la rueda, siempre a la vista; arriba eliges qué pintas (fondo, letras o contorno).
   const PARTES = { color: "Fondo", colorTexto: "Texto", contorno: "Contorno" };
   let parte = "color";
   const cajaColores = h("div.colores-perfil");
@@ -111,6 +111,7 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, titulo = "Tu perfi
         valor: p[parte],
         colores: COLORES,
         ninguno: parte === "contorno" ? "Sin contorno" : null,
+        ruedaFija: true,
         alCambiar: (c) => ((p[parte] = c), pintarVista()),
       }).el
     );

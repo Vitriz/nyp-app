@@ -25,7 +25,7 @@ export function hexAHsv(hex) {
  * colores: lista de colores rápidos. ninguno: texto del botón "sin color" (o null si no hay).
  * Devuelve { el, fijar(valor) }. alCambiar(color|null) se llama al tocar.
  */
-export function selectorColor({ valor, colores, alCambiar, ninguno = null }) {
+export function selectorColor({ valor, colores, alCambiar, ninguno = null, ruedaFija = false }) {
   let actual = valor ?? null;
   let hsv = hexAHsv(actual ?? colores[0]);
   const rapidos = h("div.paleta");
@@ -73,7 +73,7 @@ export function selectorColor({ valor, colores, alCambiar, ninguno = null }) {
       ...(ninguno
         ? [h(`button.color.color-ninguno${actual == null ? ".elegido" : ""}`, { type: "button", "aria-label": ninguno, onclick: () => elegir(null) }, "∅")]
         : []),
-      botonRueda, // la rueda siempre a la vista, al principio
+      ...(ruedaFija ? [] : [botonRueda]), // el botón de la rueda, al principio (si la rueda no está siempre abierta)
       ...colores.map((c) => h(`button.color${actual === c ? ".elegido" : ""}`, { type: "button", style: { "--c": c }, "aria-label": c, onclick: () => elegir(c) }))
     );
     botonRueda.classList.toggle("elegido", actual != null && !enLista);
@@ -130,5 +130,11 @@ export function selectorColor({ valor, colores, alCambiar, ninguno = null }) {
 
   brillo.value = Math.round(hsv.v * 100);
   pintar();
-  return { el: h("div.selector-color", rapidos, panel) };
+  if (ruedaFija) {
+    panel.classList.remove("oculto");
+    dibujarRueda();
+    dibujada = true;
+    colocarMarca();
+  }
+  return { el: h(`div.selector-color${ruedaFija ? ".rueda-fija" : ""}`, rapidos, panel) };
 }

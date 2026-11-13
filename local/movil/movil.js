@@ -48,8 +48,7 @@ async function inicio() {
         h(
           "button.perfil-toque",
           { type: "button", onclick: () => editarPerfil(inicio), "aria-label": "Cambiar mi perfil" },
-          perfil ? banner(perfil, ".banner-grande") : h("span.boton.suave", "✏️ Crear mi perfil"),
-          perfil ? h("small", "Toca para cambiar tu perfil") : null
+          perfil ? banner(perfil, ".banner-grande") : h("span.boton.suave", "✏️ Crear mi perfil")
         )
       ),
       h(
@@ -58,13 +57,15 @@ async function inicio() {
           "button.boton.acento.opcion",
           { type: "button", onclick: () => conPerfil(() => irParty()) },
           h("span.icono", "📺"),
-          h("span", "Jugar en grupo", h("small", "Entra con el código de la TV"))
+          h("span.opcion-texto", "Jugar en grupo", h("small", "Entra con el código de la TV")),
+          h("span.opcion-flecha", { "aria-hidden": "true" }, "›")
         ),
         h(
           "button.boton.opcion",
           { type: "button", onclick: () => conPerfil(irSolo) },
           h("span.icono", "🎯"),
-          h("span", "Jugar solo", h("small", "Pruebas sueltas y récords"))
+          h("span.opcion-texto", "Jugar solo", h("small", "Pruebas sueltas y récords")),
+          h("span.opcion-flecha", { "aria-hidden": "true" }, "›")
         ),
         avisoSolo
       ),
