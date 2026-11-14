@@ -529,3 +529,36 @@
 .sel-cuadricula.ajustada .sel-casilla { min-height: 0; height: 100%; aspect-ratio: auto; font-size: calc(var(--lado) * 0.34); gap: calc(var(--lado) * 0.04); padding: calc(var(--lado) * 0.05) 0.3rem; }
 .sel-cuadricula.ajustada .sel-casilla-nombre { font-size: clamp(0.62rem, calc(var(--lado) * 0.105), 1rem); }
 .sel-cuadricula.ajustada .sel-casilla.elegido { transform: scale(1.03); }
+
+/* ---------- Estadísticas y Clasificación ---------- */
+.records-filtro.juegos .records-opciones { overflow-x: auto; scrollbar-width: none; }
+.records-filtro.juegos .records-opciones::-webkit-scrollbar { display: none; }
+.records-filtro.juegos .records-op { flex: none; min-width: 2.6rem; padding-inline: 0.5rem; font-size: 1.05rem; }
+.est-resumen { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; }
+.est-dato { display: flex; flex-direction: column; overflow: hidden; border-radius: 0.8rem; text-align: center; background: linear-gradient(180deg, #2a52a6, #1c3f8c); border: 1px solid rgba(170, 200, 255, 0.26); }
+.est-dato small { padding: 0.28rem 0.2rem; background: rgba(6, 18, 56, 0.45); font-size: 0.62rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: #eef4ff; }
+.est-dato b { padding: 0.3rem 0.2rem 0.4rem; font-family: var(--fuente-ficha); font-size: 1.25rem; color: #fff; }
+.est-dato.bien b { color: #8ff0bd; }
+.est-dato.mal b { color: #ff9c90; }
+.est-dato.oro b { color: var(--oro); }
+.est-barra { height: 0.5rem; border-radius: 1rem; background: rgba(228, 106, 98, 0.45); overflow: hidden; }
+.est-barra i { display: block; height: 100%; background: linear-gradient(90deg, #5fd68e, #8ff0bd); border-radius: inherit; }
+.est-fila {
+  display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) auto; grid-template-areas: "ico nombre record" "ico cifras record"; align-items: center; gap: 0.25rem 0.6rem;
+  padding: 0.55rem 0.7rem; border-radius: 0.9rem; background: rgba(120, 160, 255, 0.1); animation: sel-texto 340ms var(--curva) both;
+}
+.est-fila.sin { opacity: 0.5; }
+.est-fila .ico { grid-area: ico; font-size: 1.5rem; text-align: center; }
+.est-nombre { grid-area: nombre; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.est-cifras { grid-area: cifras; display: flex; gap: 0.7rem; }
+.est-cifras span { display: flex; align-items: baseline; gap: 0.25rem; font-size: 0.8rem; color: var(--texto-suave); font-weight: 800; }
+.est-cifras small { font-size: 0.7rem; }
+.est-cifras b { font-family: var(--fuente-ficha); font-size: 0.95rem; color: #fff; }
+.est-cifras .bien b { color: #8ff0bd; }
+.est-cifras .mal b { color: #ff9c90; }
+.est-record { grid-area: record; display: flex; flex-direction: column; align-items: flex-end; text-align: right; max-width: 9rem; }
+.est-record small { font-size: 0.66rem; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; color: var(--texto-suave); }
+.est-record b { color: var(--oro); font-weight: 900; }
+.est-record span { font-size: 0.68rem; color: var(--texto-suave); font-weight: 700; }
+.familia-modo { display: block; font-size: 0.7rem; color: var(--texto-suave); font-weight: 700; }
+@media (max-width: 380px) { .est-cifras small { display: none; } }

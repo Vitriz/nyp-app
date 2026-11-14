@@ -7,6 +7,10 @@ import { crearBatalla, codigoBatalla } from "./batalla.js";
 import { actualizarPaquete } from "../solo/paquete.js";
 import { subirLuego } from "../comun/nube.js";
 import { idMovil } from "../comun/familia.js";
+import { svgQR } from "../comun/qr.js";
+
+// Página de descarga de la app (la del QR para compartirla con la familia).
+const URL_DESCARGA = "https://vitriz.github.io/nyp-app/#instalar";
 
 vigilarEncaje(); // ningún número se sale de su casilla
 
@@ -43,14 +47,42 @@ function mostrar(el) {
 }
 
 /** La barra de arriba con el banner (tocarlo abre el perfil). */
-function barraPerfil(alTocar) {
+function barraPerfil(alTocar, extra = null) {
   const f = bannerApp();
   return h(
     "div.barra-sup.barra-inicio",
     f
       ? h("button.perfil-toque", { type: "button", onclick: alTocar, "aria-label": "Cambiar mi perfil", title: "Cambiar mi perfil" }, f.hueco("abierto"))
-      : h("button.boton.suave", { type: "button", onclick: alTocar }, "✏️ Crear mi perfil")
+      : h("button.boton.suave", { type: "button", onclick: alTocar }, "✏️ Crear mi perfil"),
+    extra
   );
+}
+
+/** Ventana con el QR de la página de descarga: para compartir la app en un momento. */
+function ventanaDescarga() {
+  const qr = h("div.batalla-qr.grande");
+  try {
+    qr.innerHTML = svgQR(URL_DESCARGA);
+  } catch {}
+  const cerrar = () => capa.remove();
+  const compartir =
+    navigator.share &&
+    h("button.boton.suave", {
+      type: "button",
+      onclick: () => navigator.share({ title: "NYP", text: "Juegos de palabras y números para jugar en familia", url: URL_DESCARGA }).catch(() => {}),
+    }, "↗ Compartir enlace");
+  const capa = h(
+    "div.capa-movil.capa-qr-sala",
+    { onclick: (ev) => ev.target === capa && cerrar() },
+    h(
+      "div.caja.tarjeta",
+      h("div.records-cabeza", h("h2", "📲 Descargar NYP"), h("button.icono-btn", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
+      qr,
+      h("p.suave", "Que lo escaneen con la cámara del móvil: les lleva a la página para instalar la app."),
+      compartir
+    )
+  );
+  document.body.append(capa);
 }
 
 // ------------------------------------------------------------------ inicio
@@ -69,12 +101,24 @@ async function inicio() {
 
   // El título se puede golpear: las letras se esparcen como en un líquido y vuelven solas.
   const titulo = tituloJuego();
-  tituloVivo(titulo);
+  // ¿Todas las letras fuera de la pantalla? Hazaña «Machaca títulos» (premio: un martillo para el avatar).
+  tituloVivo(titulo, {
+    alExpulsar: async () => {
+      const { conseguirHazana, celebrarHazanas } = await import("../solo/hazanas.js");
+      const x = conseguirHazana("machaca-titulos");
+      if (!x) return;
+      celebrarHazanas([x]);
+      if (perfil) subirLuego(idMovil(), perfil, 2500);
+    },
+  });
   mostrar(
     h(
       "section.inicio",
       // Arriba a la izquierda, tu banner (tocarlo abre el perfil); en el centro, el título.
-      barraPerfil(() => editarPerfil(inicio)),
+      barraPerfil(
+        () => editarPerfil(inicio),
+        h("button.icono-btn.boton-qr", { type: "button", onclick: ventanaDescarga, "aria-label": "QR para descargar la app", title: "QR para descargar la app" }, "📲")
+      ),
       h("div.inicio-centro", titulo),
       h(
         "div.inicio-opciones",

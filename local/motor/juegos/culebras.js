@@ -6,11 +6,13 @@ import { nivelDificultad } from "../util.js";
 import { elegirDefiniciones } from "../lexico.js";
 import { caminoCompleto } from "./caminos.js";
 
+// Fácil 4×4, medio 5×5 y difícil 6×6 (hasta 1 minuto) o 7×7 (con más tiempo o sin límite).
 const NIVELES = [
+  { n: 4, min: 3, max: 6, huecos: [0, 1], nivelMax: 1 },
   { n: 5, min: 3, max: 6, huecos: [1, 1], nivelMax: 1 },
-  { n: 6, min: 4, max: 8, huecos: [1, 2], nivelMax: 1 },
-  { n: 7, min: 4, max: 9, huecos: [2, 3], nivelMax: 2 },
+  { n: 6, min: 4, max: 8, huecos: [1, 2], nivelMax: 2 },
 ];
+const DIFICIL_LARGO = { n: 7, min: 4, max: 9, huecos: [2, 3], nivelMax: 2 };
 
 /** Largos de las palabras que suman `total` (entre min y max, a ser posible distintos). */
 function repartir(azar, total, min, max) {
@@ -44,8 +46,9 @@ export default {
   breve: "Encuentra las palabras que serpentean por el tablero.",
   descripcion: "El tablero está lleno de palabras escondidas que serpentean de letra en letra (sin diagonales). Solo sabes cuántas letras tiene cada una. Arrastra el dedo de la primera letra a la última; si te equivocas, vuelve atrás por el mismo camino. Gana quien las encuentre todas antes.",
 
-  crear({ azar, config, inicio = Date.now() }) {
-    const nv = NIVELES[nivelDificultad(config) + 1];
+  crear({ azar, config, duracion = 0, inicio = Date.now() }) {
+    const d = nivelDificultad(config);
+    const nv = d > 0 && (!duracion || duracion > 60000) ? DIFICIL_LARGO : NIVELES[d + 1];
     const n = nv.n;
     let tablero = null;
     for (let intento = 0; intento < 30 && !tablero; intento++) {

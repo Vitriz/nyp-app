@@ -57,7 +57,7 @@ export const servidor = { base: new URL("../", import.meta.url).href };
 
 /** Icono redondo del jugador: su foto o sus iniciales, con sus colores. */
 // Premios de las hazañas para el avatar: un sombrero encima y/o una animación.
-export const SOMBREROS = { corona: "👑", chistera: "🎩", birrete: "🎓", gorra: "🧢", lazo: "🎀", estrella: "⭐", pamela: "👒", flor: "🌸", gafas: "🕶️", casco: "🪖" };
+export const SOMBREROS = { martillo: "🔨", corona: "👑", chistera: "🎩", birrete: "🎓", gorra: "🧢", lazo: "🎀", estrella: "⭐", pamela: "👒", flor: "🌸", gafas: "🕶️", casco: "🪖" };
 export const ANIMACIONES = { salto: "Salto", giro: "Giro", baile: "Baile", brillo: "Brillo" };
 
 /** Pone el sombrero y la animación (si tiene) a un avatar ya creado. */
@@ -140,13 +140,26 @@ export function bannerFijo(j) {
       capa.classList.remove("sin-transicion");
     }
   }
+  /** Vuelve a medir el banner (y ajusta sus huecos): el nombre siempre cabe entero. */
+  function remedir() {
+    if (!capa.isConnected) return;
+    medidas = medir();
+    for (const hu of document.querySelectorAll(".hueco-banner")) {
+      const [w, hh] = medidas[hu.dataset.estado] ?? medidas.abierto;
+      Object.assign(hu.style, { width: `${w}px`, height: `${hh}px` });
+    }
+  }
   const alCambiarTamano = () => {
     capa.classList.add("sin-transicion");
+    remedir(); // en el ordenador el banner es más grande (cambia con el ancho de la ventana)
     colocar();
     void capa.offsetWidth;
     capa.classList.remove("sin-transicion");
   };
   window.addEventListener("resize", alCambiarTamano);
+  // Si la letra del juego carga después de medir, el nombre se cortaba («T…»): se mide otra vez al cargar.
+  document.fonts?.ready?.then(() => alCambiarTamano());
+  document.fonts?.addEventListener?.("loadingdone", () => alCambiarTamano());
   return {
     el: capa,
     /** El sitio que el banner ocupa en la barra de una pantalla. */

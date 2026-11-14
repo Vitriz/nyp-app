@@ -21,28 +21,48 @@ async function cargarApp(raiz) {
 }
 
 /**
- * El título no desaparece al abrirse el juego: el del inicio sale desde donde estaba el de la pantalla de
- * carga y se desliza (y encoge) hasta su sitio. Si el inicio no tiene título (p. ej. crear el perfil), nada.
+ * El título no desaparece al abrirse el juego: la pantalla de carga se vuelve transparente (se ve el inicio
+ * detrás), su título se desliza y encoge hasta donde está el del inicio y entonces se cambian. Mientras, las
+ * opciones del inicio aparecen una detrás de otra. Si la primera pantalla no tiene título, se funde y ya.
  */
 async function viajarTitulo() {
-  const carga = document.querySelector("#carcasa .marca");
-  await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
-  const destino = document.querySelector("#app .pantalla:not(.sale) .titulo-nyp");
-  if (!carga || !destino || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  // Sin la animación de entrada de la pantalla (movería el título): el título viaja y lo demás aparece suave.
+  const carcasa = $("carcasa");
+  const carga = carcasa.querySelector(".marca");
+  // El inicio puede tardar un instante en pintarse: lo esperamos (como mucho, 2 s).
+  let destino = null;
+  for (let t = 0; t < 2000 && !destino; t += 50) {
+    destino = document.querySelector("#app .pantalla:not(.sale) .titulo-nyp");
+    if (!destino) await espera(50);
+  }
+  const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!carga || !destino || quieto) {
+    carcasa.animate([{ opacity: 1 }, { opacity: 0 }], { duration: quieto ? 1 : 350, fill: "forwards" });
+    await espera(quieto ? 0 : 360);
+    return;
+  }
   const pantalla = destino.closest(".pantalla");
-  pantalla.classList.remove("entra");
-  for (const x of pantalla.children) if (!x.contains(destino)) x.animate([{ opacity: 0, transform: "translateY(1rem)" }, { opacity: 1, transform: "none" }], { duration: 450, delay: 350, easing: "ease-out", fill: "backwards" });
+  pantalla.classList.remove("entra"); // su entrada movería el título mientras medimos
+  destino.style.visibility = "hidden";
+  await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
   const a = carga.getBoundingClientRect(), b = destino.getBoundingClientRect();
-  if (!a.width || !b.width) return;
-  const dx = a.left + a.width / 2 - (b.left + b.width / 2);
-  const dy = a.top + a.height / 2 - (b.top + b.height / 2);
-  const k = a.width / b.width;
-  $("carcasa").classList.add("oculto");
-  destino.animate(
-    [{ transform: `translate(${dx}px, ${dy}px) scale(${k})` }, { transform: "none" }],
-    { duration: 750, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }
+  // Las opciones (y el banner) aparecen escalonadas desde abajo.
+  const piezas = [...pantalla.querySelectorAll(".barra-sup, .opcion, .instalar, .aviso-paquete")];
+  piezas.forEach((x, i) =>
+    x.animate([{ opacity: 0, transform: "translateY(1.6rem) scale(0.96)" }, { opacity: 1, transform: "none" }], {
+      duration: 520, delay: 420 + i * 110, easing: "cubic-bezier(0.22, 1, 0.36, 1)", fill: "backwards",
+    })
   );
+  document.querySelectorAll(".banner-fijo").forEach((x) => x.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 400, delay: 420, fill: "backwards" }));
+  // Fuera el fondo y el texto de carga; el título se queda y viaja.
+  carcasa.classList.add("saliendo");
+  const dx = b.left + b.width / 2 - (a.left + a.width / 2);
+  const dy = b.top + b.height / 2 - (a.top + a.height / 2);
+  const k = b.width / a.width;
+  const viaje = carga.animate([{ transform: "none" }, { transform: `translate(${dx}px, ${dy}px) scale(${k})` }], {
+    duration: 900, easing: "cubic-bezier(0.65, 0, 0.35, 1)", fill: "forwards",
+  });
+  await viaje.finished.catch(() => {});
+  destino.style.visibility = "";
 }
 
 // El aviso de "instalar app" puede llegar antes de que cargue el juego: lo guardamos.

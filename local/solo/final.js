@@ -24,9 +24,11 @@ function kkJaulasBien(j, ronda) {
 }
 
 const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+// Con décimas, como el récord (42,8 s; 1:05,3).
 const reloj = (ms) => {
-  const s = Math.max(0, Math.round(ms / 1000));
-  return s < 60 ? `${s} s` : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  const d = Math.max(0, Math.round(ms / 100)); // décimas
+  const s = Math.floor(d / 10), dec = d % 10;
+  return s < 60 ? `${s},${dec} s` : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")},${dec}`;
 };
 const media = (ms, n) => (n ? `${(ms / n / 1000).toFixed(1).replace(".", ",")} s` : "—");
 const porcentaje = (a, b) => (b ? `${Math.round((a / b) * 100)} %` : "—");
@@ -180,7 +182,8 @@ function finalPuzle(meta, ronda, j) {
     const tuyas = new Set(j.encontradas);
     pie = h("div.final-chips", ronda.palabras.map((p, i) => h(`span.pg-chip${tuyas.has(i) ? ".bien" : ".falta"}`, (p.forma ?? p.clave).toUpperCase())));
   } else return null;
-  return h("div.final-puzle.tarjeta", h("small", resuelto ? "¡Resuelto! Así quedó" : "La solución"), t.el, pie);
+  // Sin recuadro y lo más grande posible; si no lo resolviste, se avisa de que es la solución.
+  return h("div.final-puzle", resuelto ? null : h("small.final-seccion", "La solución"), t.el, pie);
 }
 
 /** Las casillas de datos de la partida (o null si el juego no tiene). */
@@ -196,7 +199,13 @@ export function casillasFinal(meta, ronda, j) {
     `div.final-datos${filas.length >= 3 ? ".en-fila" : ""}`,
     { style: { "--n": filas.length } },
     filas.map(([ico, etq, val, tono], k) =>
-      h(`div.final-dato${tono ? `.${tono}` : ""}`, { style: { animationDelay: `${250 + k * 70}ms` } }, h("span.final-dato-ico", ico), h("b.final-dato-valor", String(val)), h("small", etq))
+      h(
+        `div.final-dato${tono ? `.${tono}` : ""}`,
+        { style: { animationDelay: `${250 + k * 70}ms` } },
+        // El título arriba (destacado) y debajo el dato con su icono.
+        h("small.final-dato-etq", etq),
+        h("div.final-dato-cuerpo", h("span.final-dato-ico", ico), h("b.final-dato-valor", String(val)))
+      )
     )
   );
 }
@@ -264,6 +273,22 @@ function finalTutifruti(ronda, j) {
     h("small", `Te faltaron (${faltan.length})`),
     h("div.final-chips.faltan", faltan.map((c) => chip(c, esTuti(c) ? ".tuti.falta" : ".falta")))
   );
+}
+
+/**
+ * ¿Partida ganada? (para las estadísticas) En los puzles y juegos con meta, haberla completado; en los
+ * de puntuación, haber hecho algo que cuente.
+ */
+const COMPLETAR = new Set(["sopa", "revuelto", "kenken", "laberinto", "hilo", "coronas", "parcelas", "culebras"]);
+export function ganoPartida(meta, r, ronda, j) {
+  try {
+    if (COMPLETAR.has(meta.id)) return j?.ms != null;
+    if (meta.id === "crucigrama") return Object.keys(j?.resueltas ?? {}).length === ronda.palabras.length;
+    if (meta.id === "semantica") return Boolean(j?.encontrada);
+    if (meta.id === "llegar-resultado") return j?.mejor?.dist === 0;
+    if (meta.id === "conexiones") return (j?.fallosTotal ?? 0) < 4 && (j?.grupos ?? 0) > 0;
+  } catch {}
+  return r?.valor != null && r.valor > 0;
 }
 
 export { plural };

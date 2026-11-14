@@ -7,6 +7,7 @@ import { mensajeRecords, guardarFamilia } from "../comun/familia.js";
 import { selectorJuegos, infoPartida } from "../solo/selector.js";
 import { elegirAmbito, elegirNumero } from "../comun/ambitos.js";
 import { svgQR } from "../comun/qr.js";
+import { palabrasTocables } from "../comun/diccionario.js";
 
 /**
  * app: contenedor; base: dirección del servidor PARTY; perfil: { nombre, color, colorTexto, foto }
@@ -537,7 +538,9 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
 
     resultados(e) {
       const mio = e.resultados?.find((r) => r.id === e.yo.id);
-      const barra = barraSuperior(e, { titulo: true });
+      const barra = barraSuperior(e);
+      const NIVEL = { facil: "Fácil", normal: "Medio", dificil: "Difícil" };
+      const cabJuego = infoPartida(e.juego, e.juego.duracion, NIVEL[e.juego.dificultad ?? e.sala?.dificultad] ?? null);
       const lista = e.resultados ?? [];
       const empate = (r) => r.puesto != null && lista.filter((x) => x.puesto === r.puesto).length > 1;
       // Tu partida, en una sola tarjeta: puesto, tu marca y los puntos que ganas.
@@ -564,12 +567,15 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
           ? h("div.pl-botones.batalla-siguiente", h("button.boton.acento.grande", { type: "button", onclick: () => host("siguiente") }, "Ver la clasificación ▶"))
           : h("p.rp-espera", h("span.rp-espera-punto"), batalla ? "Esperando a que el anfitrión siga…" : "Mira la TV: enseguida, la clasificación");
       const el = h(
-        "section.res-party",
+        "section.res-party.pantalla-final",
         barra.el,
-        h("div.rp-col", cabeza, siguiente),
-        h("div.rp-cuerpo", solucion, palabraPendiente(mio?.pendiente), ...filas)
+        cabJuego,
+        h("div.rp-col.zona-final", cabeza, siguiente),
+        h("div.rp-cuerpo.zona-final", solucion, palabraPendiente(mio?.pendiente), ...filas)
       );
       if (mio?.puesto === 1) navigator.vibrate?.([60, 60, 120]);
+      // Juegos de palabras: toca una palabra para ver qué significa.
+      if (e.juego.categoria === "palabras") palabrasTocables(el.querySelector(".rp-cuerpo"));
       return { el, actualizar: (e) => barra.actualizar(e) };
     },
   };

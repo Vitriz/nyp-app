@@ -72,12 +72,13 @@ export function crearTablero({ n, pistas }) {
       marcasPista.forEach((m, i) => m.classList.toggle("hecha", hechas.has(i)));
     },
     /** El rectángulo que se está dibujando (o null para quitarlo). */
-    previa(x) {
+    previa(x, { choca = false } = {}) {
       previa.classList.toggle("oculto", !x);
       if (!x) return;
       colocar(previa, x);
-      const i = valida(x);
+      const i = choca ? -1 : valida(x);
       previa.classList.toggle("bien", i >= 0);
+      previa.classList.toggle("choca", choca); // pisaría otra parcela: no se puede poner
       previa.style.setProperty("--c", i >= 0 ? COLORES[i % COLORES.length] : "#5fb7d0");
     },
   };

@@ -1505,3 +1505,96 @@ button.fila-j { appearance: none; cursor: pointer; }
 .inicio .titulo-nyp { touch-action: none; user-select: none; -webkit-user-select: none; }
 .inicio .titulo-nyp .ficha { cursor: pointer; }
 .inicio .titulo-nyp.agitado { position: relative; z-index: 40; }
+
+/* =====================================================================
+   Pantallas de resultado (revisión): cabecera grande, casillas con el título arriba,
+   secciones sin recuadro a todo el ancho y palabras que se pueden tocar
+   ===================================================================== */
+.final-solo { align-items: stretch; gap: 0.9rem; }
+.final-solo > * { width: 100%; }
+/* Cabecera: el juego en grande y sus ajustes en dos casillas */
+.info-partida { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.6rem; padding: 0; background: none; border: 0; border-radius: 0; flex: none; width: 100%; }
+.info-partida-titulo { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+.info-partida .info-partida-ico { display: grid; width: 3.2rem; height: 3.2rem; font-size: 1.9rem; border-radius: 0.9rem; flex: none; }
+.info-partida-nombre { margin: 0; min-width: 0; font-family: var(--fuente-ficha); font-weight: 900; font-size: clamp(1.55rem, 7.4vw, 2.4rem); line-height: 1.05; letter-spacing: 0.01em; text-shadow: 0 0.12em 0 rgba(4, 12, 40, 0.45); overflow-wrap: anywhere; text-align: left; }
+.info-partida-ajustes { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.info-ajuste, .final-dato {
+  display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 0; padding: 0; overflow: hidden; text-align: center;
+  border-radius: 0.9rem; background: linear-gradient(180deg, #2a52a6, #1c3f8c); border: 1px solid rgba(170, 200, 255, 0.28); border-top-color: rgba(220, 235, 255, 0.45);
+  box-shadow: 0 0.25rem 0 rgba(4, 12, 40, 0.4);
+}
+/* El título de cada casilla: arriba, en su franja, y bien visible */
+.info-ajuste small, .final-dato small.final-dato-etq {
+  display: block; padding: 0.32rem 0.4rem 0.28rem; background: rgba(6, 18, 56, 0.45); border-bottom: 1px solid rgba(170, 200, 255, 0.18);
+  font-size: 0.72rem; font-weight: 900; letter-spacing: 0.08em; line-height: 1.15; text-transform: uppercase; color: #eef4ff;
+}
+.info-ajuste b { display: block; padding: 0.35rem 0.4rem 0.45rem; font-family: var(--fuente-ficha); font-size: 1.3rem; line-height: 1.1; color: #fff; }
+.final-dato-cuerpo { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.45rem 0.35rem 0.5rem; min-width: 0; }
+.final-dato .final-dato-ico { font-size: 1.15rem; }
+.final-dato .final-dato-valor { font-size: 1.25rem; }
+.final-datos.en-fila .final-dato-cuerpo { flex-direction: column; gap: 0.1rem; }
+.final-dato.oro small.final-dato-etq { background: rgba(120, 80, 0, 0.16); border-bottom-color: rgba(120, 80, 0, 0.18); color: #4a3300; }
+/* Con sitio (ordenador): el título a la izquierda y las dos casillas a la derecha; la pantalla, más ancha */
+.final-solo { container-type: inline-size; }
+@container (min-width: 44rem) {
+  .info-partida { grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem); align-items: center; gap: 1.2rem; }
+  .info-partida-nombre { font-size: 2.6rem; }
+  .info-partida .info-partida-ico { width: 3.8rem; height: 3.8rem; font-size: 2.3rem; }
+}
+@media (min-width: 900px) { .pantalla.pantalla-final:not(.res-party) { --ancho: min(100vw, 60rem); } }
+.res-party > .info-partida { margin-bottom: 0.2rem; }
+@media (min-width: 900px) { .res-party > .info-partida { grid-column: 1 / -1; } }
+
+/* Secciones de resultados: sin recuadro, a todo el ancho (con los márgenes de la pantalla) */
+.final-solo .final-kk, .final-solo .final-palabras, .final-solo .solo-solucion, .final-solo .final-puzle, .final-solo .final-llegar, .final-solo .cx-estudio, .final-solo .mis-respuestas {
+  background: none; border: 0; box-shadow: none; backdrop-filter: none; border-radius: 0; padding: 0; width: 100%;
+}
+.final-seccion, .final-kk > small, .final-palabras > small {
+  display: flex; align-items: center; gap: 0.6rem; width: 100%; margin: 0.3rem 0 0.1rem; color: #eef4ff;
+  font-size: 0.78rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; text-align: left;
+}
+.final-seccion::after, .final-kk > small::after, .final-palabras > small::after { content: ""; flex: 1; height: 1px; background: rgba(170, 200, 255, 0.25); }
+/* Los tableros de los puzles, lo más grandes posible */
+.final-puzle { gap: 0.6rem; }
+.final-puzle > .hilo, .final-puzle > .cor, .final-puzle > .pc, .final-puzle > .cul { width: min(100%, 32rem, 62dvh); font-size: calc(min(100cqw, 32rem, 62dvh) / var(--n)); }
+.final-kk .kk { width: min(100%, 30rem, 60dvh); font-size: calc(min(100cqw, 30rem, 60dvh) / var(--n)); }
+.final-lab .lab { width: min(100%, 30rem); }
+
+/* Palabra más larga: agrupadas por número de letras */
+.solo-solucion { display: flex; flex-direction: column; gap: 0.55rem; }
+.grupo-largo { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr); align-items: start; gap: 0.6rem; }
+.grupo-largo-n { display: flex; flex-direction: column; align-items: center; padding: 0.3rem 0; border-radius: 0.8rem; background: rgba(120, 160, 255, 0.16); line-height: 1; }
+.grupo-largo-n b { font-family: var(--fuente-ficha); font-size: 1.5rem; color: #fff; }
+.grupo-largo-n small { font-size: 0.62rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: var(--texto-suave); }
+.grupo-largo .solo-chips { justify-content: flex-start; }
+
+/* Palabras tocables: fichas grandes y separadas (difícil tocar la de al lado) */
+.zona-final .solo-chips, .zona-final .final-chips, .zona-final .respuestas { gap: 0.5rem; }
+.tocable[data-palabra] { cursor: pointer; min-height: 2.5rem; padding: 0.4rem 0.8rem; font-size: 0.98rem; display: inline-flex; align-items: center; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: transform 120ms var(--curva), filter 120ms; }
+.tocable[data-palabra]:active { transform: scale(0.94); filter: brightness(1.2); }
+.tocable[data-palabra]:focus-visible { outline: 0.15rem solid var(--oro); outline-offset: 0.12rem; }
+@media (hover: hover) { .tocable[data-palabra]:hover { filter: brightness(1.18); } }
+.zona-final .final-chips .pg-chip { font-size: 0.95rem; }
+.pista-tocar { font-size: 0.78rem; color: var(--texto-suave); font-weight: 700; text-align: center; margin: 0; }
+
+/* Ventana del diccionario */
+.capa-dicc { place-items: center; z-index: 60; }
+.dicc-caja { text-align: left; max-height: 80dvh; overflow: hidden; animation: aparece 220ms var(--curva); }
+.dicc-palabra { font-family: var(--fuente-ficha); letter-spacing: 0.04em; overflow-wrap: anywhere; }
+.dicc-lista { overflow-y: auto; min-height: 0; }
+.dicc-acepciones { margin: 0; padding-left: 1.3rem; display: flex; flex-direction: column; gap: 0.6rem; font-size: 1.02rem; line-height: 1.4; }
+.dicc-etiqueta { display: inline-block; margin-right: 0.4rem; padding: 0.05rem 0.45rem; border-radius: 999px; background: rgba(233, 199, 90, 0.2); color: var(--oro); font-size: 0.72rem; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; vertical-align: 0.1em; }
+
+/* Elegir temas: varios a la vez */
+.ambito-ayuda { margin: 0; color: var(--texto-suave); font-size: 0.9rem; }
+.ambito { position: relative; transition: background 140ms, border-color 140ms, transform 120ms var(--curva); }
+.ambito:active { transform: scale(0.95); }
+.ambito-marca { position: absolute; top: 0.25rem; right: 0.3rem; width: 1.15rem; height: 1.15rem; border-radius: 50%; display: grid; place-items: center; font-size: 0.7rem; font-weight: 900; background: rgba(255, 255, 255, 0.12); color: transparent; }
+.ambito[aria-pressed="true"] { background: linear-gradient(180deg, rgba(95, 183, 208, 0.45), rgba(95, 183, 208, 0.25)); border-color: #8ed3e6; }
+.ambito[aria-pressed="true"] .ambito-marca { background: #8ed3e6; color: #06283a; }
+.ambito-jugar { flex: none; }
+.ambito-jugar:disabled { opacity: 0.55; }
+
+/* Inicio: botón del QR para descargar la app */
+.barra-inicio .boton-qr { margin-left: auto; font-size: 1.3rem; width: 2.9rem; height: 2.9rem; }
+.dicc-lema { margin: 0 0 0.5rem; color: var(--texto-suave); font-weight: 700; } .dicc-lema b { color: #fff; }

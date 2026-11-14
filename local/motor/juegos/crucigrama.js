@@ -14,18 +14,26 @@ export const AMBITOS = [
 /**
  * Palabras de un tema para los juegos con tema (Crucigrama, Definición, Sopa).
  *   "todos" = de cualquier tema · "azar" (o desconocido) = un tema al azar con bastantes palabras.
+ *   [temas…] = mezcla de los temas elegidos (el nombre: «Marina · Música» o «5 temas»).
  * Devuelve { ambito, lista: [{ clave, forma, nivel, definicion, palabras }] }.
  */
 export function palabrasDeTema(azar, ambito, minimo = 80) {
   const todo = cargarCrucigrama();
   const conDatos = AMBITOS.filter((a) => (todo[a]?.length ?? 0) >= 30);
   const entrada = ([c, forma, niv, definicion]) => ({ clave: c, forma, nivel: niv, definicion, palabras: definicion.split(/\s+/).length });
-  if (ambito === "todos") {
+  const mezcla = (temas) => {
     const vistas = new Map();
-    for (const a of conDatos) for (const f of todo[a]) if (!vistas.has(f[0])) vistas.set(f[0], entrada(f));
-    return { ambito: "todos", lista: [...vistas.values()] };
+    for (const a of temas) for (const f of todo[a] ?? []) if (!vistas.has(f[0])) vistas.set(f[0], entrada(f));
+    return [...vistas.values()];
+  };
+  if (ambito === "todos") return { ambito: "todos", lista: mezcla(conDatos) };
+  if (Array.isArray(ambito)) {
+    const temas = ambito.filter((a) => (todo[a]?.length ?? 0) > 0);
+    if (temas.length === 1) ambito = temas[0];
+    else if (temas.length > 1) return { ambito: temas.length <= 2 ? temas.join(" · ") : `${temas.length} temas`, temas, lista: mezcla(temas) };
+    else ambito = "azar";
   }
-  const elegido = conDatos.includes(ambito) ? ambito : azar.elegir(conDatos.filter((a) => todo[a].length >= minimo));
+  const elegido = (todo[ambito]?.length ?? 0) > 0 ? ambito : azar.elegir(conDatos.filter((a) => todo[a].length >= minimo));
   return { ambito: elegido, lista: (todo[elegido] ?? []).map(entrada) };
 }
 
@@ -150,6 +158,12 @@ export default {
     const nivel = NIVELES[d + 1];
     const { ambito, lista } = palabrasDeTema(azar, config?.ambito);
     let entradas = lista.filter((x) => x.clave.length <= nivel.tam && x.palabras <= nivel.maxPalabras);
+    // Palabras salidas hace poco (en este móvil): se dejan fuera mientras quede donde elegir.
+    const evitar = new Set(Array.isArray(config?.evitar) ? config.evitar : []);
+    if (evitar.size) {
+      const nuevas = entradas.filter((x) => !evitar.has(x.clave));
+      if (nuevas.length >= nivel.n * 4) entradas = nuevas;
+    }
     if (nivel.comunes) {
       const comunes = entradas.filter((x) => x.nivel <= 2);
       if (comunes.length >= nivel.n * 4) entradas = comunes;

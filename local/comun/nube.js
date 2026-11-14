@@ -44,7 +44,11 @@ const leerJSON = (k, def) => {
 
 // ------------------------------------------------------------------ tu ficha
 /** Sube tu ficha entera (perfil + récords + hazañas). Si no hay internet, no pasa nada: se vuelve a intentar luego. */
+// Las pruebas en el ordenador (localhost) no suben nada: así no aparecen jugadores de prueba en la clasificación.
+const enPruebas = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+
 export async function subirFicha(id, perfil) {
+  if (enPruebas) return false;
   const ficha = {
     nombre: perfil.nombre,
     color: perfil.color,
@@ -76,7 +80,9 @@ export async function leerFicha(id) {
 }
 
 // ------------------------------------------------------------------ todos (clasificación global)
+const PRUEBAS = new Set(["3c683e1791484d3db1ff", "7869ffb70b2542358ca1", "a3647781984f461293f6", "b85a4fb7ab414f8db0db"]);
 /** Todos los jugadores, sin las fotos (para la clasificación). [{ id, nombre, color, records: {…}, hazanas: {…} }] */
+// (Los jugadores «Test» que subieron las pruebas antiguas no se enseñan.)
 export async function leerJugadores() {
   const r = await pedir(`:runQuery`, {
     method: "POST",
@@ -96,7 +102,8 @@ export async function leerJugadores() {
         }
       };
       return { ...d, id: x.document.name.split("/").pop(), records: json(d.records), hazanas: json(d.hazanas) };
-    });
+    })
+    .filter((p) => !PRUEBAS.has(p.id));
   // Copia para verla sin conexión.
   almacen.guardar("nyp-nube-jugadores", JSON.stringify({ lista, fecha: new Date().toISOString() }));
   return lista;

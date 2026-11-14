@@ -5,9 +5,10 @@ import { nivelDificultad } from "../util.js";
 import { vecinasDe, caminoCompleto, claveMuro } from "./caminos.js";
 
 const NIVELES = [
-  { n: 5, numeros: 7, muros: 0 },
-  { n: 6, numeros: 8, muros: 0.45 },
-  { n: 7, numeros: 9, muros: 0.6 },
+  // Como mucho 7 números (en fácil, 5).
+  { n: 5, numeros: 5, muros: 0 },
+  { n: 6, numeros: 6, muros: 0.45 },
+  { n: 7, numeros: 7, muros: 0.6 },
 ];
 
 /**
@@ -130,7 +131,10 @@ export default {
     const nv = NIVELES[nivelDificultad(config) + 1];
     const n = nv.n, total = n * n;
     let mejor = null;
-    for (let intento = 0; intento < 6; intento++) {
+    // Nunca más de 7 números: si hace falta más ayuda, una pared (o se prueba con otro camino).
+    const MAX_NUMEROS = 7;
+    for (let intento = 0; intento < 30; intento++) {
+      const conMuros = nv.muros > 0 || intento >= 15; // en fácil, sin paredes mientras se pueda
       const sol = caminoCompleto(azar, n, n);
       // Números repartidos por el camino (con algo de azar), siempre el principio y el final.
       const pos = new Set([0, total - 1]);
@@ -146,6 +150,7 @@ export default {
           break;
         }
         if (!r) {
+          if (pos.size >= MAX_NUMEROS) break; // con 7 números aún hay demasiados caminos: otro camino
           // Demasiados caminos posibles: un número más en el tramo más largo.
           const orden = [...pos].sort((a, b) => a - b);
           let largo = 0, donde = 1;
@@ -158,11 +163,13 @@ export default {
         const i = otro.findIndex((k, j) => k !== sol[j]);
         // (Si esa casilla ya tiene número, el número va donde se metió el otro camino.)
         const alt = pos.has(i) ? sol.indexOf(otro[i]) : i;
-        if (azar() < nv.muros || pos.has(alt)) muros.add(claveMuro(otro[i - 1], otro[i]));
+        const pared = azar() < nv.muros || pos.has(alt) || pos.size >= MAX_NUMEROS;
+        if (pared && !conMuros) break;
+        if (pared) muros.add(claveMuro(otro[i - 1], otro[i]));
         else pos.add(alt);
       }
       const numeros = numerar(sol, pos);
-      mejor = { sol, numeros, muros };
+      if (unico || !mejor) mejor = { sol, numeros, muros };
       if (unico) break;
     }
     return {

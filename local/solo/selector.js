@@ -78,14 +78,11 @@ export { textoSegundos };
 
 /** Al lado del perfil en los resultados: el icono y el nombre del juego, y sus ajustes en dos chips. */
 export function infoPartida(juego, segundos, nivel) {
+  const casilla = (ico, etq, valor) => h("div.info-ajuste", h("small", ico, " ", etq), h("b", valor));
   return h(
     "div.info-partida",
-    h("span.info-partida-ico", ICONOS[juego.id] ?? "🎲"),
-    h(
-      "div.info-partida-txt",
-      h("b", juego.nombre),
-      h("div.info-partida-chips", h("span", `⏱ ${textoSegundos(segundos)}`), nivel ? h("span", `◆ ${nivel}`) : null)
-    )
+    h("div.info-partida-titulo", h("span.info-partida-ico", ICONOS[juego.id] ?? "🎲"), h("h2.info-partida-nombre", juego.nombre)),
+    h("div.info-partida-ajustes", casilla("⏱", "Tiempo", segundos ? textoSegundos(segundos) : "Sin límite"), nivel ? casilla("◆", "Nivel", nivel) : null)
   );
 }
 
@@ -213,28 +210,30 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       navigator.vibrate?.([20, 40, 60]);
     };
     if (vista === "cuadricula") {
-      // Casillas que se iluminan al azar, cada vez más despacio, sin enseñar su ficha; la última es la elegida.
-      const saltos = 12;
-      let k = 0, previa = -1, espera = 45;
-      const paso = () => {
-        casillas.forEach((c) => c.classList.remove("sorteo"));
-        if (k === saltos) {
-          ir(destino, false);
-          casillas[destino].classList.add("sorteo-fin");
-          setTimeout(() => casillas[destino].classList.remove("sorteo-fin"), 900);
-          return final();
+      // La luz recorre las casillas en orden: empieza deprisa y frena con suavidad hasta pararse en la
+      // elegida (la última casilla iluminada es siempre la que sale; nunca salta a otra al final).
+      const total = (((destino - sel) % n) + n) % n + n * 2;
+      const dur = 2600;
+      const t0 = performance.now();
+      const frenar = (x) => 1 - Math.pow(1 - x, 3); // deprisa al principio, despacio al final
+      let previa = -1;
+      const paso = (ahora) => {
+        const x = Math.min(1, (ahora - t0) / dur);
+        const i = (sel + Math.min(total, Math.round(frenar(x) * total))) % n;
+        if (i !== previa) {
+          if (previa >= 0) casillas[previa].classList.remove("sorteo");
+          casillas[i].classList.add("sorteo");
+          previa = i;
+          if (x < 0.9) navigator.vibrate?.(3);
         }
-        let i;
-        do i = Math.floor(Math.random() * n);
-        while (i === previa || (k === saltos - 1 && i === destino));
-        previa = i;
-        casillas[i].classList.add("sorteo");
-        navigator.vibrate?.(4);
-        k++;
-        espera *= 1.13;
-        setTimeout(paso, espera);
+        if (x < 1) return void requestAnimationFrame(paso);
+        casillas[i].classList.remove("sorteo");
+        ir(destino, false);
+        casillas[destino].classList.add("sorteo-fin");
+        setTimeout(() => casillas[destino].classList.remove("sorteo-fin"), 900);
+        final();
       };
-      return paso();
+      return void requestAnimationFrame(paso);
     }
     // Ruleta: una vuelta y lo que falte hasta el elegido. La lista se desliza de forma continua (fotograma a
     // fotograma, sin saltos de casilla en casilla) y frena suavemente al final (≈2,2 s).

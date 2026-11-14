@@ -115,6 +115,9 @@ export function iniciarFondo({ espaciado = 34, color = "150, 185, 255" } = {}) {
     "pointerdown",
     (e) => {
       if (e.target instanceof Element && e.target.closest(INTERACTIVO)) return;
+      // Pantallas de resultado: en el móvil, sin olas (al desplazar salían muchas); en el ordenador,
+      // solo fuera de la zona con los resultados.
+      if (e.target instanceof Element && e.target.closest(".pantalla-final") && (e.pointerType !== "mouse" || e.target.closest(".zona-final"))) return;
       onda(e.clientX, e.clientY);
     },
     { passive: true }

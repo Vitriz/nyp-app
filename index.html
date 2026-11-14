@@ -47,7 +47,10 @@
     #carcasa .marca { margin-top: 0; position: absolute; left: 50%; top: 33.3%; translate: -50% -50%; }
     #carcasa #estado { position: absolute; left: 50%; top: 66.6%; translate: -50% -50%; white-space: nowrap; }
     #carcasa.saliendo { background: transparent; pointer-events: none; }
-    #carcasa.saliendo > :not(.marca) { opacity: 0; transition: opacity 250ms; }
+    #carcasa.saliendo > :not(.marca) { opacity: 0; transition: opacity 300ms; }
+    /* La pantalla de carga tapa el juego mientras se prepara; al salir se vuelve transparente (queda el título) */
+    #carcasa { background: radial-gradient(120% 90% at 50% 0%, #1d3f86, #14306f 45%, #0b1d4f); transition: background-color 300ms; }
+    #carcasa.saliendo { background: transparent; }
     /* Lo que está pasando (cargando, actualizando…), arriba y bien visible: una píldora con un círculo que gira. */
     #carcasa #estado { display: inline-flex; align-items: center; gap: 0.6em; margin: 0; padding: 0.55em 1.1em 0.55em 0.8em; border-radius: 999px;
       font-size: clamp(1.05rem, 2.4vh, 1.5rem); font-weight: 800; color: #ffffff; background: rgba(10, 27, 74, 0.7); border: 2px solid rgba(142, 211, 230, 0.55);

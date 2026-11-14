@@ -329,6 +329,11 @@ export class Sala {
           if ([5, 8, 12, 16, 20].includes(Number(msg.operaciones))) this.config.operaciones = Number(msg.operaciones);
           this.#presentar(msg.juego);
           if (typeof msg.ambito === "string" && msg.ambito.length <= 30 && this.juego?.ambitos?.length) this.config.ambito = msg.ambito;
+          // Varios temas a la vez (solo los que existen).
+          else if (Array.isArray(msg.ambito) && msg.ambito.length && msg.ambito.length <= 40 && this.juego?.ambitos?.length) {
+            const temas = msg.ambito.filter((a) => this.juego.ambitos.includes(a));
+            if (temas.length) this.config.ambito = temas;
+          }
         }
         break;
       case "aleatorio":

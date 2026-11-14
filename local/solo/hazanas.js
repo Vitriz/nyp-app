@@ -9,6 +9,12 @@ import { almacen } from "../comun/conexion.js";
  */
 export const HAZANAS = [
   {
+    // Fuera de los juegos: en la pantalla de inicio. Su descripción no se ve hasta conseguirla.
+    id: "machaca-titulos", juego: "inicio", icono: "🔨", nombre: "Machaca títulos", premio: { sombrero: "martillo" }, oculta: true,
+    desc: "Expulsa todas las letras del título en la pantalla de inicio.",
+    comprobar: () => false,
+  },
+  {
     id: "llegar-directo", juego: "llegar-resultado", icono: "🎯", nombre: "Directo al grano", premio: { sombrero: "corona" },
     desc: "Llega exacto al objetivo con 2 cálculos o menos, en Difícil.",
     comprobar: ({ meta, j }) => meta.dificultad === "dificil" && j?.mejor?.dist === 0 && (j.mejor.pasos?.length ?? 9) <= 2,
@@ -113,6 +119,16 @@ export function comprobarHazanas(meta, r, ronda, id) {
   return nuevas;
 }
 
+/** Consigue una hazaña que no es de un juego (p. ej. en el inicio). Devuelve la hazaña si es nueva. */
+export function conseguirHazana(id) {
+  const x = HAZANAS.find((y) => y.id === id);
+  const hechas = leerHazanas();
+  if (!x || hechas[id]) return null;
+  hechas[id] = new Date().toISOString().slice(0, 10);
+  almacen.guardar("nyp-hazanas", JSON.stringify(hechas));
+  return x;
+}
+
 /** Texto del premio: "👑 Corona" o "✨ Animación Baile". */
 export function textoPremio(premio) {
   if (premio?.sombrero) return `${SOMBREROS[premio.sombrero]} ${premio.sombrero[0].toUpperCase()}${premio.sombrero.slice(1)}`;
@@ -208,7 +224,8 @@ export function tarjetaHazanas(nuevas) {
 /** Ventana con todas las hazañas: conseguidas (con fecha) y por conseguir. */
 export function ventanaHazanas(juegos, iconos) {
   const hechas = leerHazanas();
-  const nombre = Object.fromEntries(juegos.map((j) => [j.id, j.nombre]));
+  const nombre = { ...Object.fromEntries(juegos.map((j) => [j.id, j.nombre])), inicio: "Pantalla de inicio" };
+  iconos = { ...iconos, inicio: "🏠" };
   const lista = HAZANAS.filter((x) => nombre[x.juego]);
   const total = lista.filter((x) => hechas[x.id]).length;
   const cerrar = () => {
@@ -244,7 +261,7 @@ export function ventanaHazanas(juegos, iconos) {
               `div.hazana${f ? ".hecha" : ""}`,
               { style: { animationDelay: `${60 + i * 40}ms` } },
               h("span.hazana-medalla", f ? x.icono : "🔒"),
-              h("div.hazana-textos", h("b", x.nombre), h("small", `${iconos?.[x.juego] ?? ""} ${nombre[x.juego]}`), h("p", x.desc), x.premio ? h("small.hazana-premio", `🎁 ${textoPremio(x.premio)}`) : null),
+              h("div.hazana-textos", h("b", x.nombre), h("small", `${iconos?.[x.juego] ?? ""} ${nombre[x.juego]}`), h("p", x.oculta && !f ? "❓ Descripción oculta: descubre tú cómo se consigue." : x.desc), x.premio ? h("small.hazana-premio", `🎁 ${textoPremio(x.premio)}`) : null),
               f ? h("span.hazana-fecha", `✔ ${f.slice(8, 10)}/${f.slice(5, 7)}`) : null
             );
           })
