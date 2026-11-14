@@ -18,7 +18,7 @@
       font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden; }
     #carcasa { position: fixed; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.2rem;
       padding: calc(env(safe-area-inset-top) + 1rem) 1.2rem calc(env(safe-area-inset-bottom) + 1rem); text-align: center; box-sizing: border-box; }
-    #carcasa .marca { display: flex; flex-direction: column; align-items: center; gap: 0.25em; font-size: min(2.3rem, calc((100vw - 3rem) / 13.4)); margin-top: 3rem; }
+    #carcasa .marca { display: flex; flex-direction: column; align-items: center; gap: 0.25em; font-size: min(3.4rem, calc((100vw - 3rem) / 13.4), 7.5vh); margin-top: 3rem; }
     #carcasa .marca .fila { display: flex; gap: 0.18em; }
     #carcasa .marca .ficha { box-sizing: border-box; }
     #carcasa .marca .ficha { animation: bandera 2.4s linear infinite; animation-delay: calc(var(--x) * 0.28s - 2.4s); }
@@ -42,19 +42,28 @@
     #carcasa .tecla { flex: 1; height: 2.8rem; padding: 0; font: inherit; font-weight: 900; font-size: 1.1rem; color: #0d2560;
       background: linear-gradient(180deg, #fff, #dde6fb); border: 2px solid #0a1b4a; border-radius: 0.45rem; }
     #carcasa .tecla.ancha { flex: 1.6; }
-    #carcasa { overflow-y: auto; justify-content: flex-start; }
+    #carcasa { overflow-y: auto; justify-content: center; gap: 2rem; }
+    #carcasa .marca { margin-top: 0; }
+    /* Lo que está pasando (cargando, actualizando…), arriba y bien visible: una píldora con un círculo que gira. */
+    #carcasa #estado { display: inline-flex; align-items: center; gap: 0.6em; margin: 0; padding: 0.55em 1.1em 0.55em 0.8em; border-radius: 999px;
+      font-size: clamp(1.05rem, 2.4vh, 1.5rem); font-weight: 800; color: #ffffff; background: rgba(10, 27, 74, 0.7); border: 2px solid rgba(142, 211, 230, 0.55);
+      box-shadow: 0 0.3em 1em rgba(4, 12, 40, 0.4); }
+    #carcasa #estado::before { content: ""; width: 1em; height: 1em; border-radius: 50%; border: 0.18em solid rgba(142, 211, 230, 0.3); border-top-color: #8ed3e6;
+      animation: girar-carga 0.8s linear infinite; flex: none; }
+    #carcasa #estado.sin-giro::before { display: none; }
+    @keyframes girar-carga { to { transform: rotate(360deg); } }
     #carcasa video { width: min(100%, 22rem); aspect-ratio: 1; object-fit: cover; border-radius: 1rem; border: 4px solid #fff; background: #000; }
     .oculto { display: none !important; }
   </style>
 </head>
 <body>
   <div id="carcasa">
+    <p id="estado" role="status">Cargando…</p>
     <div class="marca" role="heading" aria-level="1" aria-label="Números y Palabras">
       <div class="fila num"><span class="ficha" style="--x:-3">N</span><span class="ficha" style="--x:-2">Ú</span><span class="ficha" style="--x:-1">M</span><span class="ficha" style="--x:0">E</span><span class="ficha" style="--x:1">R</span><span class="ficha" style="--x:2">O</span><span class="ficha" style="--x:3">S</span></div>
       <span class="ficha y" style="--x:0">Y</span>
       <div class="fila pal"><span class="ficha" style="--x:-3.5">P</span><span class="ficha" style="--x:-2.5">A</span><span class="ficha" style="--x:-1.5">L</span><span class="ficha" style="--x:-0.5">A</span><span class="ficha" style="--x:0.5">B</span><span class="ficha" style="--x:1.5">R</span><span class="ficha" style="--x:2.5">A</span><span class="ficha" style="--x:3.5">S</span></div>
     </div>
-    <p id="estado" class="suave">Cargando…</p>
   </div>
   <!-- El juego del ordenador se monta aquí -->
   <canvas id="fondo"></canvas>

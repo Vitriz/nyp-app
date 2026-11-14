@@ -2,7 +2,8 @@
 import { h } from "../../comun/ui.js";
 
 // Colores de los rectángulos bien hechos (los que no cumplen su pista se ven grises).
-export const COLORES = ["#f2b84b", "#e9604f", "#4fb6e8", "#3fbf86", "#f08a3c", "#8f7ae6", "#33a9b8", "#e46fa8", "#9bbf3a", "#5b8def"];
+// Cada pista tiene su color (y su rectángulo, cuando está bien, se pinta de ese color).
+export const COLORES = ["#e5484d", "#2f9fd0", "#2fa36b", "#8b5cf6", "#f08a24", "#d6409f", "#0f9fb0", "#c9a000", "#5b6cf0", "#7a9a1a", "#b5651d", "#e0607e"];
 
 export const formaDe = (alto, ancho) => (alto === ancho ? "cuadrado" : alto > ancho ? "alto" : "ancho");
 
@@ -14,17 +15,23 @@ export function cumple(p, alto, ancho) {
 /** El dibujo de la forma de una pista (cuadrado, alto, ancho o cualquiera). */
 export const iconoForma = (forma) => h(`span.pc-forma.${forma}`, { "aria-hidden": "true" });
 
+/** La insignia de una pista: la forma rellena de su color y, si lo tiene, el tamaño dentro. */
+export const insignia = (forma, numero, color) =>
+  h(`span.pc-insignia.${forma}`, { style: { "--c": color } }, numero != null ? h("b", String(numero)) : null);
+
 export function crearTablero({ n, pistas }) {
   const el = h("div.pc", { style: { "--n": n } });
   for (let k = 0; k < n * n; k++) el.append(h("div.pc-celda", { style: { gridRow: Math.floor(k / n) + 1, gridColumn: (k % n) + 1 } }));
   const capaRects = h("div.pc-capa");
   el.append(capaRects);
-  const marcasPista = pistas.map((p) =>
+  const marcasPista = pistas.map((p, i) =>
     h(
-      `div.pc-pista${p.numero != null ? ".con-numero" : ""}`,
-      { style: { gridRow: Math.floor(p.k / n) + 1, gridColumn: (p.k % n) + 1 }, title: p.numero != null ? `${p.numero} casillas` : "" },
-      iconoForma(p.forma),
-      p.numero != null ? h("b", String(p.numero)) : null
+      "div.pc-pista",
+      {
+        style: { gridRow: Math.floor(p.k / n) + 1, gridColumn: (p.k % n) + 1, "--c": COLORES[i % COLORES.length] },
+        title: `${{ cuadrado: "Cuadrado", alto: "Rectángulo alto", ancho: "Rectángulo ancho", cualquiera: "Cualquier forma" }[p.forma]}${p.numero != null ? ` de ${p.numero} casillas` : ""}`,
+      },
+      insignia(p.forma, p.numero, COLORES[i % COLORES.length])
     )
   );
   el.append(...marcasPista);
@@ -69,7 +76,9 @@ export function crearTablero({ n, pistas }) {
       previa.classList.toggle("oculto", !x);
       if (!x) return;
       colocar(previa, x);
-      previa.classList.toggle("bien", valida(x) >= 0);
+      const i = valida(x);
+      previa.classList.toggle("bien", i >= 0);
+      previa.style.setProperty("--c", i >= 0 ? COLORES[i % COLORES.length] : "#5fb7d0");
     },
   };
 }

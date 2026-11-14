@@ -120,6 +120,17 @@ function editarPerfil(despues, volver = inicio) {
         subirLuego(idMovil(), perfil);
         despues();
       },
+      // Cambios guardados solos (al cambiar de pestaña): también a la nube.
+      alCambiar: (p) => {
+        perfil = p;
+        subirLuego(idMovil(), perfil, 2500);
+      },
+      // Perfil borrado: se empieza otro desde cero.
+      alBorrar: () => {
+        perfil = null;
+        soltarBanner();
+        editarPerfil(inicio);
+      },
       alVolver: perfil ? volver : null,
     }).el
   );

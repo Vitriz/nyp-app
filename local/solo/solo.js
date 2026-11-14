@@ -4,7 +4,7 @@ import { calmarFondo } from "../comun/fondo.js";
 import { almacen } from "../comun/conexion.js";
 import { leerPaquete, diccionarioIncluido, desbloquearDiccionario, actualizarIncluido } from "./paquete.js";
 import { campoTexto } from "../comun/teclado.js";
-import { selectorJuegos, ICONOS, textoSegundos, textoRecord } from "./selector.js";
+import { selectorJuegos, ICONOS, textoSegundos, textoRecord, infoPartida } from "./selector.js";
 import { leerFamilia, idMovil } from "../comun/familia.js";
 import { subirLuego, leerJugadores, jugadoresGuardados } from "../comun/nube.js";
 import { comprobarHazanas, tarjetaHazanas, ventanaHazanas, celebrarHazanas } from "./hazanas.js";
@@ -590,7 +590,7 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
       el: h(
         "section",
         // El juego y sus ajustes, al lado del perfil (así abajo queda sitio para lo importante).
-        barra(h("div.barra-titulo", h("b", meta.nombre), h("small", `${textoSegundos(meta.duracion)} · ${NOMBRES_NIVEL[meta.dificultad ?? "normal"]}`))),
+        barra(infoPartida(meta, meta.duracion, NOMBRES_NIVEL[meta.dificultad ?? "normal"])),
         h(
           "div.espera.final-solo",
           h(

@@ -1342,3 +1342,71 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .final-puzle { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 0.8rem; }
 .final-puzle > .hilo, .final-puzle > .cor, .final-puzle > .pc, .final-puzle > .cul { width: min(100%, 17rem); font-size: calc(min(100cqw, 17rem) / var(--n)); }
 .final-puzle { container-type: inline-size; }
+
+/* ---------- inicio en el ordenador: título arriba con aire, botones más estrechos y centrados, banner más grande ---------- */
+@media (min-width: 900px) and (min-height: 600px) and (orientation: landscape) {
+  .pantalla.inicio { --ancho: 100vw; padding: calc(env(safe-area-inset-top) + 1.4rem) 2rem 6dvh; gap: 0; }
+  .inicio-centro { flex: 1 1 auto; align-items: center; padding-bottom: 4dvh; }
+  .inicio-centro .titulo-nyp { font-size: min(3.2rem, 5.6dvh, 4vw); }
+  .pantalla.inicio > .inicio-opciones { flex: none; width: min(100%, 26rem); gap: 0.9rem; }
+  .pantalla.inicio > .inicio-opciones .opcion { min-height: 4.1rem; padding-block: 0.55rem; }
+  .barra-sup.banner-fijo .banner { font-size: 1.4rem; }
+  .barra-sup.banner-fijo .banner .avatar { font-size: 1.35rem; }
+  .inicio-centro { padding: 2dvh 0 8dvh; }
+  .pantalla.inicio { padding-bottom: 8dvh; }
+}
+
+/* ---------- PARTY · resultados en el móvil: puesto pequeño, tus datos al lado y casi todo para las respuestas ---------- */
+.pantalla.res-party { gap: 0.8rem; }
+.rp-cabeza { display: grid; grid-template-columns: auto 1fr; gap: 0.6rem; flex: none; }
+.rp-puesto, .rp-datos { border-radius: 1rem; padding: 0.6rem 0.9rem; background: linear-gradient(180deg, rgba(120, 160, 255, 0.22), rgba(120, 160, 255, 0.1)); border: 2px solid rgba(160, 190, 255, 0.3); }
+.rp-puesto { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 5.4rem; line-height: 1.05; }
+.rp-puesto .rp-medalla { font-size: 1.9rem; line-height: 1.1; }
+.rp-puesto b { font-size: 1.15rem; }
+.rp-puesto small { color: var(--oro, #ffd34d); font-weight: 900; font-size: 0.85rem; }
+.rp-puesto.oro { background: linear-gradient(180deg, #fff3c2, #f6d36b); border-color: #c99a14; color: #4a3300; }
+.rp-puesto.oro small { color: #6b4a00; }
+.rp-datos { display: flex; flex-direction: column; justify-content: center; gap: 0.15rem; min-width: 0; }
+.rp-datos small { color: var(--texto-suave); font-weight: 800; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.rp-datos b { font-size: 1.05rem; line-height: 1.25; }
+.rp-cuerpo { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem; padding-bottom: 0.4rem; scrollbar-width: none; }
+.rp-jugador { padding: 0.5rem 0.6rem 0.6rem; display: flex; flex-direction: column; gap: 0.45rem; flex: none; }
+.rp-jugador.yo { border-color: var(--oro, #ffd34d); }
+.rp-fila { appearance: none; background: none; border: 0; padding: 0; font: inherit; color: inherit; display: flex; align-items: center; gap: 0.55rem; text-align: left; cursor: pointer; width: 100%; }
+.rp-fila:disabled { cursor: default; }
+.rp-fila .avatar { font-size: 0.75rem; flex: none; }
+.rp-pos { font-weight: 900; min-width: 1.8rem; color: var(--texto-suave); }
+.rp-nombre { font-weight: 800; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-texto { color: var(--texto-suave); font-weight: 700; font-size: 0.85rem; text-align: right; }
+.rp-ver { font-size: 1.4rem; color: var(--texto-suave); margin-left: 0.1rem; }
+.rp-jugador .respuestas { justify-content: flex-start; }
+.rp-ventana { max-height: 85dvh; overflow-y: auto; }
+.rp-ventana-quien { display: flex; align-items: center; gap: 0.6rem; }
+.rp-ventana-quien .avatar { font-size: 0.8rem; }
+.rp-ventana .respuestas { justify-content: flex-start; }
+
+/* ---------- resultados: el juego y sus ajustes al lado del perfil ---------- */
+.info-partida { display: flex; align-items: center; gap: 0.55rem; min-width: 0; flex: 1; padding: 0.3rem 0.7rem 0.3rem 0.3rem; border-radius: 1rem; background: rgba(120, 160, 255, 0.14); border: 2px solid rgba(160, 190, 255, 0.25); }
+.info-partida-ico { flex: none; width: 2.4rem; height: 2.4rem; display: grid; place-items: center; font-size: 1.4rem; border-radius: 0.7rem; background: linear-gradient(180deg, #ffffff, #dfe8ff); box-shadow: 0 0.12rem 0 rgba(4, 12, 40, 0.4); }
+.info-partida-txt { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.info-partida-txt b { font-size: 1rem; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.info-partida-chips { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+.info-partida-chips span { font-size: 0.72rem; font-weight: 800; padding: 0.1rem 0.45rem; border-radius: 999px; background: rgba(10, 27, 74, 0.55); color: #cfe0ff; white-space: nowrap; }
+
+/* ---------- Conexiones: 4 sitios fijos para los grupos y el panel de palabras siempre igual ---------- */
+.cx-hallados { gap: 0.3rem; font-size: 0.92rem; }
+.cx-hallados .cx-franja { padding: 0.3em 0.4em 0.4em; gap: 0.28em; }
+.cx-hallados .cx-mini { min-height: 1.8em; }
+.cx-hueco { min-height: 4.05rem; border-radius: 0.8rem; border: 2px dashed rgba(160, 190, 255, 0.3); display: grid; place-items: center; }
+.cx-hueco span { font-size: 0.75rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(169, 187, 230, 0.55); }
+.cx-palabra.usada { visibility: hidden; }
+.cx-rejilla { margin-top: auto; }
+.cx-palabra { aspect-ratio: 1.45; }
+.pc-leyenda .pc-insignia { font-size: 1.7rem; }
+/* En el móvil el sitio es justo: el nombre puede ir en dos líneas y el icono es más pequeño. */
+.info-partida { padding: 0.25rem 0.5rem 0.25rem 0.25rem; gap: 0.45rem; }
+.info-partida-ico { width: 2rem; height: 2rem; font-size: 1.15rem; border-radius: 0.6rem; }
+.info-partida-txt b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 0.92rem; }
+@media (max-width: 380px) { .info-partida-ico { display: none; } }
+.perfil .barra-sup .perfil-auto { margin-left: auto; color: #8fe0b4; font-weight: 800; font-size: 0.8rem; white-space: nowrap; }
+.borrar-perfil { margin-top: 0.2rem; color: #ffb4ad !important; border-color: rgba(232, 106, 98, 0.45) !important; }

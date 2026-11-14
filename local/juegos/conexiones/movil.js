@@ -7,7 +7,9 @@ import { textoCasilla, franjaGrupo } from "./piezas.js";
 export function montar(cuerpo, e, ctx) {
   let d = e.datos;
   let elegidas = new Set();
-  let orden = null; // orden propio al mezclar
+  // El panel de palabras es fijo: cada palabra se queda en su casilla (las acertadas dejan su hueco).
+  let orden = d.palabras.map((p) => p.clave);
+  let avanzado = -1; // tablero que ya se pasó solo (al completarlo)
   let ultimoVisto = d.ultimo?.n ?? 0;
   let tVisto = d.t;
 
@@ -15,7 +17,7 @@ export function montar(cuerpo, e, ctx) {
   const hallados = h("div.cx-hallados");
   const rejilla = h("div.cx-rejilla");
   const aviso = h("div.pl-aviso");
-  const mezclar = h("button.boton.suave", { type: "button", "aria-label": "Mezclar", title: "Mezclar", onclick: () => ((orden = barajar(quedan().map((p) => p.clave))), pintar()) }, "🔀");
+  const mezclar = h("button.boton.suave", { type: "button", "aria-label": "Mezclar", title: "Mezclar", onclick: () => mezclarQuedan() }, "🔀");
   const quitar = h("button.boton.suave", { type: "button", onclick: () => ((elegidas = new Set()), pintar()) }, "Quitar");
   const comprobar = h("button.boton.acento.pl-comprobar", { type: "button", onclick: enviar }, "✓ Comprobar");
   const siguiente = h("button.boton.acento.grande.oculto", { type: "button", onclick: () => ctx.enviar({ a: "siguiente", t: d.t }) }, "Siguiente tablero ▶");
@@ -31,11 +33,20 @@ export function montar(cuerpo, e, ctx) {
     return a;
   }
 
+  /** Mezcla solo las palabras que quedan, entre sus propias casillas. */
+  function mezclarQuedan() {
+    const fuera = new Set(d.hallados.flatMap((g) => g.claves));
+    const sitios = orden.map((c, i) => (fuera.has(c) ? -1 : i)).filter((i) => i >= 0);
+    const nuevas = barajar(sitios.map((i) => orden[i]));
+    orden = [...orden];
+    sitios.forEach((i, k) => (orden[i] = nuevas[k]));
+    pintar();
+  }
+
   const enGrupo = () => new Set((d.solucion ?? d.hallados).flatMap((g) => g.claves));
   function quedan() {
     const fuera = new Set(d.hallados.flatMap((g) => g.claves));
     let lista = d.palabras.filter((p) => !fuera.has(p.clave));
-    if (orden) lista = [...lista].sort((a, b) => orden.indexOf(a.clave) - orden.indexOf(b.clave));
     return lista;
   }
 
@@ -71,16 +82,30 @@ export function montar(cuerpo, e, ctx) {
     cabeza.replaceChildren(h("span", `Tablero ${d.t + 1} de ${d.total}`), h("span.cx-fallos", { title: "Fallos que te quedan" }, corazones), h("span.cx-grupos", `🏆 ${d.grupos}`));
     const forma = Object.fromEntries(d.palabras.map((p) => [p.clave, p.forma]));
     const lista = d.acabado ? d.solucion : d.hallados;
+    // Arriba, siempre 4 sitios: los grupos encontrados y huecos para los que faltan.
     hallados.replaceChildren(
-      ...lista.map((g) => franjaGrupo(g.nombre, g.claves.map((c) => forma[c]), g.color ?? g.g, { perdido: !d.hallados.some((x) => x.g === g.g) }))
+      ...lista.map((g) => franjaGrupo(g.nombre, g.claves.map((c) => forma[c]), g.color ?? g.g, { perdido: !d.hallados.some((x) => x.g === g.g) })),
+      ...Array.from({ length: Math.max(0, 4 - lista.length) }, (_, k) => h("div.cx-hueco", h("span", `Grupo ${lista.length + k + 1}`)))
     );
-    const resto = d.acabado ? [] : quedan();
+    const fuera = new Set(d.acabado ? d.palabras.map((p) => p.clave) : d.hallados.flatMap((g) => g.claves));
+    if (orden.length !== d.palabras.length) orden = d.palabras.map((p) => p.clave);
     rejilla.replaceChildren(
-      ...resto.map((p) => h(`button.cx-palabra${elegidas.has(p.clave) ? ".elegida" : ""}`, { type: "button", "data-c": p.clave }, textoCasilla(p.forma)))
+      ...orden.map((c) =>
+        fuera.has(c)
+          ? h("span.cx-palabra.usada", { "aria-hidden": "true" })
+          : h(`button.cx-palabra${elegidas.has(c) ? ".elegida" : ""}`, { type: "button", "data-c": c }, textoCasilla(forma[c]))
+      )
     );
     comprobar.disabled = elegidas.size !== 4;
+    // Tablero completo: se pasa solo al siguiente. Si se acabaron los fallos, se ven los grupos y se pasa con el botón.
+    const completo = d.acabado && d.hallados.length === 4;
     botones.classList.toggle("oculto", d.acabado);
-    siguiente.classList.toggle("oculto", !d.acabado);
+    siguiente.classList.toggle("oculto", !d.acabado || completo);
+    if (completo && avanzado !== d.t) {
+      avanzado = d.t;
+      const t = d.t;
+      setTimeout(() => d.t === t && !d.fin && ctx.enviar({ a: "siguiente", t }), 1300);
+    }
     if (d.acabado) {
       aviso.className = "pl-aviso";
       aviso.textContent = d.hallados.length === 4 ? "🎉 ¡Tablero completo!" : "Se acabaron los fallos: estos eran los grupos";
@@ -95,7 +120,7 @@ export function montar(cuerpo, e, ctx) {
       if (d.t !== tVisto) {
         tVisto = d.t;
         elegidas = new Set();
-        orden = null;
+        orden = d.palabras.map((p) => p.clave);
         aviso.textContent = "";
       }
       const u = d.ultimo;

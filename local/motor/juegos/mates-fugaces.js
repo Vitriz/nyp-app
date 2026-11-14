@@ -41,6 +41,17 @@ function operacion(azar, nivel) {
   return { texto: `${a} ${SIMBOLO[tipo]} ${b}`, r };
 }
 
+/**
+ * Todas las operaciones que salieron, con su resultado: verde si la acertaste a la primera, amarilla si
+ * fallaste antes de acertar, roja si la pasaste y azul la última (la que estaba en pantalla al acabar).
+ */
+function resumenOps(ronda, j) {
+  const lista = (j.hist ?? []).map((x) => ({ t: `${ronda.ops[x.i].texto} = ${ronda.ops[x.i].r}`, k: x.pasada ? "pasada" : x.f ? "fallo" : "bien" }));
+  const actual = ronda.ops[j.i];
+  if (actual && (lista.length || j.fallosOp)) lista.push({ t: `${actual.texto} = ${actual.r}`, k: "actual" });
+  return lista;
+}
+
 export default {
   id: "mates-fugaces",
   nombre: "Mates fugaces",
@@ -60,7 +71,8 @@ export default {
 
   // El estado de cada jugador vive en ronda.jugadores[id].
   estadoJugador(ronda, id) {
-    return (ronda.jugadores[id] ??= { i: 0, aciertos: 0, fallos: 0 });
+    // hist: lo que pasó con cada operación (acertada a la primera, con fallos o pasada).
+    return (ronda.jugadores[id] ??= { i: 0, aciertos: 0, fallos: 0, fallosOp: 0, hist: [] });
   },
 
   vistaJugador(ronda, id) {
@@ -78,16 +90,22 @@ export default {
   accion(ronda, id, msg) {
     const j = this.estadoJugador(ronda, id);
     if (msg.i !== j.i || j.i >= ronda.ops.length) return false;
+    j.hist ??= [];
     if (msg.a === "pasar") {
+      j.hist.push({ i: j.i, f: j.fallosOp ?? 0, pasada: true });
+      j.fallosOp = 0;
       j.i++;
       return true;
     }
     if (msg.a === "respuesta") {
       if (Number(msg.valor) === ronda.ops[j.i].r) {
+        j.hist.push({ i: j.i, f: j.fallosOp ?? 0 });
+        j.fallosOp = 0;
         j.aciertos++;
         j.i++;
       } else {
         j.fallos++;
+        j.fallosOp = (j.fallosOp ?? 0) + 1;
       }
       return true;
     }
@@ -107,6 +125,7 @@ export default {
         valor: j && j.aciertos > 0 ? j.aciertos - j.fallos * 0.5 : null,
         corto: j ? `${j.aciertos} ${j.aciertos === 1 ? "acierto" : "aciertos"}` : "",
         texto: j ? `${j.aciertos} ${j.aciertos === 1 ? "acierto" : "aciertos"}${j.fallos ? ` · ${j.fallos} ${j.fallos === 1 ? "fallo" : "fallos"}` : ""}` : "No jugó",
+        detalle: j ? resumenOps(ronda, j) : null,
       };
     });
   },

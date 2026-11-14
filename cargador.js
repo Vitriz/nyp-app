@@ -82,5 +82,6 @@ async function prepararServiceWorker() {
     await cargarApp(base ?? RAIZ_LOCAL);
   } catch {
     $("estado").textContent = "No se pudo abrir el juego. Cierra la app y vuelve a abrirla.";
+    $("estado").classList.add("sin-giro");
   }
 })();

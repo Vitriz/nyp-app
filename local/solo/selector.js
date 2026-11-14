@@ -76,6 +76,19 @@ export const textoRecord = (r) => r?.corto ?? String(r?.texto ?? "").replace(/^C
 
 export { textoSegundos };
 
+/** Al lado del perfil en los resultados: el icono y el nombre del juego, y sus ajustes en dos chips. */
+export function infoPartida(juego, segundos, nivel) {
+  return h(
+    "div.info-partida",
+    h("span.info-partida-ico", ICONOS[juego.id] ?? "🎲"),
+    h(
+      "div.info-partida-txt",
+      h("b", juego.nombre),
+      h("div.info-partida-chips", h("span", `⏱ ${textoSegundos(segundos)}`), nivel ? h("span", `◆ ${nivel}`) : null)
+    )
+  );
+}
+
 /**
  * juegos: [{ id, nombre, categoria, descripcion, duracion, bloqueado }]
  * recordDe(juego, segundos, nivel) -> { texto } | null   (sin él no hay récords, p. ej. en la TV de PARTY)
@@ -232,7 +245,8 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
 
   // ---- ficha del juego elegido
   const ficha = h("div.sel-ficha.tarjeta");
-  const contador = h("span.sel-contador");
+  // Siempre del mismo ancho: el de «18 / 18» (el número de juegos con todas sus cifras).
+  const contador = h("span.sel-contador", { style: { "--cifras": String(n).length } });
 
   const recordEl = h("p.sel-record");
 

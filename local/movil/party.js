@@ -4,7 +4,7 @@ import { h, cambiarPantalla, avatar, banner, bannerFijo, fotosMemoria, TIEMPOS, 
 import { calmarFondo } from "../comun/fondo.js";
 import { actualizarPaquete } from "../solo/paquete.js";
 import { mensajeRecords, guardarFamilia } from "../comun/familia.js";
-import { selectorJuegos } from "../solo/selector.js";
+import { selectorJuegos, infoPartida } from "../solo/selector.js";
 import { elegirAmbito, elegirNumero } from "../comun/ambitos.js";
 import { svgQR } from "../comun/qr.js";
 
@@ -163,8 +163,13 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
     return { el, actualizar: (e) => banFijo(e.yo) };
   }
 
-  function barraSuperior(e, { reloj, plegar = false } = {}) {
+  function barraSuperior(e, { reloj, plegar = false, titulo = false } = {}) {
     if (reloj) return barraJuego(e, reloj);
+    // Resultados: el juego y cómo se jugó (tiempo · nivel), al lado del perfil, como en «Jugar solo».
+    const NIVEL = { facil: "Fácil", normal: "Medio", dificil: "Difícil" };
+    const cabTitulo = titulo && e.juego
+      ? infoPartida(e.juego, e.juego.duracion, NIVEL[e.juego.dificultad ?? e.sala?.dificultad] ?? null)
+      : null;
     const pts = h(`span.pts${plegar ? ".plegar" : ""}`);
     // Batalla: arriba, la sala (y si eres el anfitrión); al tocarla se abre el QR para invitar.
     const chipSala =
@@ -181,8 +186,9 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
     const el = h(
       "div.barra-sup",
       banFijo(e.yo).hueco(plegar ? "cerrado" : "abierto"),
-      chipSala,
-      batalla ? null : pts,
+      cabTitulo,
+      cabTitulo ? null : chipSala,
+      batalla || cabTitulo ? null : pts,
       reloj?.el,
       h("button.icono-btn", { type: "button", onclick: preguntarSalir, "aria-label": "Salir de la partida" }, "✕")
     );
@@ -420,30 +426,45 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
 
     resultados(e) {
       const mio = e.resultados?.find((r) => r.id === e.yo.id);
-      const barra = barraSuperior(e);
-      const el = h(
-        "section",
-        barra.el,
+      const barra = barraSuperior(e, { titulo: true });
+      const lista = e.resultados ?? [];
+      // Arriba, pequeño: tu puesto (con los puntos que ganas) y tus datos de la partida.
+      const cabeza = h(
+        "div.rp-cabeza",
         h(
-          "div.espera",
-          h("span.suave", e.juego.nombre),
-          h("div.puesto-grande.aparece", mio?.puesto ? medalla(mio.puesto) : "–"),
-          h("h1", mio?.puesto ? `${mio.puesto}º puesto` : "Esta vez no has puntuado"),
-          h("p", mio?.texto ?? ""),
-          mio?.puntos ? h("p.suave", `+${mio.puntos} puntos`) : null,
-          e.juego.id === "llegar-resultado" ? finalLlegar(e.resumen, mio?.detalle) : detalleJugador(mio?.pendiente ? mio.detalle?.slice(0, -1) : mio?.detalle, { clase: ".mis-respuestas" }),
-          palabraPendiente(mio?.pendiente),
+          `div.rp-puesto.aparece${mio?.puesto === 1 ? ".oro" : ""}`,
+          h("span.rp-medalla", mio?.puesto ? medalla(mio.puesto) : "–"),
+          h("b", mio?.puesto ? `${mio.puesto}º` : "Sin puesto"),
+          mio?.puntos ? h("small", `+${mio.puntos} pts`) : null
+        ),
+        h("div.rp-datos", h("small", "Tu partida"), h("b", mio?.texto ?? "No has jugado"))
+      );
+      // Lo importante: las respuestas. Las tuyas enteras y las de los demás (toca su fila para verlas todas).
+      const solucion =
+        e.juego.id === "llegar-resultado" ? finalLlegar(e.resumen, mio?.detalle) : null;
+      const filas = lista.map((r) => {
+        const yoMismo = r.id === e.yo.id;
+        const det = yoMismo && r.pendiente ? r.detalle?.slice(0, -1) : r.detalle;
+        const abrir = () => ventanaRespuestas(r, det);
+        return h(
+          `div.rp-jugador.tarjeta${yoMismo ? ".yo" : ""}`,
           h(
-            "div.lista-mini",
-            (e.resultados ?? []).slice(0, 8).map((r) =>
-              h(
-                `div.item.tarjeta${r.id === e.yo.id ? ".yo" : ""}`,
-                h("div.item-fila", h("span", textoPuesto(r.puesto)), avatar(r), h("span.n", r.nombre), h("span.suave", r.texto)),
-                r.id === e.yo.id ? null : detalleJugador(r.detalle, { max: 8 })
-              )
-            )
-          )
-        )
+            "button.rp-fila",
+            { type: "button", onclick: abrir, disabled: !det?.length, "aria-label": `Ver las respuestas de ${r.nombre}` },
+            h("span.rp-pos", textoPuesto(r.puesto)),
+            avatar(r),
+            h("span.rp-nombre", r.nombre),
+            h("span.rp-texto", r.corto ?? r.texto),
+            det?.length ? h("span.rp-ver", "›") : null
+          ),
+          e.juego.id === "llegar-resultado" ? null : detalleJugador(det, { max: yoMismo ? Infinity : 10 })
+        );
+      });
+      const el = h(
+        "section.res-party",
+        barra.el,
+        cabeza,
+        h("div.rp-cuerpo", solucion, palabraPendiente(mio?.pendiente), ...filas)
       );
       if (mio?.puesto === 1) navigator.vibrate?.([60, 60, 120]);
       // Batalla: el anfitrión pasa a la clasificación (y desde allí elige el siguiente juego).
@@ -451,6 +472,22 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
       return { el, actualizar: (e) => barra.actualizar(e) };
     },
   };
+
+  /** Todas las respuestas de un jugador, sin recortar. */
+  function ventanaRespuestas(r, det) {
+    const cerrar = () => capa.remove();
+    const capa = h(
+      "div.capa-movil",
+      { onclick: (ev) => ev.target === capa && cerrar() },
+      h(
+        "div.caja.tarjeta.rp-ventana",
+        h("div.records-cabeza", h("div.rp-ventana-quien", avatar(r), h("h2", r.nombre)), h("button.icono-btn", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
+        h("p.suave", r.texto),
+        detalleJugador(det)
+      )
+    );
+    document.body.append(capa);
+  }
 
   // Mientras llega el primer estado
   mostrar("conectando", () => ({

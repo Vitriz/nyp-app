@@ -2,7 +2,7 @@
 // arrastras). Si pisa a otros, los sustituye. Tocar un rectángulo lo borra.
 import { h, botonMantener, confeti } from "../../comun/ui.js";
 import { seguirDedo, avisoBreve } from "../comun/trazo.js";
-import { crearTablero, iconoForma } from "./rejilla.js";
+import { crearTablero, insignia } from "./rejilla.js";
 
 export function montar(cuerpo, e, ctx) {
   const d = e.datos;
@@ -19,7 +19,7 @@ export function montar(cuerpo, e, ctx) {
   const borrar = botonMantener("Borrar todo", () => cambiar([]), { clase: ".suave", ms: 600 });
   const leyenda = h(
     "div.pc-leyenda",
-    [["cuadrado", "Cuadrado"], ["alto", "Alto"], ["ancho", "Ancho"], ["cualquiera", "Cualquiera"]].map(([f, t]) => h("span", iconoForma(f), t)),
+    [["cuadrado", "Cuadrado"], ["alto", "Alto"], ["ancho", "Ancho"], ["cualquiera", "Cualquiera"]].map(([f, t]) => h("span", insignia(f, null, "#8fb4ff"), t)),
     h("small", "Con número: ese es su tamaño en casillas.")
   );
   cuerpo.append(
@@ -86,8 +86,10 @@ export function montar(cuerpo, e, ctx) {
       tablero.previa(actual);
       navigator.vibrate?.(2);
     },
-    soltar(k, seMovio) {
+    soltar(k, seMovio, ms) {
       tablero.previa(null);
+      // Un toque corto en un rectángulo lo borra; si el dedo se quedó quieto un rato, no se borra nada.
+      if (!seMovio && ms > 450) return;
       if (!seMovio) {
         // Un toque: si hay un rectángulo, se borra; si no, se pone uno de 1×1.
         const i = rects.findIndex((x) => dentro(x, desde));

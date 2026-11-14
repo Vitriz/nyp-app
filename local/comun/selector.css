@@ -523,3 +523,4 @@
 .sel-casilla.sorteo { transform: scale(1.12); background: linear-gradient(180deg, #fff6d8, #f0c64a); border-color: var(--oro); box-shadow: 0 0 0 0.2rem rgba(233, 199, 90, 0.7), 0 0.4rem 1rem rgba(4, 12, 40, 0.5); }
 .sel-casilla.sorteo-fin { animation: rebote 600ms var(--curva); }
 @media (prefers-reduced-motion: reduce) { .sel-dado.girando .dado-cara { animation: none; } }
+.sel-titulo .sel-contador { font-variant-numeric: tabular-nums; min-width: calc((var(--cifras, 2) * 2 + 2.4) * 1ch + 1.2rem); }

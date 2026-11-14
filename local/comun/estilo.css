@@ -543,3 +543,34 @@ html, body {
 .cul-celda.hueco { background: #aab3c5; border-color: #aab3c5; }
 .cul-celda.hecha { color: #ffffff; text-shadow: 0 0.05em 0 rgba(0, 0, 0, 0.25); border-color: transparent; }
 .cul-trazo { stroke: #ffd34d; opacity: 0.85; }
+/* Mates fugaces: cómo fue cada operación */
+.det-fallo { background: rgba(240, 196, 64, 0.16); border-color: rgba(240, 196, 64, 0.6); color: #ffe7a0; }
+.det-pasada { background: rgba(232, 106, 98, 0.16); border-color: rgba(232, 106, 98, 0.6); color: #ffc9c4; }
+.det-actual { background: rgba(90, 170, 242, 0.18); border-color: rgba(90, 170, 242, 0.65); color: #cfe6ff; }
+.det-bien { font-variant-numeric: tabular-nums; }
+
+/* ---------- Conexiones: títulos de categoría con más carácter ---------- */
+.cx-franja .cx-grupo-nombre {
+  align-self: center; display: inline-flex; align-items: center; gap: 0.4em; padding: 0.12em 0.8em; border-radius: 999px;
+  font-family: var(--fuente-ficha); font-size: 0.82em; font-weight: 900; text-transform: uppercase; letter-spacing: 0.07em;
+  color: #0a1b4a; background: rgba(255, 255, 255, 0.45); box-shadow: inset 0 -0.1em 0 rgba(10, 27, 74, 0.15);
+}
+.cx-franja.perdido .cx-grupo-nombre { background: rgba(255, 255, 255, 0.25); color: #e8eeff; }
+/* Resumen final: los grupos seguidos, sin recuadro ni separación por tableros */
+.cx-estudio { padding: 0; max-height: none; overflow: visible; gap: 0.5rem; }
+
+/* ---------- Parcelas: cada pista con su color; insignia con la forma rellena y el tamaño dentro ---------- */
+.pc { background: #fbfcff; }
+.pc-celda { border: 1px solid #e3e9f5; }
+.pc-pista { background: color-mix(in srgb, var(--c) 22%, #ffffff); margin: 1px; border-radius: 0.08em; }
+.pc-pista.hecha { background: transparent; }
+.pc-insignia { position: relative; display: grid; place-items: center; background: var(--c); border-radius: 0.07em; box-shadow: 0 0.03em 0 rgba(0, 0, 0, 0.25); font-size: 1em; }
+.pc-insignia.cuadrado { width: 0.5em; height: 0.5em; }
+.pc-insignia.alto { width: 0.36em; height: 0.6em; }
+.pc-insignia.ancho { width: 0.62em; height: 0.36em; }
+.pc-insignia.cualquiera { width: 0.5em; height: 0.5em; background: color-mix(in srgb, var(--c) 30%, #ffffff); outline: 0.04em dashed var(--c); outline-offset: -0.04em; }
+.pc-insignia b { font-family: var(--fuente-ficha, system-ui); font-weight: 900; font-size: 0.3em; line-height: 1; color: #ffffff; text-shadow: 0 0.05em 0 rgba(0, 0, 0, 0.25); }
+.pc-insignia.cualquiera b { color: color-mix(in srgb, var(--c) 80%, #000000); text-shadow: none; }
+.pc-pista.hecha .pc-insignia { box-shadow: 0 0 0 0.03em #ffffff; }
+.pc-rect.bien { background: color-mix(in srgb, var(--c) 42%, #ffffff); box-shadow: inset 0 0 0 0.05em var(--c); }
+.pc-rect.previa, .pc-rect.previa.bien { background: color-mix(in srgb, var(--c) 30%, transparent); box-shadow: inset 0 0 0 0.06em var(--c); }

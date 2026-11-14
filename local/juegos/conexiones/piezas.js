@@ -58,19 +58,11 @@ export function franjaGrupo(nombre, formas, color, { perdido = false, clase = ""
   );
 }
 
-/** Al acabar (modo solo): todos los tableros jugados con sus grupos, para estudiarlos. */
+/** Al acabar (modo solo): todos los grupos que salieron, seguidos (los que no encontraste, apagados). */
 export function estudioGrupos(resumen, yo) {
   if (!resumen?.tableros?.length) return null;
-  const encontrados = resumen.tableros.reduce((s, t) => s + t.grupos.filter((g) => g.por.includes(yo)).length, 0);
   return h(
-    "div.cx-estudio.tarjeta",
-    h("small", `Los grupos de cada tablero · encontraste ${encontrados}`),
-    resumen.tableros.map((t, k) =>
-      h(
-        "div.cx-estudio-tablero",
-        h("span.cx-estudio-titulo", `Tablero ${k + 1}`),
-        t.grupos.map((g, gi) => franjaGrupo(g.nombre, g.palabras, g.color ?? gi, { perdido: !g.por.includes(yo) }))
-      )
-    )
+    "div.cx-estudio",
+    resumen.tableros.flatMap((t) => t.grupos.map((g, gi) => franjaGrupo(g.nombre, g.palabras, g.color ?? gi, { perdido: !g.por.includes(yo) })))
   );
 }

@@ -1,5 +1,5 @@
 // Perfil del jugador: nombre, color de las letras, fondo del banner y foto (o iniciales).
-import { h, banner, SOMBREROS, ANIMACIONES } from "../comun/ui.js";
+import { h, banner, botonMantener, SOMBREROS, ANIMACIONES } from "../comun/ui.js";
 import { almacen } from "../comun/conexion.js";
 import { campoTexto } from "../comun/teclado.js";
 import { selectorColor } from "../comun/color.js";
@@ -47,6 +47,11 @@ export function cargarPerfil() {
   } catch {}
   const viejo = almacen.leer("nyp-nombre"); // nombre de versiones anteriores
   return viejo ? { nombre: viejo, color: FONDOS[0], colorTexto: TEXTOS[0], foto: null } : null;
+}
+
+/** Borra todo lo del perfil en este móvil: el perfil, los récords, las hazañas, las fotos usadas… */
+export function borrarDatosPerfil() {
+  for (const k of ["nyp-perfil", "nyp-nombre", "nyp-records", "nyp-hazanas", "nyp-fotos", "nyp-crucigrama-guardado", "nyp-nube-subida"]) almacen.guardar(k, null);
 }
 
 export function guardarPerfil(p) {
@@ -181,10 +186,28 @@ function camaraCircular() {
 }
 
 /** Pantalla de edición. alGuardar(perfil) recibe el perfil nuevo. */
-export function pantallaPerfil({ perfil, alGuardar, alVolver, titulo = "Tu perfil" }) {
+export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, alBorrar = null, titulo = "Tu perfil" }) {
   const p = { nombre: "", color: FONDOS[0], colorTexto: TEXTOS[0], contorno: null, foto: null, ...(perfil ?? {}) };
+  const editando = Boolean(perfil); // un perfil que ya existe se guarda solo (sin botón «Guardar»)
   const vista = h("div.perfil-vista");
-  const pintarVista = () => vista.replaceChildren(banner(p, ".banner-grande"));
+  // Cada cambio se guarda en el móvil al momento; a la nube va al cambiar de pestaña o al volver.
+  let guardarT = 0;
+  const guardarLocal = () => {
+    clearTimeout(guardarT);
+    if (!editando) return false;
+    const nombre = campo?.valor?.() ?? p.nombre;
+    if (!nombre) return false;
+    p.nombre = nombre;
+    guardarPerfil({ ...p });
+    return true;
+  };
+  const pintarVista = () => {
+    vista.replaceChildren(banner(p, ".banner-grande"));
+    if (editando) {
+      clearTimeout(guardarT);
+      guardarT = setTimeout(guardarLocal, 350);
+    }
+  };
 
   const campo = campoTexto({ valor: p.nombre, max: 14, placeholder: "Toca las letras", alCambiar: (t) => ((p.nombre = t), pintarVista()) });
 
@@ -311,6 +334,8 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, titulo = "Tu perfi
   const cuerpo = h("div.perfil-cuerpo");
   const botonesPestaña = h("div.pestanas");
   const elegir = (k) => {
+    // Al cambiar de pestaña, lo cambiado se guarda (y se sube a la nube).
+    if (guardarLocal()) alCambiar?.({ ...p });
     cuerpo.replaceChildren(paneles[k]);
     botonesPestaña.querySelectorAll("button").forEach((b) => b.classList.toggle("activa", b.dataset.k === k));
   };
@@ -327,16 +352,41 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, titulo = "Tu perfi
     alGuardar(p);
   };
 
+  // Volver: si el perfil ya existía, se guarda lo cambiado y se vuelve (no hace falta «Guardar»).
+  const volver = () => {
+    if (editando) {
+      p.nombre = campo.valor();
+      if (!p.nombre) {
+        elegir("nombre");
+        aviso.textContent = "Escribe tu nombre";
+        return;
+      }
+      guardarPerfil({ ...p });
+      return alGuardar({ ...p });
+    }
+    alVolver?.();
+  };
+
+  // Borrar el perfil entero (récords, hazañas, fotos…) para empezar otro desde cero. Hay que mantenerlo pulsado.
+  const borrar =
+    editando && alBorrar
+      ? botonMantener("🗑️ Borrar perfil y empezar de cero", () => {
+          borrarDatosPerfil();
+          alBorrar();
+        }, { clase: ".suave.borrar-perfil", ms: 1500 })
+      : null;
+
   pintarVista();
   elegir("nombre");
   const el = h(
     "section.perfil",
-    h("div.barra-sup", alVolver ? h("button.icono-btn", { type: "button", onclick: alVolver, "aria-label": "Volver" }, "←") : null, h("span.nombre", titulo)),
+    h("div.barra-sup", alVolver || editando ? h("button.icono-btn", { type: "button", onclick: volver, "aria-label": "Volver" }, "←") : null, h("span.nombre", titulo), editando ? h("small.perfil-auto", "✔ Se guarda solo") : null),
     vista,
     botonesPestaña,
     cuerpo,
     aviso,
-    h("button.boton.acento.grande", { type: "button", onclick: guardar }, "Guardar"),
+    editando ? null : h("button.boton.acento.grande", { type: "button", onclick: guardar }, "Guardar"),
+    borrar,
     // ¿Ya jugabas en otro móvil (o borraste la app)? Se recupera todo de la nube.
     h(
       "button.boton.suave.recuperar-btn",
