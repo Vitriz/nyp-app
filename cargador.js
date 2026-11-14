@@ -16,7 +16,33 @@ async function cargarApp(raiz) {
     )
   );
   await import(raiz + "movil/movil.js");
+  await viajarTitulo();
   $("carcasa").classList.add("oculto");
+}
+
+/**
+ * El título no desaparece al abrirse el juego: el del inicio sale desde donde estaba el de la pantalla de
+ * carga y se desliza (y encoge) hasta su sitio. Si el inicio no tiene título (p. ej. crear el perfil), nada.
+ */
+async function viajarTitulo() {
+  const carga = document.querySelector("#carcasa .marca");
+  await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
+  const destino = document.querySelector("#app .pantalla:not(.sale) .titulo-nyp");
+  if (!carga || !destino || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  // Sin la animación de entrada de la pantalla (movería el título): el título viaja y lo demás aparece suave.
+  const pantalla = destino.closest(".pantalla");
+  pantalla.classList.remove("entra");
+  for (const x of pantalla.children) if (!x.contains(destino)) x.animate([{ opacity: 0, transform: "translateY(1rem)" }, { opacity: 1, transform: "none" }], { duration: 450, delay: 350, easing: "ease-out", fill: "backwards" });
+  const a = carga.getBoundingClientRect(), b = destino.getBoundingClientRect();
+  if (!a.width || !b.width) return;
+  const dx = a.left + a.width / 2 - (b.left + b.width / 2);
+  const dy = a.top + a.height / 2 - (b.top + b.height / 2);
+  const k = a.width / b.width;
+  $("carcasa").classList.add("oculto");
+  destino.animate(
+    [{ transform: `translate(${dx}px, ${dy}px) scale(${k})` }, { transform: "none" }],
+    { duration: 750, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }
+  );
 }
 
 // El aviso de "instalar app" puede llegar antes de que cargue el juego: lo guardamos.

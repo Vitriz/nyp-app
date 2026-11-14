@@ -1,5 +1,6 @@
 // App NYP del móvil: inicio (perfil · jugar en grupo con PARTY · jugar solo).
 import { iniciarFondo } from "../comun/fondo.js";
+import { tituloVivo } from "../comun/titulo-vivo.js";
 import { h, cambiarPantalla, bannerFijo, servidor, vigilarEncaje, tituloJuego } from "../comun/ui.js";
 import { cargarPerfil, pantallaPerfil } from "./perfil.js";
 import { crearBatalla, codigoBatalla } from "./batalla.js";
@@ -66,12 +67,15 @@ async function inicio() {
   pintarAviso();
   alCambiarPaquete = pintarAviso;
 
+  // El título se puede golpear: las letras se esparcen como en un líquido y vuelven solas.
+  const titulo = tituloJuego();
+  tituloVivo(titulo);
   mostrar(
     h(
       "section.inicio",
       // Arriba a la izquierda, tu banner (tocarlo abre el perfil); en el centro, el título.
       barraPerfil(() => editarPerfil(inicio)),
-      h("div.inicio-centro", tituloJuego()),
+      h("div.inicio-centro", titulo),
       h(
         "div.inicio-opciones",
         h(

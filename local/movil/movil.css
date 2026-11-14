@@ -1500,3 +1500,8 @@ button.fila-j { appearance: none; cursor: pointer; }
   .pantalla.sala-jugador { --ancho: min(100vw, 48rem); }
 }
 @media (prefers-reduced-motion: reduce) { .rp-espera-punto { animation: none; } }
+
+/* Título del inicio: las letras se pueden golpear (por encima de todo mientras vuelan) */
+.inicio .titulo-nyp { touch-action: none; user-select: none; -webkit-user-select: none; }
+.inicio .titulo-nyp .ficha { cursor: pointer; }
+.inicio .titulo-nyp.agitado { position: relative; z-index: 40; }
