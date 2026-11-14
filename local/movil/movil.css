@@ -1410,3 +1410,39 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 @media (max-width: 380px) { .info-partida-ico { display: none; } }
 .perfil .barra-sup .perfil-auto { margin-left: auto; color: #8fe0b4; font-weight: 800; font-size: 0.8rem; white-space: nowrap; }
 .borrar-perfil { margin-top: 0.2rem; color: #ffb4ad !important; border-color: rgba(232, 106, 98, 0.45) !important; }
+.pantalla.solo-msg { --ancho: min(100vw, 68rem); } /* «Preparando…»: el banner en el mismo sitio que en la lista */
+
+/* ---------- Crear sala: modo de juego, equipos y cómo se eligen los juegos ---------- */
+.batalla-modo { overflow-y: auto; gap: 0.8rem; }
+.modo-opciones .opcion .opcion-flecha { font-size: 1.2rem; }
+.modo-equipos, .modo-pruebas { display: flex; flex-direction: column; gap: 0.4rem; }
+.modo-segmentos { display: flex; gap: 0.3rem; padding: 0.25rem; border-radius: 0.9rem; background: rgba(10, 27, 74, 0.5); }
+.modo-segmentos .sel-seg { flex: 1; min-height: 2.8rem; font-size: 0.95rem; }
+
+/* ---------- Victoria (móvil) y ajustes de la sala del anfitrión ---------- */
+.pantalla.victoria { gap: 1rem; }
+.victoria-cuerpo { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2rem; font-size: 1.15rem; text-align: center; }
+.victoria-titulo h1 { margin: 0.2rem 0 0; font-size: 2rem; }
+.victoria-espera { text-align: center; }
+.batalla-ajustes { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.7rem 0.9rem; flex: none; }
+.ajuste-fila { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; }
+.ajuste-modo { font-size: 1rem; }
+.ajuste-chip { font-size: 0.78rem; font-weight: 800; padding: 0.15rem 0.6rem; border-radius: 999px; background: rgba(10, 27, 74, 0.55); color: #cfe0ff; }
+.ajuste-meta > span { font-weight: 800; }
+.ajuste-meta small { flex-basis: 100%; }
+.meta-control { display: flex; align-items: center; gap: 0.5rem; }
+.meta-control b { min-width: 2.4ch; text-align: center; font-family: var(--fuente-ficha); font-size: 1.5rem; color: var(--oro, #ffd34d); }
+.meta-control .icono-btn { width: 2.3rem; height: 2.3rem; font-size: 1.3rem; font-weight: 900; }
+.ajuste-nota { margin: 0; }
+.enlace { appearance: none; background: none; border: 0; padding: 0 0.2rem; font: inherit; font-weight: 800; color: #8ed3e6; text-decoration: underline; cursor: pointer; }
+.boton.mini { min-height: 0; padding: 0.35rem 0.7rem; font-size: 0.85rem; }
+.panel-azar { display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem; text-align: center; }
+.panel-azar h2 { margin: 0; }
+.panel-azar p { margin: 0 0 0.3rem; }
+.panel-azar .etiqueta { text-align: left; }
+.panel-azar .modo-segmentos { flex-wrap: wrap; }
+.panel-azar .modo-segmentos .sel-seg { min-width: 3.4rem; }
+.azar-dado { font-size: 3rem; }
+.batalla-gente .item.con-equipo { border-left: 0.35rem solid var(--eq); }
+.batalla-gente button.item { appearance: none; font: inherit; color: inherit; width: 100%; cursor: pointer; }
+.batalla-gente .item .n small.eq { display: block; font-size: 0.72rem; color: var(--texto-suave); font-weight: 700; }

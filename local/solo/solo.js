@@ -130,7 +130,7 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
     );
 
   function mensaje(titulo, texto) {
-    mostrar({ el: h("section", barra(), h("div.espera", h("h1", titulo), texto ? h("p.suave", texto) : null)) });
+    mostrar({ el: h("section.solo-msg", barra(), h("div.espera", h("h1", titulo), texto ? h("p.suave", texto) : null)) });
   }
 
   async function lista() {

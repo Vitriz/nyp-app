@@ -1,7 +1,7 @@
 // La sala: jugadores, fases de la partida, rondas y puntos.
 // Funciona en el ordenador (PARTY, con WebSockets) y en el navegador del anfitrión (Batalla multijugador,
 // con los mensajes por internet): lo que depende del sitio (récords, código de sala, fotos) se le pasa al crearla.
-import { crearAzar, clasificar, puntosPorPuesto, limpiarNombre, TIEMPOS, msDuracion } from "./util.js";
+import { crearAzar, clasificar, limpiarNombre, TIEMPOS, msDuracion } from "./util.js";
 import { listaJuegos, obtenerJuego, juegosDisponibles } from "./juegos/index.js";
 
 const azarHex = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -21,7 +21,6 @@ export const EQUIPOS = [
 const CUENTA_ATRAS_MS = 4000; // 3, 2, 1 y ¡YA!: un segundo cada uno
 const HEX = /^#[0-9a-f]{6}$/i;
 const MAX_FOTO = 160 * 1024;
-const METAS = [30, 50, 75, 100, 0]; // puntos para ganar la partida (0 = sin límite)
 const PREMIO = /^[a-z]{2,12}$/; // sombrero o animación del avatar (premios de las hazañas)
 // Modo automático: un solo tiempo para pasar de presentación a juego y de resultados a la siguiente.
 const FASES_AUTO = ["presentacion", "resultados", "clasificacion"];
@@ -56,7 +55,7 @@ export class Sala {
       tablaPuntos: [10, 8, 6, 5, 4, 3, 2, 1],
       duraciones: {},
       pulsadorTipos: ["definicion", "calculo", "revuelto"],
-      meta: 50, // puntos para ganar (por separado o por equipos; en el torneo no se usa)
+      meta: 5, // puntos para ganar (por separado o por equipos; en el torneo no se usa)
       ambito: "azar", // crucigrama: tema elegido por el presentador (o al azar)
     };
     this.desempate = null; // ids empatados que se juegan la victoria en una última prueba
@@ -128,6 +127,16 @@ export class Sala {
     }
   }
 
+  /**
+   * Batalla: el móvil anfitrión prepara la partida al crear la sala (modo, equipos, cómo se eligen los
+   * juegos y la meta). Nunca pasa sola de pantalla: el anfitrión va dando paso.
+   */
+  configurarBatalla(opciones) {
+    this.fase = "lobby";
+    this.#accionHost({ accion: "crearSala", opciones });
+    this.config.automatico = false;
+  }
+
   #enviar(ws, msg) {
     if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg));
   }
@@ -140,6 +149,7 @@ export class Sala {
           ws.esHost = msg.clave === this.claveHost;
           ws.esMando = msg.rol === "mando" && ws.esHost;
           this.tvs.add(ws);
+          if (this.enNavegador) this.#enviar(ws, { t: "fotos", fotos: Object.fromEntries(this.fotos) });
           this.#enviar(ws, this.#vistaTV(ws));
         } else {
           ws.rol = "jugador";
@@ -257,6 +267,7 @@ export class Sala {
       this.fotos.set(j.id, foto);
       j.foto = `mem:${j.id}:${Date.now().toString(36)}`;
       for (const x of this.jugadores.values()) if (x.socket) this.#enviar(x.socket, { t: "fotos", fotos: { [j.id]: foto } });
+      for (const tv of this.tvs) this.#enviar(tv, { t: "fotos", fotos: { [j.id]: foto } });
       return;
     }
     const buf = Buffer.from(foto.slice(m[0].length), "base64");
@@ -287,7 +298,7 @@ export class Sala {
         if (["individual", "equipos", "torneo"].includes(o.modo)) this.config.modo = o.modo;
         if (["facil", "normal", "dificil"].includes(o.dificultad)) this.config.dificultad = o.dificultad;
         if (["elegir", "azar"].includes(o.pruebas)) this.config.pruebas = o.pruebas;
-        if (METAS.includes(Number(o.meta))) this.config.meta = Number(o.meta);
+        if (Number.isInteger(Number(o.meta)) && Number(o.meta) >= 0 && Number(o.meta) <= 300) this.config.meta = Number(o.meta);
         if (TIEMPOS_AUTO.includes(Number(o.tiempoAuto))) this.config.tiempoAuto = Number(o.tiempoAuto);
         if (Array.isArray(o.juegos)) {
           const validos = o.juegos.filter((id) => juegosDisponibles().includes(id));
@@ -323,7 +334,11 @@ export class Sala {
       case "aleatorio":
         if (["lobby", "clasificacion", "presentacion"].includes(f)) {
           if (this.campeon) this.#reiniciarPuntos(); // torneo acabado: empieza otro
-          this.#presentar(this.#juegoAleatorio());
+          const id = this.#juegoAleatorio();
+          // Batalla «al azar»: el anfitrión fija el tiempo y el nivel para todos los juegos.
+          if (TIEMPOS.includes(msg.segundos)) this.config.duraciones[id] = msg.segundos;
+          if (["facil", "normal", "dificil"].includes(msg.dificultad)) this.config.dificultad = msg.dificultad;
+          this.#presentar(id);
         }
         break;
       case "empezar":
@@ -356,8 +371,11 @@ export class Sala {
         if (f === "jugando" || f === "cuenta") this.#terminarRonda();
         break;
       case "siguiente":
-        if (f === "resultados") this.#irA("clasificacion");
-        else if (f === "clasificacion") this.config.automatico && !this.campeon ? this.#presentar(this.#juegoAleatorio()) : this.#irA("lobby");
+        if (f === "resultados") {
+          this.#irA("clasificacion");
+          // ¡Hay ganador! Tras ver cómo suben los puntos, el podio.
+          if (this.campeon) this.#programar(6500, () => this.fase === "clasificacion" && this.#irA("victoria"));
+        } else if (f === "clasificacion") this.campeon ? this.#irA("victoria") : this.config.automatico ? this.#presentar(this.#juegoAleatorio()) : this.#irA("lobby");
         else if (f === "presentacion") this.#cuentaAtras();
         break;
       case "automatico":
@@ -431,6 +449,22 @@ export class Sala {
       case "reiniciarPuntos":
         this.#reiniciarPuntos();
         this.difundir();
+        break;
+      case "meta": {
+        // Puntos de victoria (el anfitrión los ajusta en la sala con − / +).
+        const v = Number(msg.valor);
+        if (Number.isInteger(v) && v >= 1 && v <= 300 && !this.campeon) {
+          this.config.meta = v;
+          this.difundir();
+        }
+        break;
+      }
+      case "revancha":
+        // Tras el podio: los mismos jugadores, todos a 0 y de vuelta a la sala.
+        if (f === "victoria" || this.campeon) {
+          this.#reiniciarPuntos();
+          this.#irA("lobby");
+        }
         break;
     }
   }
@@ -604,7 +638,8 @@ export class Sala {
     const filas = clasificar(impl.resultados(this.ronda, ids));
     this.resultados = filas.map((f) => {
       const j = this.jugadores.get(f.id);
-      const puntos = puntosPorPuesto(f.puesto, this.config.tablaPuntos);
+      // Un punto por cada rival que queda por detrás (con 2 jugadores: 1 y 0). Los empatados suman lo mismo.
+      const puntos = f.puesto == null ? 0 : filas.filter((o) => o.id !== f.id && (o.puesto == null || o.puesto > f.puesto)).length;
       j.puntos += puntos;
       return { id: f.id, nombre: j.nombre, color: j.color, colorTexto: j.colorTexto, contorno: j.contorno, foto: j.foto, sombrero: j.sombrero ?? null, animacion: j.animacion ?? null, puesto: f.puesto, texto: f.texto, detalle: f.detalle ?? null, pendiente: f.pendiente ?? null, puntos };
     });
@@ -687,7 +722,26 @@ export class Sala {
       pulsadorTipos: this.config.pulsadorTipos,
       resultados: this.resultados,
       resumen: this.resumen,
+      podio: this.campeon ? this.#podio() : null,
     };
+  }
+
+  /** Los tres primeros de la partida (o los equipos). En el torneo: el campeón y los últimos en caer. */
+  #podio() {
+    const ficha = (j) => ({ id: j.id, nombre: j.nombre, color: j.color, colorTexto: j.colorTexto, contorno: j.contorno, foto: j.foto, sombrero: j.sombrero ?? null, animacion: j.animacion ?? null, puntos: j.puntos });
+    if (this.config.modo === "torneo") {
+      const caidos = [...this.eliminados].reverse().map((id) => this.jugadores.get(id)).filter(Boolean);
+      const campeon = this.jugadores.get(this.campeon);
+      return [campeon, ...caidos].filter(Boolean).slice(0, 3).map((j, i) => ({ ...ficha(j), puesto: i + 1 }));
+    }
+    if (this.equipos) {
+      return this.#clasificacionEquipos().slice(0, 3).map((q) => ({ id: q.id, nombre: q.nombre, color: q.color, puntos: q.puntos, puesto: q.puesto, equipo: true, miembros: q.miembros }));
+    }
+    const puestos = this.#clasificacionGeneral();
+    return [...this.jugadores.values()]
+      .sort((a, b) => b.puntos - a.puntos)
+      .slice(0, 3)
+      .map((j) => ({ ...ficha(j), puesto: j.id === this.campeon ? 1 : Math.max(2, puestos[j.id] ?? 3) }));
   }
 
   #vistaTV(ws) {
@@ -704,6 +758,7 @@ export class Sala {
       codigo: this.codigoListo && this.cifras ? this.codigo?.formatear(this.cifras) ?? this.cifras : this.tunel?.url?.match(/https:\/\/([a-z0-9-]+)\.trycloudflare\.com/)?.[1] ?? null,
     };
     v.esMando = Boolean(ws.esMando);
+    if (this.enNavegador) v.batalla = { codigo: this.cifras };
     if (ws.esHost) v.claveHost = this.claveHost; // para dibujar el QR del mando
     if (this.fase === "jugando" && this.ronda) {
       const impl = obtenerJuego(this.juego.id);

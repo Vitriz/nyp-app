@@ -1,0 +1,446 @@
+/* TV: todo en rem; 1rem = 16px en una pantalla 1920×1080 y escala con ella. */
+html { font-size: min(0.8333vw, 1.4815vh); }
+body { cursor: default; }
+
+.pantalla { padding: 3rem 4rem; gap: 2rem; }
+
+/* ---------- cabecera ---------- */
+.cabecera { display: flex; align-items: center; justify-content: space-between; gap: 2rem; min-height: 6rem; }
+.marca { display: flex; gap: 0.35rem; font-size: 3rem; }
+.titulo-juego { font-size: 3rem; font-weight: 900; letter-spacing: 0.02em; }
+.etiqueta {
+  display: inline-block;
+  font-size: 1.3rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--texto-suave);
+}
+
+/* ---------- lobby ---------- */
+.lobby { display: grid; grid-template-columns: 34rem 1fr; gap: 3rem; flex: 1; min-height: 0; }
+.unirse { padding: 2.2rem; display: flex; flex-direction: column; align-items: center; gap: 1.4rem; text-align: center; }
+.unirse h2 { margin: 0; font-size: 2.6rem; }
+.qr {
+  width: 26rem; height: 26rem; background: #fff; border-radius: 1.2rem; padding: 1rem;
+  border: 0.4rem solid #0a1b4a; box-shadow: var(--sombra);
+}
+.qr img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+.direccion { font-size: 1.6rem; font-weight: 700; word-break: break-all; }
+.distancia { font-size: 1.3rem; }
+
+.lado { display: flex; flex-direction: column; gap: 1.4rem; min-height: 0; overflow: hidden; }
+.jugadores { display: flex; flex-wrap: wrap; gap: 1.2rem; align-content: flex-start; min-height: 9rem; }
+.jugador {
+  display: flex; align-items: center; gap: 0.9rem; padding: 0.7rem 1.4rem 0.7rem 0.7rem;
+  font-size: 1.7rem; font-weight: 800; border-radius: 4rem;
+}
+.jugador .avatar { font-size: 1.4rem; }
+.jugador .pts { color: var(--texto-suave); font-weight: 700; }
+.jugador.host-click { cursor: pointer; }
+.vacio { font-size: 1.8rem; padding: 1rem 0; }
+
+.selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.juego-carta {
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+  padding: 1rem 1.2rem; border-radius: var(--radio);
+  background: var(--superficie); border: 2px solid var(--borde-suave);
+  display: flex; flex-direction: column; gap: 0.3rem;
+  transition: transform 160ms var(--curva), background 160ms;
+}
+.juego-carta:hover:not(:disabled), .juego-carta:focus-visible { background: var(--superficie-2); transform: translateY(-0.2rem); outline: none; }
+.juego-carta b { font-size: 1.7rem; }
+.juego-carta span { font-size: 1.2rem; color: var(--texto-suave); }
+.juego-carta:disabled { opacity: 0.4; cursor: default; }
+
+.panel-host { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; font-size: 1.5rem; }
+.interruptor { display: inline-flex; align-items: center; gap: 0.8rem; cursor: pointer; }
+.interruptor .pista-int {
+  width: 3.6rem; height: 2rem; border-radius: 2rem; background: rgba(160, 190, 255, 0.25);
+  position: relative; transition: background 200ms;
+}
+.interruptor .pista-int::after {
+  content: ""; position: absolute; top: 0.25rem; left: 0.25rem; width: 1.5rem; height: 1.5rem;
+  border-radius: 50%; background: var(--texto); transition: transform 220ms var(--curva);
+}
+.interruptor.on .pista-int { background: var(--acento); }
+.interruptor.on .pista-int::after { transform: translateX(1.6rem); }
+
+/* ---------- presentación ---------- */
+.presentacion { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3rem; text-align: center; }
+.fichas-titulo { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem 2.2rem; font-size: min(6.5rem, calc(108rem / var(--n, 6) / 1.75)); }
+.fichas-titulo .palabra { display: flex; gap: 0.6rem; }
+.fichas-titulo .ficha { animation: caer 600ms var(--curva) both; }
+@keyframes caer { from { opacity: 0; transform: translateY(-0.6em) rotate(-6deg); } }
+.descripcion { font-size: 2.4rem; max-width: 70rem; line-height: 1.35; color: var(--texto); }
+.duraciones { display: flex; gap: 0.8rem; align-items: center; font-size: 1.6rem; }
+.duraciones .boton { min-height: 0; padding: 0.4rem 1rem; font-size: 1.5rem; }
+.duraciones .boton.elegida { background: linear-gradient(180deg, #8ed3e6, var(--acento)); color: var(--acento-texto); border-color: var(--ficha-borde); }
+.acciones { display: flex; gap: 1.5rem; font-size: 2rem; }
+.acciones .boton { font-size: 2rem; padding: 0.6em 1.6em; }
+.tecla { font-size: 1.2rem; color: var(--texto-suave); margin-left: 0.6rem; }
+
+/* ---------- cuenta atrás ---------- */
+.cuenta { flex: 1; display: grid; place-items: center; }
+.cuenta .ficha { font-size: 22rem; animation: zoom 1s var(--curva) both; }
+@keyframes zoom { from { transform: scale(0.4); opacity: 0; } 70% { opacity: 1; } }
+
+/* ---------- jugando ---------- */
+.jugando-cuerpo { flex: 1; min-height: 0; position: relative; }
+.reloj-tv { font-size: 2.4rem; width: 9rem; height: 9rem; }
+.reloj-tv .cifra { font-size: 1.6em; }
+
+/* ---------- resultados y clasificación ---------- */
+.tabla { display: flex; flex-direction: column; gap: 0.9rem; flex: 1; min-height: 0; overflow: hidden; }
+.fila-res {
+  display: grid; grid-template-columns: 5rem 4rem 1fr auto 9rem; align-items: center; gap: 1.4rem;
+  padding: 0.8rem 1.6rem; font-size: 2.2rem; font-weight: 800; border-radius: var(--radio);
+}
+.fila-res .puesto { font-size: 2.6rem; text-align: center; }
+.fila-res .avatar { font-size: 1.5rem; }
+.fila-res .detalle { color: var(--texto-suave); font-weight: 700; }
+.fila-res .suma { text-align: right; color: var(--oro); }
+.fila-res.p1 { background: rgba(233, 199, 90, 0.16); border-color: rgba(233, 199, 90, 0.5); }
+
+.fila-clas { grid-template-columns: 5rem 4rem 18rem 1fr 7rem; }
+.barra { height: 1.6rem; border-radius: 1rem; background: rgba(160, 190, 255, 0.18); overflow: hidden; }
+.barra i { display: block; height: 100%; border-radius: 1rem; background: var(--c, var(--acento)); transform-origin: left; animation: crecer 1100ms var(--curva) both; }
+@keyframes crecer { from { transform: scaleX(0); } }
+
+.pie { display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; font-size: 1.6rem; min-height: 4rem; }
+.pie .boton { font-size: 1.8rem; }
+.auto-aviso { font-size: 1.5rem; }
+
+#sin-conexion {
+  position: fixed; left: 50%; bottom: 2rem; transform: translateX(-50%); z-index: 10;
+  background: var(--mal); color: #fff; font-weight: 800; padding: 0.8rem 1.6rem; border-radius: 2rem; font-size: 1.6rem;
+}
+
+/* ---------- juego: mates fugaces ---------- */
+.mf-rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr)); gap: 1.4rem; align-content: start; }
+.mf-carta { display: flex; align-items: center; gap: 1.2rem; padding: 1.2rem 1.6rem; font-size: 2rem; font-weight: 800; }
+.mf-carta .avatar { font-size: 1.5rem; }
+.mf-carta .nombre { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mf-carta .ficha { font-size: 3rem; min-width: 1.8em; }
+
+.jugador .quitar { display: none; min-height: 0; padding: 0.2rem 0.8rem; font-size: 1.1rem; }
+.jugador:hover .quitar { display: inline-block; }
+
+/* ---------- juego: palabra más larga ---------- */
+.pl-tv { display: flex; flex-direction: column; gap: 2.5rem; height: 100%; }
+.pl-letras-tv { display: flex; justify-content: center; gap: 0.9rem; font-size: 6.4rem; padding-top: 0.5rem; }
+.pl-letras-tv .ficha { animation: caer 600ms var(--curva) both; }
+.pl-estado { color: var(--bien); font-size: 1.4rem; }
+.pl-resumen { padding: 1.2rem 1.6rem; display: flex; flex-direction: column; gap: 0.8rem; }
+.pl-soluciones { display: flex; flex-wrap: wrap; gap: 0.8rem 1.6rem; font-size: 2.2rem; font-weight: 900; }
+.pl-sol small { font-size: 1.3rem; color: var(--texto-suave); font-weight: 700; }
+.pl-sol.rara { color: var(--texto-suave); }
+
+.tv-ayuda { text-align: center; margin: 0 auto 2rem; color: var(--texto-suave); }
+.df-lista-tv { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem 2.4rem; }
+.df-item-tv { display: flex; flex-direction: column; font-size: 1.3rem; line-height: 1.25; }
+.df-item-tv b { font-size: 1.8rem; }
+.df-item-tv span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* ---------- sopa ---------- */
+.sopa-tv { display: grid; grid-template-columns: auto 1fr; gap: 3rem; height: 100%; }
+.sopa-tv-tablero { height: 100%; aspect-ratio: 1; font-size: 1.4rem; }
+.sopa-tv-tablero .sopa { height: 100%; width: auto; }
+.sopa-lado .mf-rejilla { grid-template-columns: 1fr 1fr; }
+.sopa-resumen { flex-direction: row; align-items: center; gap: 2rem; }
+.sopa-mini { width: 16rem; font-size: 0.6rem; flex: none; }
+.sopa-resumen .pl-soluciones { font-size: 1.8rem; }
+
+.pg-tv-panal { height: 100%; aspect-ratio: 1; display: grid; place-items: center; }
+.pg-tv-panal .panal { height: 100%; width: auto; }
+.pg-mini { width: 12rem; flex: none; }
+
+/* resultados con resumen a la derecha */
+.res-cuerpo { flex: 1; min-height: 0; display: flex; gap: 2rem; }
+.res-cuerpo .tabla { flex: 1; min-width: 0; }
+.res-cuerpo .pl-resumen { width: 46rem; flex: none; align-self: flex-start; max-height: 100%; overflow: hidden; }
+.res-cuerpo .sopa-resumen { flex-direction: column; align-items: flex-start; }
+.res-cuerpo .sopa-mini { width: 20rem; }
+.res-cuerpo .df-lista-tv { grid-template-columns: 1fr; }
+.tabla.compacta .fila-res { font-size: 1.7rem; padding: 0.45rem 1.2rem; }
+.tabla.compacta .fila-res .puesto { font-size: 2rem; }
+
+/* ---------- cálculo mental ---------- */
+.cm-escena { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2rem; height: 100%; aspect-ratio: 1.1; }
+.cm-grande-tv { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; font-size: 11rem; }
+.cm-grande-tv .ficha { padding: 0 0.3em; }
+.cm-texto-tv { font-size: 5rem; font-weight: 900; }
+
+/* ---------- llegar al resultado ---------- */
+.lr-tv { display: flex; align-items: center; justify-content: center; gap: 3rem; margin-bottom: 2.5rem; }
+.lr-objetivo-tv { font-size: 8rem; padding: 0 0.35em; }
+.lr-numeros-tv { display: flex; gap: 1rem; font-size: 5.5rem; }
+.lr-numeros-tv .ficha { padding: 0 0.25em; animation: caer 600ms var(--curva) both; }
+.lr-pasos-tv { font-size: 2.2rem; font-weight: 800; line-height: 1.5; font-variant-numeric: tabular-nums; }
+
+/* ---------- laberinto ---------- */
+.lab-tv { height: 100%; aspect-ratio: 1; display: grid; place-items: center; container-type: size; }
+.lab-tv-rejilla {
+  width: min(100cqw, 100cqh * var(--cols) / var(--filas));
+  font-size: calc(min(100cqw / var(--cols), 100cqh / var(--filas)) * 0.4);
+}
+.lab-mini { font-size: 1.4rem; width: 30rem; }
+
+/* ---------- equipos ---------- */
+.equipos-tv { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1.2rem; }
+.equipo-col { padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; border-color: var(--c); border-width: 3px; }
+.equipo-cab { display: flex; justify-content: space-between; align-items: baseline; font-size: 1.8rem; color: var(--c); }
+.equipo-cab .suave { font-size: 1.3rem; }
+.equipo-col .jugador { font-size: 1.5rem; padding: 0.3rem 0.6rem 0.3rem 0.3rem; background: none; border: 0; }
+.fila-equipo { border-color: var(--c); font-size: 2.4rem; }
+.duraciones .boton.elegida { background: linear-gradient(180deg, #8ed3e6, var(--acento)); color: var(--acento-texto); border-color: var(--ficha-borde); }
+
+/* ---------- capa (QR del mando) ---------- */
+.capa { position: fixed; inset: 0; z-index: 20; background: rgba(5, 14, 40, 0.7); display: grid; place-items: center; animation: aparece 300ms var(--curva); }
+.capa-caja { padding: 2.5rem; display: flex; flex-direction: column; align-items: center; gap: 1.4rem; text-align: center; background: var(--fondo-2); max-width: 44rem; }
+.capa-caja h2 { margin: 0; font-size: 2.6rem; }
+.capa-caja .qr { width: 22rem; height: 22rem; }
+.capa-caja p { font-size: 1.6rem; margin: 0; }
+
+/* ---------- pulsador ---------- */
+.pul-ok { background: linear-gradient(180deg, #9be0bd, var(--bien)); color: #08321f; }
+.pul-mal { background: linear-gradient(180deg, #f6a7a1, var(--mal)); color: #3a0906; }
+.solucion-oculta { color: var(--oro); font-weight: 900; }
+.pul-tv { display: flex; flex-direction: column; align-items: center; gap: 2rem; height: 100%; position: relative; }
+.pul-pregunta { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.6rem; text-align: center; max-width: 90rem; }
+.pul-titulo { font-size: 2rem; }
+.pul-texto { font-size: 3.6rem; font-weight: 800; line-height: 1.25; margin: 0; }
+.pul-pista { font-size: 2rem; }
+.pul-fichas { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.8rem; font-size: 6rem; }
+.pul-fichas .ficha { padding: 0 0.25em; }
+.pul-anterior { font-size: 2rem; min-height: 2.6rem; }
+.pul-anterior b { color: var(--oro); }
+.pul-capa {
+  position: absolute; inset: 0; display: grid; place-items: center; z-index: 5;
+  background: rgba(5, 14, 40, 0.55); border-radius: var(--radio); animation: aparece 250ms var(--curva);
+}
+.pul-capa .caja { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
+.pul-capa .avatar { font-size: 5rem; animation: latir 0.9s ease-in-out infinite; }
+.pul-capa b { font-size: 6rem; }
+.pul-capa span { font-size: 2.4rem; color: var(--texto-suave); }
+.pul-tv .mf-rejilla { width: 100%; }
+.pul-flecha { align-self: center; font-size: 0.5em; color: var(--texto-suave); }
+
+/* jugadores con su banner (colores elegidos en el móvil) */
+.jugador.banner-tv { background: var(--fondo); color: var(--texto); border-color: rgba(255, 255, 255, 0.8); }
+.jugador.banner-tv .pts { color: inherit; opacity: 0.75; }
+
+/* ---------- sala: un solo QR (unirse / descargar la app) ---------- */
+.lobby-izq { display: flex; flex-direction: column; gap: 1.2rem; min-height: 0; }
+.lobby-izq .unirse { gap: 1rem; padding: 1.4rem 1.8rem 1.8rem; }
+.lobby-izq .unirse .qr { width: 23rem; height: 23rem; }
+.qr-modos { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; width: 100%; }
+.qr-modos .boton { min-height: 0; padding: 0.6rem 0.4rem; font-size: 1.25rem; }
+.qr-modos .boton.elegida, .opciones .boton.elegida { background: linear-gradient(180deg, #8ed3e6, var(--acento)); color: var(--acento-texto); border-color: var(--ficha-borde); }
+.sala-resumen { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.chip-juego { font-size: 1.2rem; font-weight: 800; padding: 0.3rem 0.9rem; border-radius: 2rem; background: var(--superficie); border: 2px solid var(--borde-suave); }
+.campeon { width: 100%; padding: 1rem 1.4rem; font-size: 1.8rem; text-align: center; border-color: var(--oro); color: var(--oro); }
+.lado { gap: 1rem; }
+.lado .jugadores { flex: none; min-height: 4.5rem; max-height: 13rem; overflow-y: auto; }
+.lobby-rueda { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.lobby-azar { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.4rem; padding: 2rem; text-align: center; }
+.lobby-azar h2 { margin: 0; font-size: 2.6rem; }
+.azar-icono { font-size: 5rem; }
+.azar-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; max-width: 60rem; }
+.crear-sala { font-size: 1.9rem; min-height: 4.6rem; padding: 0.6rem 2.6rem; }
+.panel-host { flex: none; }
+.jugador.eliminado, .fila-res.eliminado { opacity: 0.45; filter: grayscale(0.7); }
+.eliminado-aviso { font-size: 1.8rem; font-weight: 800; color: #ff9b94; margin-right: auto; }
+.eliminado-aviso.suave { color: var(--texto-suave); }
+
+/* ---------- crear sala ---------- */
+.nueva { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1.25fr; gap: 3rem; }
+.nueva-col { display: flex; flex-direction: column; gap: 0.9rem; min-height: 0; }
+.nueva-col .etiqueta { margin-top: 0.6rem; }
+.opciones { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+.opcion-tv { display: flex; align-items: center; gap: 0.9rem; min-height: 0; padding: 0.8rem 1.3rem; font-size: 1.5rem; text-align: left; }
+.opcion-tv small { display: block; font-size: 1.05rem; font-weight: 700; opacity: 0.8; }
+.opcion-tv.elegida small { opacity: 0.85; }
+.op-icono { font-size: 2rem; line-height: 1; }
+.fila-op { display: flex; align-items: center; gap: 1rem; font-size: 1.5rem; }
+.fila-op.entre { justify-content: space-between; }
+.boton.mini { min-height: 0; padding: 0.35rem 1rem; font-size: 1.2rem; }
+.nueva-juegos { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; overflow-y: auto; min-height: 0; padding: 0.2rem; }
+.juego-toggle {
+  appearance: none; display: flex; align-items: center; gap: 0.9rem; padding: 0.7rem 1rem; text-align: left; cursor: pointer;
+  font: inherit; font-size: 1.4rem; color: var(--texto); background: var(--superficie); border: 2px solid var(--borde-suave); border-radius: 1rem;
+  border-left: 0.45rem solid var(--borde-suave); opacity: 0.6; transition: opacity 150ms, background 150ms;
+}
+.juego-toggle small { display: block; font-size: 1rem; color: var(--texto-suave); font-weight: 700; }
+.juego-toggle.on { opacity: 1; background: var(--superficie-2); border-left-color: var(--bien); }
+.juego-toggle .marca-on { margin-left: auto; font-size: 1.6rem; color: var(--bien); font-weight: 900; }
+.nueva-pie { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding-top: 1rem; }
+.centro { margin: auto; font-size: 2rem; }
+.opciones:has(.op-icono) { flex-direction: column; }
+.opciones:has(.op-icono) .opcion-tv { width: 100%; }
+/* La rueda, algo más grande en la TV */
+.lobby-rueda .sel-caja { zoom: 1.3; }
+
+/* ---------- v3: QR en "Crear sala"; en la sala, jugadores a la izquierda y rueda grande ---------- */
+.cabecera .salir { font-size: 1.3rem; min-height: 0; padding: 0.6rem 1.2rem; }
+.nueva { grid-template-columns: 27rem 1fr; gap: 2.4rem; }
+.nueva-qr .unirse { padding: 1.2rem 1.4rem 1.6rem; gap: 0.9rem; }
+.nueva-qr .unirse .qr { width: 21rem; height: 21rem; }
+.nueva-qr .unirse h2 { font-size: 2rem; }
+.nueva-cols { display: grid; grid-template-columns: 1fr 1.2fr; gap: 2.4rem; min-height: 0; }
+.nueva-cols .opcion-tv { font-size: 1.35rem; padding: 0.7rem 1.1rem; }
+.lobby { grid-template-columns: 44rem 1fr; gap: 2.4rem; }
+.lobby-izq { display: flex; flex-direction: column; gap: 1rem; min-height: 0; }
+.lobby-jugadores { flex: 1; min-height: 0; overflow-y: auto; }
+.lobby-izq .jugadores { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; min-height: 0; }
+.lobby-izq .jugadores .vacio { grid-column: 1 / -1; }
+.lobby-izq .jugador { min-width: 0; }
+.lobby-izq .jugador .nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lobby-izq .equipos-tv { grid-template-columns: 1fr 1fr; }
+.lobby-unirse { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.codigo-mini { font-size: 1.5rem; font-weight: 800; }
+.capa-qr { max-width: 36rem; }
+.capa-qr .unirse { background: none; border: 0; box-shadow: none; padding: 0; }
+.lobby-rueda .sel-caja { zoom: 1.4; }
+.nueva-pie { justify-content: flex-end; }
+.qr-modos .boton { white-space: nowrap; font-size: 1.15rem; }
+/* Cálculo mental: la operación entera, en grande */
+.cm-escena { aspect-ratio: auto; width: 100%; padding: 0 2rem; }
+.cm-grande-tv { font-size: 9rem; max-width: 100%; }
+.cm-expresion-tv { font-family: var(--fuente-ficha); font-weight: 900; font-size: 4.6rem; line-height: 1.3; text-align: center; text-wrap: balance; max-width: 70rem; }
+/* Icono de los jugadores más grande */
+.jugador .avatar { font-size: 1.9rem; margin: -0.35rem 0 -0.35rem -0.35rem; box-shadow: 0 0.15rem 0.5rem rgba(4, 12, 40, 0.5); }
+.equipo-col .jugador .avatar { font-size: 1.6rem; margin: 0; }
+
+/* Pulsador: la cuenta con paréntesis y el aviso de lectura */
+.pul-expresion { font-family: var(--fuente-ficha); font-weight: 900; line-height: 1.3; text-align: center; text-wrap: balance; font-size: 4.4rem; max-width: 80rem; padding: 1rem 2rem; border-radius: var(--radio); background: #17346f; border: 2px solid rgba(160, 190, 255, 0.25); }
+.cm-igual { color: var(--oro); white-space: nowrap; }
+.pul-leer { min-height: 3.4rem; font-size: 2.4rem; font-weight: 900; color: var(--texto-suave); text-align: center; }
+.pul-leer.abierto { color: var(--bien); }
+
+/* Resultados: lo que respondió cada jugador, debajo de su nombre */
+.fila-res .fila-respuestas { grid-column: 3 / 6; font-size: 1.25rem; margin-top: -0.6rem; }
+.fila-res.con-detalle { row-gap: 0.9rem; }
+.tabla { overflow-y: auto; }
+.tabla.compacta .fila-res .fila-respuestas { font-size: 1.05rem; }
+.df-item-tv .ex-lista { display: block; font-size: 1.6rem; -webkit-line-clamp: unset; }
+.df-item-tv .ex-lista span { display: inline; overflow: visible; }
+.fila-res .fila-respuestas { font-size: 1.6rem; }
+.tabla.compacta .fila-res .fila-respuestas { font-size: 1.3rem; }
+.cuenta .cuenta-ya { font-size: 14rem; }
+.reloj-tv.apuro { filter: drop-shadow(0 0 1.2rem rgba(255, 82, 82, 0.6)); }
+
+/* ---------- clasificación: barras verticales hasta la meta ---------- */
+.carrera { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 4.5rem 2rem 0; }
+.carrera-meta {
+  position: absolute; left: 1.2rem; right: 1.2rem; top: 4.5rem; height: 0; border-top: 0.25rem dashed rgba(233, 199, 90, 0.75); z-index: 0;
+}
+.carrera-meta span { position: absolute; right: 0; top: -2.6rem; font-family: var(--fuente-ficha); font-weight: 900; font-size: 1.9rem; color: var(--oro); }
+.carrera-cols { flex: 1; min-height: 0; display: flex; justify-content: center; align-items: stretch; gap: 2.2rem; }
+.col { flex: 0 1 9rem; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; animation: aparece 500ms var(--curva) both; }
+.col-carril { position: relative; flex: 1; width: 62%; min-height: 0; border-radius: 1.2rem 1.2rem 0.6rem 0.6rem; background: rgba(160, 190, 255, 0.12); }
+.col-relleno {
+  position: absolute; left: 0; right: 0; bottom: 0; border-radius: 1.2rem 1.2rem 0.6rem 0.6rem;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 80%, #fff), var(--c)); box-shadow: 0 0 1.4rem color-mix(in srgb, var(--c) 45%, transparent);
+  transition: height 1500ms cubic-bezier(0.25, 0.9, 0.3, 1);
+}
+.col-cima { position: absolute; left: 50%; translate: -50% 0; margin-bottom: 0.3rem; font-size: 2.7rem; z-index: 2; transition: bottom 1500ms cubic-bezier(0.25, 0.9, 0.3, 1); }
+.col-cima .avatar { font-size: 1em; }
+.col-puntos { font-family: var(--fuente-ficha); font-size: 2.4rem; color: var(--oro); line-height: 1; }
+.col-nombre { font-size: 1.5rem; font-weight: 800; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.col.eliminado { opacity: 0.4; filter: grayscale(0.8); }
+.col.desempate .col-carril { box-shadow: 0 0 0 0.25rem var(--oro); }
+.carrera.muchos .carrera-cols { gap: 1rem; }
+.carrera.muchos .col-cima { font-size: 2rem; }
+.carrera.muchos .col-nombre { font-size: 1.15rem; }
+.carrera.muchos .col-puntos { font-size: 1.8rem; }
+/* Ánimo según la última prueba: el ganador salta de alegría, los últimos se ponen tristes */
+.col-cima.gana { animation: col-salta 900ms ease-in-out 2000ms infinite; }
+.col-cima.pierde { animation: col-triste 2.4s ease-in-out 2000ms infinite; }
+.col-cima.pierde .avatar { filter: saturate(0.5) brightness(0.85); }
+.col-fiesta { position: absolute; top: -1.6rem; right: -1.4rem; font-size: 0.9em; animation: col-fiesta 900ms ease-in-out 2000ms infinite; }
+.col-lagrima { position: absolute; top: 45%; right: -0.3rem; font-size: 0.5em; animation: col-lagrima 1.6s ease-in 2000ms infinite; opacity: 0; }
+.col-corona { position: absolute; top: -1.3em; left: 50%; translate: -50% 0; font-size: 0.95em; animation: col-fiesta 1.2s ease-in-out infinite; }
+.col-cima.campeon .avatar { box-shadow: 0 0 0 0.12em var(--oro), 0 0 1.5rem rgba(233, 199, 90, 0.8); }
+@keyframes col-salta { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(-38%) rotate(-8deg); } 55% { transform: translateY(0) scale(1.08, 0.92); } 75% { transform: translateY(-14%) rotate(6deg); } }
+@keyframes col-triste { 0%, 100% { transform: rotate(0) translateY(0); } 50% { transform: rotate(-10deg) translateY(6%); } }
+@keyframes col-fiesta { 0%, 100% { transform: scale(1) rotate(0); } 50% { transform: scale(1.3) rotate(15deg); } }
+@keyframes col-lagrima { 0% { opacity: 0; transform: translateY(0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(160%); } }
+.desempate-aviso { width: 100%; padding: 0.9rem 1.4rem; font-size: 1.7rem; text-align: center; border-color: var(--oro); }
+@media (prefers-reduced-motion: reduce) { .col-cima, .col-fiesta, .col-lagrima, .col-corona { animation: none !important; } .col-relleno, .col-cima { transition: none; } }
+
+/* ---------- crucigrama (TV) ---------- */
+.cg-escena { align-items: center; }
+.cg-tv-izq { flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; gap: 1rem; min-width: 0; }
+.cg-tv { height: calc(100% - 3rem); max-width: 100%; font-size: 2.2rem; }
+.cg-resumen { align-items: center; }
+.cg-resumen .cg-rejilla { height: 20rem; width: auto; max-width: 100%; font-size: 1.3rem; }
+.cg-soluciones { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+.ambitos-tv { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.45rem; max-width: 92rem; }
+.ambitos-tv .boton { font-size: 1.05rem; padding: 0.35rem 0.8rem; min-height: 0; }
+.duraciones:has(.ambitos-tv) { flex-direction: column; gap: 1rem; }
+.ambitos-tv .boton { font-size: 1.3rem; padding: 0.4rem 0.9rem; }
+
+/* ---------- KenKen (TV) ---------- */
+.kk-escena { align-items: center; }
+.kk-tv { height: 100%; aspect-ratio: 1; display: grid; }
+.kk-tv .kk { height: 100%; font-size: 9rem; }
+.kk-resumen .kk { width: 22rem; font-size: 4.5rem; }
+
+/* ---------- memoria (TV) ---------- */
+.mem-tv { align-items: center; }
+.mem-tv-cartel { display: flex; flex-direction: column; align-items: center; gap: 1rem; text-align: center; font-size: 2.6rem; }
+.mem-tv-icono { font-size: 9rem; animation: flotar 3s ease-in-out infinite; }
+@keyframes flotar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.6rem); } }
+.sm-secreta-tv { font-family: var(--fuente-ficha); font-weight: 900; font-size: 4rem; color: var(--oro); letter-spacing: 0.05em; }
+.kk-tv { container-type: size; width: min(100%, 100vh - 16rem); }
+.kk-tv .kk { height: 100cqh; width: 100cqh; font-size: calc(100cqh / var(--n)); }
+.kk-resumen .kk { font-size: calc(22rem / var(--n)); }
+
+/* ---------- puzles nuevos en la TV ---------- */
+.puzle-tv { container-type: size; height: 100%; width: min(100%, 100vh - 16rem); display: grid; place-items: center; }
+.puzle-tv > .hilo, .puzle-tv > .cor, .puzle-tv > .pc, .puzle-tv > .cul { height: 100cqh; width: 100cqh; font-size: calc(100cqh / var(--n)); }
+.puzle-mini > .hilo, .puzle-mini > .cor, .puzle-mini > .pc, .puzle-mini > .cul { width: 22rem; font-size: calc(22rem / var(--n)); }
+
+/* La cara que asoma por encima del avatar no se corta: hueco arriba en las listas que se desplazan. */
+.lobby-jugadores, .lado .jugadores { padding-top: 1.6rem; padding-inline: 0.3rem; margin-top: -1rem; }
+/* Resultados: la solución de los puzles bien grande. */
+.res-cuerpo .pl-resumen:has(.puzle-mini) { width: auto; max-width: 52rem; display: flex; flex-direction: column; align-items: center; }
+.puzle-mini > .hilo, .puzle-mini > .cor, .puzle-mini > .pc, .puzle-mini > .cul { width: min(44rem, 100vh - 19rem); font-size: calc(min(44rem, 100vh - 19rem) / var(--n)); }
+.pl-resumen .solo-chips { justify-content: center; margin-top: 0.8rem; font-size: 1.3rem; }
+.kk-resumen .kk { width: min(36rem, 100vh - 19rem); font-size: calc(min(36rem, 100vh - 19rem) / var(--n)); }
+
+/* ---------- sala (v4): jugadores arriba y el selector como en «Jugar solo» debajo ---------- */
+.lobby.lobby-v4 { display: grid; grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); gap: 1.2rem; }
+.lobby-v4 .lobby-izq { display: grid; grid-template-columns: auto 1fr auto; grid-template-rows: auto auto; align-items: center; column-gap: 1.4rem; row-gap: 0.4rem; }
+.lobby-v4 .lobby-izq > .etiqueta { grid-column: 1; grid-row: 1 / span 2; writing-mode: vertical-rl; transform: rotate(180deg); }
+.lobby-v4 .lobby-jugadores { grid-column: 2; grid-row: 1 / span 2; max-height: 12.5rem; }
+.lobby-v4 .lobby-izq .jugadores { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+.lobby-v4 .lobby-izq .jugador { flex: 0 1 19rem; }
+.lobby-v4 .lobby-unirse { grid-column: 3; grid-row: 1; flex-direction: column; align-items: flex-end; gap: 0.5rem; }
+.lobby-v4 .sala-resumen { grid-column: 3; grid-row: 2; display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: flex-end; max-width: 26rem; }
+.lobby-v4 .lado { display: grid; grid-template-columns: 1fr auto; gap: 1.2rem; min-height: 0; }
+.lobby-v4 .lobby-rueda { min-height: 0; display: flex; }
+.lobby-v4 .lobby-rueda .sel-caja { zoom: 1.1; flex: 1; min-height: 0; }
+.lobby-v4 .panel-host { display: flex; flex-direction: column; gap: 0.8rem; align-self: end; width: 16rem; }
+.lobby-v4 .lado > .vacio { grid-column: 1 / -1; display: grid; place-items: center; font-size: 2rem; }
+
+/* ---------- Pantalla grande de una Batalla: código y QR para unirse; podio de la victoria ---------- */
+.visor-unirse { display: flex; align-items: center; gap: 2.4rem; padding: 2.4rem; align-self: center; justify-self: center; grid-column: 1 / -1; }
+.visor-qr { width: 22rem; height: 22rem; padding: 1rem; background: #fff; border-radius: 1.4rem; }
+.visor-qr svg { width: 100%; height: 100%; display: block; }
+.visor-texto { display: flex; flex-direction: column; gap: 0.8rem; max-width: 34rem; }
+.visor-codigo { font-family: var(--fuente-ficha); font-size: 6rem; letter-spacing: 0.06em; color: var(--oro, #ffd34d); line-height: 1; }
+.visor-texto p { font-size: 1.5rem; margin: 0; }
+.victoria-tv .victoria-cuerpo { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3rem; font-size: 2.2rem; text-align: center; }
+.victoria-tv .victoria-titulo h1 { font-size: 4.4rem; margin: 0.4rem 0 0; }
+.victoria-tv .podio { max-width: 60rem; }
+.victoria-tv .pie { justify-content: space-between; }
+/* Sala v4 por equipos: columnas compactas (los jugadores de cada equipo, en fila) */
+.lobby-v4 .lobby-jugadores { max-height: 17rem; }
+.lobby-v4 .equipos-tv { grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
+.lobby-v4 .equipo-col { padding: 0.6rem 0.9rem; gap: 0.4rem; }
+.lobby-v4 .equipo-col { flex-direction: row; flex-wrap: wrap; align-content: flex-start; }
+.lobby-v4 .equipo-col > .equipo-cab { flex-basis: 100%; }
+.lobby-v4 .jugadores > .vacio.oculto { display: none; }

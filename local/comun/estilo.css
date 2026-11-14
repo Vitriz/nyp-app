@@ -574,3 +574,24 @@ html, body {
 .pc-pista.hecha .pc-insignia { box-shadow: 0 0 0 0.03em #ffffff; }
 .pc-rect.bien { background: color-mix(in srgb, var(--c) 42%, #ffffff); box-shadow: inset 0 0 0 0.05em var(--c); }
 .pc-rect.previa, .pc-rect.previa.bien { background: color-mix(in srgb, var(--c) 30%, transparent); box-shadow: inset 0 0 0 0.06em var(--c); }
+
+/* ---------- Podio de la victoria (móvil y pantalla grande) ---------- */
+.podio { display: flex; align-items: flex-end; justify-content: center; gap: 0.5em; width: 100%; }
+.podio-sitio { flex: 1; max-width: 9em; display: flex; flex-direction: column; align-items: center; gap: 0.2em; opacity: 0; animation: podio-sube 900ms cubic-bezier(0.2, 1.3, 0.4, 1) forwards; }
+.podio-quien { position: relative; }
+.podio-quien .avatar { font-size: 1.4em; }
+.podio-sitio.p1 .podio-quien .avatar { font-size: 1.9em; box-shadow: 0 0 0 0.12em #ffd34d, 0 0 1.2em rgba(255, 211, 77, 0.6); }
+.podio-equipo { display: grid; place-items: center; width: 2.6em; height: 2.6em; border-radius: 50%; background: var(--c); font-size: 1.4em; }
+.podio-corona { position: absolute; left: 50%; top: -0.9em; translate: -50% 0; font-size: 1.4em; animation: corona-bota 1.4s ease-in-out infinite; }
+.podio-nombre { font-size: 1em; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.podio-puntos { color: var(--texto-suave, #a9bbe6); font-weight: 800; font-size: 0.8em; }
+.podio-escalon { width: 100%; display: grid; place-items: start center; padding-top: 0.35em; border-radius: 0.5em 0.5em 0 0; font-size: 1.5em;
+  background: linear-gradient(180deg, #3f6fd0, #1d3f86); box-shadow: inset 0 0.12em 0 rgba(255, 255, 255, 0.25), 0 0.3em 0.8em rgba(4, 12, 40, 0.4); }
+.podio-sitio.p1 .podio-escalon { height: 5.2em; background: linear-gradient(180deg, #ffe48a, #e9b52a); }
+.podio-sitio.p2 .podio-escalon { height: 3.7em; background: linear-gradient(180deg, #e8eef8, #a9b6cc); }
+.podio-sitio.p3 .podio-escalon { height: 2.6em; background: linear-gradient(180deg, #f2c49b, #c47b3e); }
+@keyframes podio-sube { from { opacity: 0; transform: translateY(3em); } to { opacity: 1; transform: none; } }
+@keyframes corona-bota { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-0.2em) rotate(6deg); } }
+.victoria-trofeo { display: inline-block; font-size: 3.2em; animation: trofeo-brilla 1.6s ease-in-out infinite; filter: drop-shadow(0 0 0.4em rgba(255, 211, 77, 0.7)); }
+@keyframes trofeo-brilla { 0%, 100% { transform: scale(1) rotate(-4deg); } 50% { transform: scale(1.12) rotate(4deg); } }
+@media (prefers-reduced-motion: reduce) { .podio-sitio { animation: none; opacity: 1; } .podio-corona, .victoria-trofeo { animation: none; } }

@@ -1,6 +1,6 @@
 // Modo partida: conectado a PARTY (la TV). Esperar, jugar y ver resultados.
 import { conectar, almacen } from "../comun/conexion.js";
-import { h, cambiarPantalla, avatar, banner, bannerFijo, fotosMemoria, TIEMPOS, crearReloj, msDuracion, textoSegundos, textoPuesto, textoCuenta, piezaCuenta, servidor, detalleJugador, finalLlegar, palabraPendiente } from "../comun/ui.js";
+import { h, confeti, cambiarPantalla, avatar, banner, bannerFijo, fotosMemoria, TIEMPOS, crearReloj, msDuracion, textoSegundos, textoPuesto, textoCuenta, piezaCuenta, servidor, detalleJugador, finalLlegar, palabraPendiente } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { actualizarPaquete } from "../solo/paquete.js";
 import { mensajeRecords, guardarFamilia } from "../comun/familia.js";
@@ -270,6 +270,55 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
     return h("div.titulo-fichas", { style: { "--n": largo } }, texto.toUpperCase().split(" ").map((p) => h("div.palabra", [...p].map((l) => h("span.ficha", l)))));
   }
 
+  /** Puntos de victoria recomendados: que la partida dure unos 6-8 juegos (2 → 5, 3 → 8, 4 → 12…). */
+  const metaRecomendada = (n) => (n <= 2 ? 5 : (n - 1) * 4);
+  let metaTocada = false; // si el anfitrión la cambia a mano, ya no se ajusta sola
+
+  function pintarAjustesSala(caja, e) {
+    const t = e.sala ?? {};
+    const n = e.jugadores.length;
+    const rec = metaRecomendada(n);
+    if (!metaTocada && t.modo !== "torneo" && n >= 2 && t.meta !== rec && !t.campeon) host("meta", { valor: rec });
+    const MODOS = { individual: "🏆 Todos contra todos", equipos: "👥 Batalla por equipos", torneo: "⚔️ Torneo eliminatorio" };
+    const cambiar = (d) => {
+      metaTocada = true;
+      host("meta", { valor: Math.max(1, (t.meta || rec) + d) });
+    };
+    caja.replaceChildren(
+      h("div.ajuste-fila", h("b.ajuste-modo", MODOS[t.modo] ?? ""), t.pruebas === "azar" ? h("span.ajuste-chip", "🎲 Juegos al azar") : h("span.ajuste-chip", "👆 Eliges tú")),
+      t.modo === "torneo"
+        ? h("p.suave.ajuste-nota", "En cada juego cae el último. Gana quien quede en pie.")
+        : h(
+            "div.ajuste-fila.ajuste-meta",
+            h("span", "🏁 Gana quien llegue a"),
+            h("div.meta-control", h("button.icono-btn", { type: "button", onclick: () => cambiar(-1), "aria-label": "Menos puntos" }, "−"), h("b", String(t.meta || rec)), h("button.icono-btn", { type: "button", onclick: () => cambiar(1), "aria-label": "Más puntos" }, "+")),
+            h("small.suave", n >= 2 ? `Recomendado: ${rec} para ${n} jugadores${metaTocada && t.meta !== rec ? " · " : ""}` : "Se ajusta cuando entre más gente", metaTocada && t.meta !== rec ? h("button.enlace", { type: "button", onclick: () => ((metaTocada = false), host("meta", { valor: rec })) }, "usar") : null)
+          ),
+      e.equipos
+        ? h("div.ajuste-fila", h("small.suave", "Toca a un jugador para cambiarlo de equipo"), h("button.boton.suave.mini", { type: "button", onclick: () => host("repartir") }, "🔀 Repartir"))
+        : null
+    );
+  }
+
+  /** Juegos al azar: el anfitrión fija el tiempo y el nivel y da paso al siguiente juego. */
+  function panelAzar() {
+    const seg = () => (TIEMPOS.includes(ajustes.seg) ? ajustes.seg : 60);
+    const caja = h("div.panel-azar.tarjeta");
+    const pintar = () =>
+      caja.replaceChildren(
+        h("div.azar-dado", "🎲"),
+        h("h2", "Juegos al azar"),
+        h("p.suave", "Cada vez sale un juego distinto. Elige el tiempo y el nivel para todos."),
+        h("span.etiqueta", "Tiempo"),
+        h("div.modo-segmentos", TIEMPOS.map((s) => h(`button.sel-seg${seg() === s ? ".elegido" : ""}`, { type: "button", onclick: () => ((ajustes.seg = s), guardarAjustes(), pintar()) }, textoSegundos(s)))),
+        h("span.etiqueta", "Nivel"),
+        h("div.modo-segmentos", NIVELES.map((nv) => h(`button.sel-seg${ajustes.nv === nv ? ".elegido" : ""}`, { type: "button", onclick: () => ((ajustes.nv = nv), guardarAjustes(), pintar()) }, NOMBRES_NIVEL[nv]))),
+        h("button.boton.acento.grande", { type: "button", onclick: () => host("aleatorio", { segundos: seg(), dificultad: ajustes.nv }) }, "🎲 ¡Siguiente juego! ▶")
+      );
+    pintar();
+    return caja;
+  }
+
   const PANTALLAS = {
     lobby(e) {
       const barra = barraSuperior(e);
@@ -280,9 +329,12 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
       const mensaje = h("p.suave", "Esperando al presentador…");
       // Batalla: el anfitrión ve el código para invitar y elige el juego; los demás, quién hay en la sala.
       const esHostBatalla = batalla && e.esHost;
-      const panelHost = esHostBatalla ? h("div.batalla-host", selectorHost(e)) : null;
+      const alAzar = e.sala?.pruebas === "azar";
+      const panelHost = esHostBatalla ? h("div.batalla-host", alAzar ? panelAzar() : selectorHost(e)) : null;
+      // Ajustes de la partida del anfitrión: la meta (− / +, con la recomendada) y los equipos.
+      const ajustesSala = esHostBatalla ? h("div.batalla-ajustes.tarjeta") : null;
       const el = esHostBatalla
-        ? h("section.batalla-sala", barra.el, panelHost, h("div.batalla-gente", puesto, lista))
+        ? h("section.batalla-sala", barra.el, ajustesSala, panelHost, h("div.batalla-gente", puesto, lista))
         : h("section", barra.el, h("div.espera", grande.el, mensaje, equipos, puesto, lista));
       return {
         el,
@@ -323,6 +375,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
                 ]
               : [])
           );
+          if (ajustesSala) pintarAjustesSala(ajustesSala, e);
           const top = [...e.jugadores].sort((a, b) => b.puntos - a.puntos);
           lista.replaceChildren(
             ...(e.fase === "clasificacion" && e.equipos
@@ -331,9 +384,19 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
                 )
               : []),
             // En Batalla se ve siempre quién está en la sala (y sus puntos).
-            ...(e.fase === "clasificacion" || batalla ? top : []).map((j) =>
-              h(`div.item.tarjeta${j.id === e.yo.id ? ".yo" : ""}`, h("span", textoPuesto(j.puesto)), avatar(j), h("span.n", j.nombre), h("span", `${j.puntos}`))
-            )
+            ...(e.fase === "clasificacion" || batalla ? top : []).map((j) => {
+              const q = e.equipos?.find((x) => x.id === j.equipo);
+              // Por equipos, el anfitrión toca a un jugador para pasarlo al siguiente equipo.
+              const mover = esHostBatalla && e.equipos ? () => host("moverEquipo", { id: j.id }) : null;
+              return h(
+                `${mover ? "button" : "div"}.item.tarjeta${j.id === e.yo.id ? ".yo" : ""}${q ? ".con-equipo" : ""}`,
+                { type: mover ? "button" : undefined, onclick: mover, style: q ? { "--eq": q.color } : {} },
+                h("span", textoPuesto(j.puesto)),
+                avatar(j),
+                h("span.n", j.nombre, q ? h("small.eq", q.nombre) : null),
+                h("span", `${j.puntos}`)
+              );
+            })
           );
         },
       };
@@ -344,7 +407,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
       const el = h(
         "section",
         barra.el,
-        h("div.espera", h("div.puesto-grande", "👀"), h("h1", "Estás eliminado"), h("p.suave", "Sigue el torneo en la TV. ¡A la próxima!"))
+        h("div.espera", h("div.puesto-grande", "👀"), h("h1", "Estás eliminado"), h("p.suave", batalla ? "Sigue el torneo desde aquí: verás los resultados de cada juego." : "Sigue el torneo en la TV. ¡A la próxima!"))
       );
       return { el, actualizar: (e) => barra.actualizar(e) };
     },
@@ -422,6 +485,44 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
           calmarFondo(false);
         },
       });
+    },
+
+    /** ¡Hay ganador! El podio con los tres primeros; el anfitrión elige revancha o salir. */
+    victoria(e) {
+      const barra = barraSuperior(e);
+      const podio = e.podio ?? [];
+      const gano = podio[0] && (podio[0].id === e.yo.id || podio[0].id === e.yo.equipo);
+      const miPuesto = podio.find((p) => p.id === e.yo.id || p.id === e.yo.equipo)?.puesto;
+      const escalon = (p, k) =>
+        h(
+          `div.podio-sitio.p${p.puesto}`,
+          { style: { animationDelay: `${[900, 300, 1500][k]}ms` } },
+          h("div.podio-quien", p.equipo ? h("span.avatar.podio-equipo", { style: { "--c": p.color } }, "👥") : avatar(p), p.puesto === 1 ? h("span.podio-corona", "👑") : null),
+          h("b.podio-nombre", p.nombre),
+          h("small.podio-puntos", e.sala?.modo === "torneo" ? (p.puesto === 1 ? "Campeón" : `Cayó ${p.puesto === 2 ? "en la final" : "en semis"}`) : `${p.puntos} pts`),
+          h("div.podio-escalon", h("span", ["🥇", "🥈", "🥉"][p.puesto - 1] ?? p.puesto))
+        );
+      // En el podio: el 2º a la izquierda, el 1º en medio y el 3º a la derecha.
+      const orden = [podio.find((p) => p.puesto === 2) ?? podio[1], podio.find((p) => p.puesto === 1) ?? podio[0], podio.find((p) => p.puesto === 3) ?? podio[2]].filter(Boolean);
+      const el = h(
+        "section.victoria",
+        barra.el,
+        h(
+          "div.victoria-cuerpo",
+          h("div.victoria-titulo.aparece", h("span.victoria-trofeo", "🏆"), h("h1", gano ? "¡Has ganado!" : `¡${podio[0]?.nombre ?? ""} gana!`), h("p.suave", gano ? "Eres el campeón de la partida" : miPuesto ? `Has quedado ${miPuesto}º` : "¡A por la revancha!")),
+          h("div.podio", [...new Set(orden)].map((p) => escalon(p, orden.indexOf(p))))
+        ),
+        batalla && e.esHost
+          ? h(
+              "div.pl-botones",
+              h("button.boton.suave", { type: "button", onclick: preguntarSalir }, "Salir"),
+              h("button.boton.acento", { type: "button", onclick: () => host("revancha") }, "🔁 Revancha")
+            )
+          : h("p.suave.victoria-espera", batalla ? "Esperando a que el anfitrión elija revancha…" : "")
+      );
+      setTimeout(() => confeti(gano ? 160 : 90), 1200);
+      if (gano) navigator.vibrate?.([80, 60, 80, 60, 200]);
+      return { el, actualizar: (e) => barra.actualizar(e) };
     },
 
     resultados(e) {

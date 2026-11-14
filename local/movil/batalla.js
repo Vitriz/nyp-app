@@ -38,7 +38,7 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
           "div.inicio-opciones",
           h(
             "button.boton.acento.opcion",
-            { type: "button", onclick: () => crearSala({ dificultad: "normal", meta: 50 }, avisoMenu) },
+            { type: "button", onclick: () => elegirModo() },
             h("span.icono", "🏠"),
             h("span.opcion-texto", "Crear sala", h("small", "Tú eliges los juegos y das paso")),
             h("span.opcion-flecha", { "aria-hidden": "true" }, "›")
@@ -51,6 +51,60 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
             h("span.opcion-flecha", { "aria-hidden": "true" }, "›")
           )
         )
+      )
+    );
+  }
+
+  // ---------------------------------------------------------------- modo de juego
+  // Antes de crear la sala: cómo se juega (todos contra todos, por equipos o torneo) y quién elige los juegos.
+  function elegirModo() {
+    const o = { modo: "individual", equipos: 2, pruebas: "elegir" };
+    const aviso = h("div.pl-aviso.mal");
+    const cajaModos = h("div.inicio-opciones.modo-opciones");
+    const cajaEquipos = h("div.modo-equipos");
+    const cajaPruebas = h("div.modo-pruebas");
+    const MODOS = [
+      ["individual", "🏆", "Todos contra todos", "Cada uno por su cuenta. Gana quien llegue antes a la meta de puntos"],
+      ["equipos", "👥", "Batalla por equipos", "Equipos repartidos al azar. Cuenta la media de puntos de cada equipo"],
+      ["torneo", "⚔️", "Torneo eliminatorio", "En cada juego cae el último. Gana quien quede en pie"],
+    ];
+    const pintar = () => {
+      cajaModos.replaceChildren(
+        ...MODOS.map(([id, ico, nombre, txt]) =>
+          h(
+            `button.boton.opcion${o.modo === id ? ".acento" : ""}`,
+            { type: "button", onclick: () => ((o.modo = id), pintar()), "aria-pressed": String(o.modo === id) },
+            h("span.icono", ico),
+            h("span.opcion-texto", nombre, h("small", txt)),
+            h("span.opcion-flecha", { "aria-hidden": "true" }, o.modo === id ? "✔" : "")
+          )
+        )
+      );
+      cajaEquipos.replaceChildren(
+        ...(o.modo === "equipos"
+          ? [h("span.etiqueta", "Equipos"), h("div.modo-segmentos", [2, 3, 4].map((n) => h(`button.sel-seg${o.equipos === n ? ".elegido" : ""}`, { type: "button", onclick: () => ((o.equipos = n), pintar()) }, `${n} equipos`)))]
+          : [])
+      );
+      cajaPruebas.replaceChildren(
+        h("span.etiqueta", "Los juegos"),
+        h(
+          "div.modo-segmentos",
+          h(`button.sel-seg${o.pruebas === "elegir" ? ".elegido" : ""}`, { type: "button", onclick: () => ((o.pruebas = "elegir"), pintar()) }, "👆 Los elijo yo"),
+          h(`button.sel-seg${o.pruebas === "azar" ? ".elegido" : ""}`, { type: "button", onclick: () => ((o.pruebas = "azar"), pintar()) }, "🎲 Al azar")
+        )
+      );
+    };
+    pintar();
+    mostrar(
+      h(
+        "section.batalla-menu.batalla-modo",
+        cabecera("🏠 Crear sala", menu),
+        h("p.suave.batalla-intro", "¿Cómo queréis jugar? Los puntos para ganar se ajustan en la sala, según cuántos seáis."),
+        cajaModos,
+        cajaEquipos,
+        cajaPruebas,
+        aviso,
+        h("button.boton.acento.grande", { type: "button", onclick: () => crearSala(o, aviso) }, "Crear la sala ▶")
       )
     );
   }
@@ -79,13 +133,11 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
       const claveHost = [...crypto.getRandomValues(new Uint8Array(12))].map((b) => b.toString(16).padStart(2, "0")).join("");
       const sala = new Sala({ claveHost, enNavegador: true, cifras: codigo });
       Object.assign(sala.config, {
-        dificultad: o.dificultad,
-        meta: o.meta,
-        juegos: disponibles.map((j) => j.id),
         pulsadorAuto: true, // sin presentador: quien pulsa escribe la respuesta (5 s)
         pulsadorTipos: conDiccionario ? ["definicion", "calculo", "revuelto"] : ["calculo"],
       });
-      sala.fase = "lobby";
+      // Modo, equipos y cómo se eligen los juegos (la meta se ajusta luego en la sala, según cuántos seáis).
+      sala.configurarBatalla({ modo: o.modo, equipos: o.modo === "equipos" ? o.equipos : 0, pruebas: o.pruebas, juegos: disponibles.map((j) => j.id), meta: 5 });
       const transporte = atenderSala(codigo, sala, { nombre: perfil.nombre });
       // Que la pantalla no se apague: si el móvil del anfitrión se duerme, la partida se para.
       let despierto = null;
@@ -109,10 +161,10 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
   }
 
   // ---------------------------------------------------------------- unirse
-  function unirse(aviso = "") {
+  function unirse(aviso = "", { titulo = "🎟️ Unirse a sala", alEntrar = (codigo) => entrarSala(codigo), volver = menu } = {}) {
     const p = pantallaGrupo({
       aviso,
-      titulo: "🎟️ Unirse a sala",
+      titulo,
       guion: 3,
       reconocer: codigoBatalla,
       resolver: async (texto) => {
@@ -131,8 +183,8 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
         formato: "El código son 6 números, como 123 456",
         sinCamara: "escribe el código de la sala",
       },
-      alVolver: menu,
-      alEntrar: (codigo) => entrarSala(codigo),
+      alVolver: volver,
+      alEntrar,
     });
     mostrar(p.el);
   }
@@ -147,5 +199,8 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
     });
   }
 
-  return { menu, unirse, entrarSala };
+  /** Pantalla grande: se pide el código de la sala y se abre la vista para mirar. */
+  const verSala = (alEntrar) => unirse("", { titulo: "📺 Pantalla grande", alEntrar, volver: alVolver });
+
+  return { menu, unirse, entrarSala, verSala };
 }

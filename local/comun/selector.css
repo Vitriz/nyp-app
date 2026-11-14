@@ -524,3 +524,8 @@
 .sel-casilla.sorteo-fin { animation: rebote 600ms var(--curva); }
 @media (prefers-reduced-motion: reduce) { .sel-dado.girando .dado-cara { animation: none; } }
 .sel-titulo .sel-contador { font-variant-numeric: tabular-nums; min-width: calc((var(--cifras, 2) * 2 + 2.4) * 1ch + 1.2rem); }
+/* Cuadrícula ajustada al sitio (ordenador): sin desplazarse, el tamaño sale del hueco disponible */
+.sel-cuadricula.ajustada { overflow: hidden; gap: 0.7rem; align-content: start; }
+.sel-cuadricula.ajustada .sel-casilla { min-height: 0; height: 100%; aspect-ratio: auto; font-size: calc(var(--lado) * 0.34); gap: calc(var(--lado) * 0.04); padding: calc(var(--lado) * 0.05) 0.3rem; }
+.sel-cuadricula.ajustada .sel-casilla-nombre { font-size: clamp(0.62rem, calc(var(--lado) * 0.105), 1rem); }
+.sel-cuadricula.ajustada .sel-casilla.elegido { transform: scale(1.03); }

@@ -165,6 +165,34 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     )
   );
   const cuadricula = h("div.sel-cuadricula", { role: "listbox", "aria-label": "Juegos" }, casillas);
+  // En pantalla ancha (ordenador) todas las casillas caben siempre: se busca el número de columnas que deja
+  // las casillas más grandes sin que ninguna se corte por abajo.
+  new ResizeObserver(() => {
+    const est = getComputedStyle(cuadricula);
+    const w = cuadricula.clientWidth - parseFloat(est.paddingLeft) - parseFloat(est.paddingRight);
+    const alto = cuadricula.clientHeight - parseFloat(est.paddingTop) - parseFloat(est.paddingBottom);
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    // Solo con la cuadrícula grande (casillas con nombre, en el ordenador); en el móvil se desplaza como siempre.
+    const conNombre = getComputedStyle(cuadricula.querySelector(".sel-casilla-nombre") ?? cuadricula).display !== "none";
+    if (!w || !alto || !conNombre) {
+      cuadricula.classList.remove("ajustada");
+      cuadricula.style.removeProperty("grid-template-columns");
+      cuadricula.style.removeProperty("grid-auto-rows");
+      return;
+    }
+    const g = 0.7 * rem;
+    let mejor = null;
+    for (let c = 2; c <= n; c++) {
+      const r = Math.ceil(n / c);
+      const ancho = (w - (c - 1) * g) / c, altoC = (alto - (r - 1) * g) / r;
+      const lado = Math.min(ancho, altoC / 0.92); // casillas un poco más anchas que altas
+      if (!mejor || lado > mejor.lado) mejor = { c, lado, altoC: Math.min(altoC, ancho * 0.92) };
+    }
+    cuadricula.classList.add("ajustada");
+    cuadricula.style.gridTemplateColumns = `repeat(${mejor.c}, minmax(0, 1fr))`;
+    cuadricula.style.gridAutoRows = `${Math.floor(mejor.altoC)}px`;
+    cuadricula.style.setProperty("--lado", `${Math.floor(mejor.lado)}px`);
+  }).observe(cuadricula);
   let vista = "rueda";
   try {
     if (localStorage.getItem("nyp-vista-juegos") === "cuadricula") vista = "cuadricula";
@@ -208,20 +236,33 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       };
       return paso();
     }
-    // Ruleta: una vuelta y lo que falte hasta el elegido, frenando solo al final (≈2 s).
+    // Ruleta: una vuelta y lo que falte hasta el elegido. La lista se desliza de forma continua (fotograma a
+    // fotograma, sin saltos de casilla en casilla) y frena suavemente al final (≈2,2 s).
     const total = (((destino - sel) % n) + n) % n + n;
+    const dur = 1500 + total * 30;
+    const t0 = performance.now();
     let hechos = 0;
-    const paso = () => {
-      if (hechos === total) {
-        fichaLuego(0);
-        return final();
+    rueda.classList.add("arrastrando");
+    const frenar = (x) => 1 - Math.pow(1 - x, 3.2); // deprisa al principio, despacio al final
+    const paso = (ahora) => {
+      const x = Math.min(1, (ahora - t0) / dur);
+      const pos = frenar(x) * total;
+      const entero = Math.min(total, Math.floor(pos));
+      if (entero > hechos) {
+        sel = (((sel + entero - hechos) % n) + n) % n;
+        hechos = entero;
+        ultimoId = juegos[sel].id;
+        if (x < 0.85) navigator.vibrate?.(2);
+        contador.textContent = `${sel + 1} / ${n}`;
       }
-      mover(1, { espera: null });
-      hechos++;
-      const t = hechos / total;
-      setTimeout(paso, 28 + 210 * t ** 4); // muy deprisa casi todo el rato; frena en los últimos
+      colocar(x < 1 ? pos - entero : 0);
+      if (x < 1) return void requestAnimationFrame(paso);
+      rueda.classList.remove("arrastrando");
+      colocar(0);
+      fichaLuego(0);
+      final();
     };
-    paso();
+    requestAnimationFrame(paso);
   }
   function cambiarVista(v = vista === "rueda" ? "cuadricula" : "rueda", guardar = true) {
     vista = v;
@@ -528,7 +569,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     const paso = (ahora) => {
       const dt = Math.min(50, ahora - t);
       t = ahora;
-      actual += (objetivo - actual) * (1 - Math.exp(-dt / 75));
+      actual += (objetivo - actual) * (1 - Math.exp(-dt / 105));
       const entero = Math.round(actual);
       if (entero) {
         actual -= entero;

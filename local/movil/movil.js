@@ -11,7 +11,7 @@ import { idMovil } from "../comun/familia.js";
 
 vigilarEncaje(); // ningún número se sale de su casilla
 
-iniciarFondo({ espaciado: 30 });
+const fondo = iniciarFondo({ espaciado: 30 });
 const app = document.getElementById("app");
 const enApp = matchMedia("(display-mode: standalone), (display-mode: fullscreen)").matches || navigator.standalone;
 // Dentro de la app instalada (carcasa de GitHub Pages) el juego vive en el propio móvil.
@@ -90,11 +90,12 @@ async function inicio() {
           h("span.opcion-texto", "Batalla multijugador", h("small", "Con tus amigos, solo con los móviles")),
           h("span.opcion-flecha", { "aria-hidden": "true" }, "›")
         ),
+        // Pantalla grande: la TV o el ordenador se une a una sala para mirar (juegos, resultados y podio).
         h(
           "button.boton.opcion",
-          { type: "button", onclick: () => conPerfil(() => irParty()) },
+          { type: "button", onclick: () => batalla().verSala(iniciarVisor) },
           h("span.icono", "📺"),
-          h("span.opcion-texto", "Unirse a modo PARTY", h("small", "Con el código de la TV")),
+          h("span.opcion-texto", "Pantalla grande", h("small", "Mira una sala en la TV o el ordenador")),
           h("span.opcion-flecha", { "aria-hidden": "true" }, "›")
         ),
         avisoSolo
@@ -182,6 +183,32 @@ async function irSolo() {
     alSalir: inicio,
     // Desde la lista de juegos también se cambia el perfil (durante el juego, no).
     alPerfil: (volver) => editarPerfil(() => volver(perfil), () => volver(perfil)),
+  });
+}
+
+// ------------------------------------------------------------------ pantalla grande
+/** La TV o el ordenador mira una sala de Batalla: la misma vista que tenía la TV de PARTY, solo para mirar. */
+async function iniciarVisor(codigo) {
+  soltarBanner();
+  pantallaCompleta();
+  // Los estilos de la TV en lugar de los del móvil.
+  for (const l of document.querySelectorAll('link[rel="stylesheet"]')) if (/movil\/movil\.css/.test(l.href)) l.remove();
+  await new Promise((ok) => {
+    const l = Object.assign(document.createElement("link"), { rel: "stylesheet", href: new URL("../tv/tv.css", import.meta.url).href });
+    l.onload = l.onerror = ok;
+    document.head.append(l);
+  });
+  document.documentElement.classList.add("visor");
+  window.NYP_VISOR = true;
+  const [{ iniciarTV }, { conectarBatalla }] = await Promise.all([import("../tv/tv.js"), import("../comun/tiemporeal.js")]);
+  iniciarTV({
+    crearConexion: (o) => conectarBatalla({ codigo, ...o }),
+    fondo,
+    codigo,
+    alSalir: () => {
+      history.replaceState(null, "", location.pathname);
+      location.reload();
+    },
   });
 }
 
@@ -291,12 +318,15 @@ if (mismoSitio && !carcasa && "serviceWorker" in navigator && window.isSecureCon
 const sala = carcasa?.salaInicial ?? null;
 const directo = location.hash.includes("party") || sala;
 // El QR de una Batalla lleva #b=123456: quien lo escanea entra directo a esa sala.
-const salaBatalla = codigoBatalla(location.hash);
+const salaBatalla = /[#&]ver=/.test(location.hash) ? null : codigoBatalla(location.hash);
+// Enlace de la pantalla grande: #ver=123456 abre directamente la vista de esa sala.
+const salaVer = location.hash.match(/[#&]ver=(\d{6})/)?.[1] ?? null;
 const paraInstalar = /instalar/.test(location.hash + location.search);
 if (location.hash) history.replaceState(null, "", location.pathname);
 
 function arrancar() {
-  if (salaBatalla) conPerfil(() => batalla().entrarSala(salaBatalla));
+  if (salaVer) iniciarVisor(salaVer);
+  else if (salaBatalla) conPerfil(() => batalla().entrarSala(salaBatalla));
   else if (directo) conPerfil(() => irPartyDirecto(sala));
   // La primera vez, lo primero es crear tu perfil.
   else if (!perfil) editarPerfil(inicio);
