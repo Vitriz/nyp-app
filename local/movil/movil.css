@@ -1598,3 +1598,78 @@ button.fila-j { appearance: none; cursor: pointer; }
 /* Inicio: botón del QR para descargar la app */
 .barra-inicio .boton-qr { margin-left: auto; font-size: 1.3rem; width: 2.9rem; height: 2.9rem; }
 .dicc-lema { margin: 0 0 0.5rem; color: var(--texto-suave); font-weight: 700; } .dicc-lema b { color: #fff; }
+
+/* ---------- Resultados: el juego y sus ajustes a la derecha del perfil (en la barra, que no se mueve) ---------- */
+.barra-sup > .info-partida { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 0.3rem; width: auto; }
+.barra-sup > .info-partida .info-partida-titulo { gap: 0.5rem; }
+.barra-sup > .info-partida .info-partida-ico { width: 2.1rem; height: 2.1rem; font-size: 1.25rem; border-radius: 0.6rem; }
+.barra-sup > .info-partida .info-partida-nombre {
+  font-size: 1.15rem; line-height: 1.08; text-shadow: none; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+/* En el móvil, sin títulos: «45 s» y «Difícil» ya se entienden */
+.barra-sup > .info-partida .info-partida-ajustes { display: flex; gap: 0.3rem; }
+.barra-sup > .info-partida .info-ajuste { flex-direction: row; border-radius: 999px; box-shadow: none; }
+.barra-sup > .info-partida .info-ajuste small { display: none; }
+.barra-sup > .info-partida .info-ajuste b { padding: 0.12rem 0.6rem; font-size: 0.85rem; }
+/* En el ordenador sí caben las casillas con su título */
+@media (min-width: 900px) {
+  .barra-sup > .info-partida { flex-direction: row; align-items: center; gap: 1rem; }
+  .barra-sup > .info-partida .info-partida-titulo { flex: 1; min-width: 0; }
+  .barra-sup > .info-partida .info-partida-ico { width: 2.8rem; height: 2.8rem; font-size: 1.7rem; }
+  .barra-sup > .info-partida .info-partida-nombre { font-size: 2rem; }
+  .barra-sup > .info-partida .info-ajuste { flex-direction: column; border-radius: 0.8rem; min-width: 7.5rem; box-shadow: 0 0.2rem 0 rgba(4, 12, 40, 0.4); }
+  .barra-sup > .info-partida .info-ajuste small { display: block; font-size: 0.66rem; padding: 0.22rem 0.4rem; }
+  .barra-sup > .info-partida .info-ajuste b { padding: 0.25rem 0.5rem 0.35rem; font-size: 1.1rem; }
+}
+/* Ventana del diccionario: cada acepción en su tarjeta */
+.dicc-caja { padding: 1.1rem; gap: 0.7rem; }
+.dicc-caja .records-cabeza { padding-bottom: 0.6rem; border-bottom: 1px solid rgba(170, 200, 255, 0.2); }
+.dicc-palabra { margin: 0; font-size: 1.6rem; }
+.dicc-lema { margin: 0 0 0.6rem; padding: 0.4rem 0.7rem; border-radius: 0.7rem; background: rgba(120, 160, 255, 0.14); font-size: 0.9rem; color: var(--texto-suave); font-weight: 700; }
+.dicc-lema b { color: #fff; letter-spacing: 0.03em; }
+.dicc-acepciones { display: flex; flex-direction: column; gap: 0.55rem; padding: 0; }
+.dicc-acepcion { padding: 0.65rem 0.8rem 0.7rem; border-radius: 0.9rem; background: rgba(6, 18, 56, 0.4); border: 1px solid rgba(170, 200, 255, 0.16); }
+.dicc-cab { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; }
+.dicc-num { width: 1.5rem; height: 1.5rem; flex: none; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(180deg, #fff, var(--ficha-2)); color: var(--ficha-texto); font-family: var(--fuente-ficha); font-size: 0.8rem; }
+.dicc-cab .dicc-etiqueta { margin: 0; }
+.dicc-texto { margin: 0; font-size: 1rem; line-height: 1.4; color: #eef4ff; }
+
+/* ---------- Botones de cerrar (rojos, con la X dibujada y centrada) y de volver (flecha estilizada) ---------- */
+.icono-btn.cerrar, .icono-btn.volver { position: relative; font-size: 0; color: transparent; border-radius: 50%; cursor: pointer; transition: transform 120ms var(--curva), filter 120ms; }
+.icono-btn.cerrar { background: linear-gradient(180deg, #ff8a80, #e5534b); border: 2px solid #ffb3ad; box-shadow: 0 0.2rem 0 rgba(90, 10, 10, 0.5); }
+.icono-btn.cerrar::before, .icono-btn.cerrar::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 46%; height: 0.17rem; border-radius: 0.2rem; background: #fff;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.icono-btn.cerrar::after { transform: translate(-50%, -50%) rotate(-45deg); }
+.icono-btn.volver { background: linear-gradient(180deg, #ffffff, var(--ficha-2)); border: 2px solid rgba(255, 255, 255, 0.7); box-shadow: 0 0.2rem 0 rgba(4, 12, 40, 0.45); }
+.icono-btn.volver::before {
+  content: ""; position: absolute; left: 54%; top: 50%; width: 30%; height: 30%;
+  border-left: 0.2rem solid var(--ficha-texto); border-bottom: 0.2rem solid var(--ficha-texto); border-radius: 0 0 0 0.12rem;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.icono-btn.cerrar:active, .icono-btn.volver:active { transform: translateY(0.12rem); box-shadow: none; }
+@media (hover: hover) { .icono-btn.cerrar:hover, .icono-btn.volver:hover { filter: brightness(1.08); } }
+
+/* ---------- Ordenador y móvil en horizontal: la barra del juego a todo el ancho (tu avatar arriba a la
+   izquierda, como en el resto de pantallas) y el juego centrado; Conexiones aprovecha el ancho ---------- */
+@media (orientation: landscape) and (min-width: 700px) {
+  .pantalla:has(> .barra-juego) { width: 100vw; padding-inline: 1.4rem; }
+  .pantalla:has(> .barra-juego) > .cuerpo-juego { width: var(--ancho); align-self: center; }
+  .pantalla:has(> .barra-juego) > .barra-juego { width: 100%; }
+  /* Conexiones: a la izquierda los grupos encontrados; a la derecha las palabras y los botones */
+  .pantalla:has(.cx) > .cuerpo-juego { width: min(100%, 72rem); }
+  .cx { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); grid-template-rows: auto minmax(0, 1fr) auto auto auto; column-gap: 2rem; row-gap: 0.6rem; align-content: start; }
+  .cx > .cx-cabeza { grid-column: 1 / -1; }
+  .cx > .cx-hallados { grid-column: 1; grid-row: 2 / span 4; align-self: start; }
+  .cx > .cx-rejilla { grid-column: 2; grid-row: 2; margin-top: 0; align-self: start; }
+  .cx > :not(.cx-cabeza):not(.cx-hallados):not(.cx-rejilla) { grid-column: 2; }
+  .cx .cx-palabra { aspect-ratio: 1.7; }
+}
+@media (orientation: landscape) and (min-width: 900px) {
+  .pantalla.pantalla-final:not(.res-party) { width: 100vw; padding-inline: 1.4rem; }
+  .pantalla.pantalla-final:not(.res-party) > .zona-final, .pantalla.pantalla-final:not(.res-party) > .bloqueo-final { width: min(100%, var(--ancho)); align-self: center; }
+}
+.sm-tema { padding: 0.1rem 0.6rem; border-radius: 999px; background: rgba(233, 199, 90, 0.18); color: var(--oro); font-weight: 800; font-size: 0.85rem; } .sm-tema b { color: #fff; }
+.capa-dicc .dicc-lema, .capa-dicc .dicc-acepcion { text-align: left; }

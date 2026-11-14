@@ -129,7 +129,7 @@ export function ventanaAyuda(juego, icono = "🎲") {
     h(
       "div.caja.tarjeta",
       { role: "dialog", "aria-label": `Cómo se juega a ${juego.nombre}` },
-      h("div.ayuda-cabeza", h("span.ayuda-icono", icono), h("h2", juego.nombre), h("button.icono-btn", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
+      h("div.ayuda-cabeza", h("span.ayuda-icono", icono), h("h2", juego.nombre), h("button.icono-btn.cerrar", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
       caja,
       h("ol.ayuda-pasos", a.pasos.map((p, i) => h("li", { style: { animationDelay: `${120 + i * 70}ms` } }, p))),
       a.puntos ? h("p.ayuda-linea", h("b", "🏆 "), a.puntos) : null,

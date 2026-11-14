@@ -248,7 +248,7 @@ export function ventanaHazanas(juegos, iconos) {
         "div.records-cabeza",
         h("h2", "🎖️ Hazañas"),
         h("span.hazanas-cuenta", `${total} / ${lista.length}`),
-        h("button.icono-btn", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")
+        h("button.icono-btn.cerrar", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")
       ),
       h("p.familia-nota", "Los retos más difíciles de cada juego. ¿Te atreves?"),
       h(

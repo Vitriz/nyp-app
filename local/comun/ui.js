@@ -211,7 +211,7 @@ function colorReloj(f) {
 }
 
 /** Tiempos de las pruebas (s). 0 = sin límite (como en servidor/util.js). */
-export const TIEMPOS = [30, 45, 60, 90, 120, 0];
+export const TIEMPOS = [30, 45, 60, 120, 0]; // (sin 90 s)
 export const SIN_LIMITE_MS = 12 * 3600 * 1000;
 export const msDuracion = (s) => (s > 0 ? s * 1000 : SIN_LIMITE_MS);
 /** «30 s», «2 min», «∞». */

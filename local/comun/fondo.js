@@ -110,7 +110,7 @@ export function iniciarFondo({ espaciado = 34, color = "150, 185, 255" } = {}) {
     quieto = false;
   });
   // La ola solo sale al tocar el fondo, nunca al pulsar botones, letras o campos.
-  const INTERACTIVO = "button, a, input, textarea, select, label, [role=button], .ficha, .juego-carta, .interruptor, .sin-onda";
+  const INTERACTIVO = "button, a, input, textarea, select, label, [role=button], .ficha, .juego-carta, .interruptor, .sin-onda, .capa-movil";
   window.addEventListener(
     "pointerdown",
     (e) => {

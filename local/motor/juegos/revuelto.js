@@ -8,7 +8,7 @@ export default {
   id: "revuelto",
   nombre: "Revuelto",
   categoria: "palabras",
-  duracion: 90,
+  duracion: 120,
   breve: "Separa las letras mezcladas en dos palabras.",
   descripcion: "Las letras de dos palabras están mezcladas (en difícil sobran 2). Lee las definiciones y escríbelas. Cada palabra vale 2; si pides su largo, 1. En grupo, pasar resta 1.",
 

@@ -176,7 +176,7 @@ export function pantallaGrupo({
     "section.grupo",
     h(
       "div.barra-sup",
-      h("button.icono-btn", { type: "button", onclick: () => (pararCamara(), alVolver()), "aria-label": "Volver" }, "←"),
+      h("button.icono-btn.volver", { type: "button", onclick: () => (pararCamara(), alVolver()), "aria-label": "Volver" }, "←"),
       h("span.nombre", titulo)
     ),
     baseLocal

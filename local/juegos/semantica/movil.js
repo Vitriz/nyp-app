@@ -61,7 +61,7 @@ export function montar(cuerpo, e, ctx) {
     return h(
       `div.sm-fila${nueva ? ".nueva" : ""}${x.pista ? ".pista" : ""}`,
       { style: { "--c": tp.c } },
-      h("span.sm-palabra", `${x.pista ? "💡 " : ""}${x.forma.toUpperCase()}`),
+      h("span.sm-palabra", `${x.salida ? "🧭 " : x.pista ? "💡 " : ""}${x.forma.toUpperCase()}`),
       h("span.sm-barra", h("i", { style: { width: `${llenado(x.puesto, d.total)}%` } })),
       h("span.sm-puesto", `${tp.e} #${x.puesto + 1}`)
     );
@@ -69,7 +69,10 @@ export function montar(cuerpo, e, ctx) {
 
   function pintar() {
     const n = d.intentos.filter((x) => !x.pista).length;
-    cabeza.replaceChildren(h("span", `${n} ${n === 1 ? "intento" : "intentos"}`), h("span.suave", `#1 = la secreta · hay ${d.total.toLocaleString("es-ES")}`));
+    cabeza.replaceChildren(
+      h("span", `${n} ${n === 1 ? "intento" : "intentos"}`),
+      d.tema ? h("span.sm-tema", "🧭 Tema: ", h("b", d.tema)) : h("span.suave", `#1 = la secreta · hay ${d.total.toLocaleString("es-ES")}`)
+    );
     const quedan = d.pistasMax - d.pistasUsadas;
     pista.textContent = quedan ? `💡 Pista (${quedan})` : "Sin pistas";
     pista.disabled = !quedan || Boolean(d.encontrada);
@@ -81,7 +84,12 @@ export function montar(cuerpo, e, ctx) {
     } else if (ultima) {
       const tp = temperatura(ultima.puesto, d.total);
       resultado.replaceChildren(fila(ultima, true), h("div.sm-temp", { style: { color: tp.c } }, tp.t));
-    } else resultado.replaceChildren(h("p.suave.sm-ayuda", "Prueba cualquier palabra: verás si está cerca (🔥) o lejos (🧊) del significado de la secreta."));
+    } else {
+      const salida = d.intentos.find((x) => x.salida);
+      resultado.replaceChildren(
+        h("p.suave.sm-ayuda", salida ? ["Para empezar: ", h("b", `🧭 ${salida.forma.toUpperCase()}`), ` está en el puesto #${salida.puesto + 1}. Prueba palabras parecidas para acercarte (🔥).`] : "Prueba cualquier palabra: verás si está cerca (🔥) o lejos (🧊) del significado de la secreta.")
+      );
+    }
     const orden = [...d.intentos].sort((a, b) => a.puesto - b.puesto);
     lista.replaceChildren(...orden.map((x) => fila(x)));
   }

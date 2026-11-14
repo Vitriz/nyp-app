@@ -40,7 +40,7 @@ export async function verPalabra(palabra) {
   const capa = h(
     "div.capa-movil.capa-dicc",
     { onclick: (ev) => ev.target === capa && cerrar() },
-    h("div.caja.tarjeta.dicc-caja", { role: "dialog", "aria-label": `Significado de ${palabra}` }, h("div.records-cabeza", titulo, h("button.icono-btn", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")), lista)
+    h("div.caja.tarjeta.dicc-caja", { role: "dialog", "aria-label": `Significado de ${palabra}` }, h("div.records-cabeza", titulo, h("button.icono-btn.cerrar", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")), lista)
   );
   document.body.append(capa);
   document.addEventListener("keydown", tecla);
@@ -53,12 +53,17 @@ export async function verPalabra(palabra) {
     lista.replaceChildren(h("p.suave", r.valida ? "✔ Palabra válida. No tenemos su definición guardada." : "No aparece en el diccionario del juego."));
     return;
   }
+  // Cada acepción en su tarjeta: número, de qué tipo o ámbito es y el texto.
   lista.replaceChildren(
-    ...(r.lema ? [h("p.dicc-lema", "Es una forma de ", h("b", `«${r.lema}»`), ":")] : []),
+    ...(r.lema ? [h("p.dicc-lema", "Forma de ", h("b", r.lema.toUpperCase()))] : []),
     h(
-      "ol.dicc-acepciones",
-      r.lista.map((x) =>
-        h("li", x.ambito || x.tipo ? h("span.dicc-etiqueta", x.ambito ?? TIPOS[x.tipo] ?? x.tipo) : null, h("span", x.texto))
+      "div.dicc-acepciones",
+      r.lista.map((x, i) =>
+        h(
+          "div.dicc-acepcion",
+          h("div.dicc-cab", h("span.dicc-num", String(i + 1)), x.ambito || x.tipo ? h("span.dicc-etiqueta", x.ambito ?? TIPOS[x.tipo] ?? x.tipo) : null),
+          h("p.dicc-texto", x.texto)
+        )
       )
     )
   );

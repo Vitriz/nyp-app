@@ -19,7 +19,7 @@ export function elegirNumero(titulo, valores, defecto) {
       { onclick: (ev) => ev.target === capa && cerrar(null) },
       h(
         "div.caja.tarjeta",
-        h("div.records-cabeza", h("h2", titulo), h("button.icono-btn", { type: "button", onclick: () => cerrar(null), "aria-label": "Cerrar" }, "✕")),
+        h("div.records-cabeza", h("h2", titulo), h("button.icono-btn.cerrar", { type: "button", onclick: () => cerrar(null), "aria-label": "Cerrar" }, "✕")),
         h("div.elegir-numero", valores.map((v) => h(`button.boton${v === defecto ? ".acento" : ".suave"}.grande`, { type: "button", onclick: () => cerrar(v) }, String(v))))
       )
     );
@@ -72,7 +72,7 @@ export function elegirAmbito(lista) {
       { onclick: (ev) => ev.target === capa && cerrar(null) },
       h(
         "div.caja.tarjeta",
-        h("div.records-cabeza", h("h2", "📚 Elige los temas"), h("button.icono-btn", { type: "button", onclick: () => cerrar(null), "aria-label": "Cerrar" }, "✕")),
+        h("div.records-cabeza", h("h2", "📚 Elige los temas"), h("button.icono-btn.cerrar", { type: "button", onclick: () => cerrar(null), "aria-label": "Cerrar" }, "✕")),
         h("p.ambito-ayuda", "Toca uno o varios: la partida mezcla palabras de todos los que marques."),
         h("div.ambito-generales", todos, h("button.boton.suave.ambito-azar", { type: "button", onclick: () => cerrar("azar") }, "🎲 Uno al azar")),
         h("div.ambitos", fichas),

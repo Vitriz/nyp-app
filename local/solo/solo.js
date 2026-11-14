@@ -158,7 +158,7 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
               title: "Clasificación",
             }, "🏆"),
             h("button.icono-btn.hazanas", { type: "button", onclick: () => ventanaHazanas(juegos, ICONOS), "aria-label": "Hazañas", title: "Hazañas" }, "🎖️"),
-            h("button.icono-btn", { type: "button", onclick: salir, "aria-label": "Volver al inicio" }, "✕")
+            h("button.icono-btn.cerrar", { type: "button", onclick: salir, "aria-label": "Volver al inicio" }, "✕")
           )
         ),
         selectorJuegos({
@@ -262,7 +262,7 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
     mostrar({
       el: h(
         "section.grupo",
-        h("div.barra-sup", h("button.icono-btn", { type: "button", onclick: lista, "aria-label": "Volver" }, "←"), h("span.nombre", "Desbloquear palabras")),
+        h("div.barra-sup", h("button.icono-btn.volver", { type: "button", onclick: lista, "aria-label": "Volver" }, "←"), h("span.nombre", "Desbloquear palabras")),
         h("p.grupo-ayuda", "🔒 Escribe la contraseña de la familia. Solo hace falta una vez."),
         campo.visor,
         aviso,
@@ -281,7 +281,7 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
         { onclick: (ev) => ev.target === capa && cerrar(null) },
         h(
           "div.caja.tarjeta",
-          h("div.records-cabeza", h("h2", titulo), h("button.icono-btn", { type: "button", onclick: () => cerrar(null), "aria-label": "Cerrar" }, "✕")),
+          h("div.records-cabeza", h("h2", titulo), h("button.icono-btn.cerrar", { type: "button", onclick: () => cerrar(null), "aria-label": "Cerrar" }, "✕")),
           h("div.elegir-numero", valores.map((v) => h(`button.boton${v === defecto ? ".acento" : ".suave"}.grande`, { type: "button", onclick: () => cerrar(v) }, String(v))))
         )
       );
@@ -454,7 +454,7 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
           h("span.icono-yo", fijo.hueco("cerrado")),
           // Sin límite de tiempo: en vez del reloj, un botón para acabar cuando quieras (y ver el resultado).
           meta.duracion ? reloj.el : h("button.boton.suave.sin-limite", { type: "button", onclick: terminar }, "∞ · Terminar 🏁"),
-          h("button.icono-btn", { type: "button", onclick: abandonar, "aria-label": "Dejar la partida" }, "✕")),
+          h("button.icono-btn.cerrar", { type: "button", onclick: abandonar, "aria-label": "Dejar la partida" }, "✕")),
         cuerpo
       ),
       desmontar: () => {
@@ -507,11 +507,10 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
     }
     const pantalla = h(
         "section.pantalla-final",
-        barra(),
+        // El juego y cómo se jugó (tiempo · nivel), a la derecha del perfil: fijo arriba aunque bajes.
+        barra(infoPartida(meta, meta.duracion, NOMBRES_NIVEL[meta.dificultad ?? "normal"])),
         h(
           "div.espera.final-solo.zona-final",
-          // El juego (en grande) y cómo se jugó, en dos casillas: tiempo y nivel.
-          infoPartida(meta, meta.duracion, NOMBRES_NIVEL[meta.dificultad ?? "normal"]),
           h(
             "div.final-cabeza",
             h(`div.puesto-grande.final-icono.aparece${record ? ".copa-record" : ""}`, record ? "🏆" : r.valor != null ? "👏" : "🙂"),

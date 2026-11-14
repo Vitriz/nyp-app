@@ -86,7 +86,7 @@ function hoja(titulo, ...hijos) {
   const capa = h(
     "div.capa-movil.capa-records",
     { onclick: (ev) => ev.target === capa && cerrar() },
-    h("div.caja.tarjeta", h("div.records-cabeza", h("h2", titulo), h("button.icono-btn", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")), ...hijos)
+    h("div.caja.tarjeta", h("div.records-cabeza", h("h2", titulo), h("button.icono-btn.cerrar", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")), ...hijos)
   );
   document.body.append(capa);
   return capa;

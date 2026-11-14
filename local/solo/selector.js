@@ -8,7 +8,7 @@ export const ICONOS = {
   "palabra-larga": "🔠", definicion: "📖", sopa: "🔍", revuelto: "🔀", paraulogico: "🐝", crucigrama: "✏️", conexiones: "🔗", semantica: "🔥", memoria: "📸", kenken: "🔢",
   "calculo-mental": "🧠", "llegar-resultado": "🎯", "mates-fugaces": "⚡", laberinto: "🧩", pulsador: "🔔", hilo: "🧵", coronas: "👑", parcelas: "📐", culebras: "🐍",
 };
-const PASO = 3.9; // rem entre elementos de la rueda
+const PASO = 3.9; // rem entre elementos de la rueda (se recalcula para que la lista llene su sitio)
 let ultimoId = null; // al volver, la rueda sigue en el último juego
 
 /**
@@ -141,12 +141,27 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
   );
   const rueda = h("div.sel-rueda", { role: "listbox", "aria-label": "Juegos" }, h("div.sel-guia"), items);
   // Cuántos juegos caben por encima y por debajo del elegido (la lista llega tan abajo como haya sitio).
+  // El paso entre juegos se ajusta para que quepa un número entero de casillas, de arriba abajo, sin
+  // medias casillas difuminadas en los bordes (casillas más grandes en el ordenador).
   let alcance = 3.5;
+  let paso = PASO;
+  let curva = 3;
   new ResizeObserver(() => {
-    const px = parseFloat(getComputedStyle(document.documentElement).fontSize) * PASO;
-    const nuevo = rueda.clientHeight ? Math.max(2.5, Math.min(n / 2, rueda.clientHeight / 2 / px)) : 3.5;
-    if (Math.abs(nuevo - alcance) > 0.05) {
+    const fs = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const alto = rueda.clientHeight;
+    if (!alto) return;
+    const ancho = innerWidth >= 900;
+    const objetivo = (ancho ? 5.4 : 4.6) * fs;
+    let k = Math.max(3, Math.round(alto / objetivo));
+    if (k % 2 === 0) k += alto / k > objetivo ? 1 : -1; // impar: el elegido en el centro
+    k = Math.max(3, Math.min(k, n % 2 ? n : n - 1));
+    const nuevoPaso = alto / k / fs;
+    const nuevo = (k - 1) / 2 + 0.45;
+    if (Math.abs(nuevo - alcance) > 0.05 || Math.abs(nuevoPaso - paso) > 0.02) {
       alcance = nuevo;
+      paso = nuevoPaso;
+      curva = ancho ? 5 : 3;
+      rueda.style.setProperty("--paso-item", `${paso}rem`);
       colocar();
     }
   }).observe(rueda);
@@ -210,30 +225,35 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       navigator.vibrate?.([20, 40, 60]);
     };
     if (vista === "cuadricula") {
-      // La luz recorre las casillas en orden: empieza deprisa y frena con suavidad hasta pararse en la
-      // elegida (la última casilla iluminada es siempre la que sale; nunca salta a otra al final).
-      const total = (((destino - sel) % n) + n) % n + n * 2;
-      const dur = 2600;
-      const t0 = performance.now();
-      const frenar = (x) => 1 - Math.pow(1 - x, 3); // deprisa al principio, despacio al final
-      let previa = -1;
-      const paso = (ahora) => {
-        const x = Math.min(1, (ahora - t0) / dur);
-        const i = (sel + Math.min(total, Math.round(frenar(x) * total))) % n;
-        if (i !== previa) {
-          if (previa >= 0) casillas[previa].classList.remove("sorteo");
-          casillas[i].classList.add("sorteo");
-          previa = i;
-          if (x < 0.9) navigator.vibrate?.(3);
+      // Se van iluminando casillas al azar, deprisa al principio y cada vez más despacio; la última que se
+      // ilumina es la elegida (se queda encendida y pasa a elegida, sin saltar a otra).
+      const SALTOS = 18;
+      let k = 0, previa = -1;
+      const espera = (i) => 45 + 520 * Math.pow(i / SALTOS, 2.6); // ms hasta el siguiente salto
+      const paso = () => {
+        let i = destino;
+        if (k < SALTOS) {
+          do i = Math.floor(Math.random() * n);
+          while (i === previa || (k === SALTOS - 1 && i === destino) || (n > 2 && k > SALTOS - 3 && Math.abs(i - destino) < 1));
         }
-        if (x < 1) return void requestAnimationFrame(paso);
-        casillas[i].classList.remove("sorteo");
-        ir(destino, false);
-        casillas[destino].classList.add("sorteo-fin");
-        setTimeout(() => casillas[destino].classList.remove("sorteo-fin"), 900);
-        final();
+        if (previa >= 0) casillas[previa].classList.remove("sorteo");
+        casillas[i].classList.add("sorteo");
+        previa = i;
+        if (k < SALTOS) {
+          navigator.vibrate?.(k > SALTOS - 4 ? 8 : 3);
+          setTimeout(paso, espera(k++));
+          return;
+        }
+        // La elegida: un momento encendida y pasa a ser el juego seleccionado.
+        setTimeout(() => {
+          casillas[i].classList.remove("sorteo");
+          ir(destino, false);
+          casillas[destino].classList.add("sorteo-fin");
+          setTimeout(() => casillas[destino].classList.remove("sorteo-fin"), 900);
+          final();
+        }, 450);
       };
-      return void requestAnimationFrame(paso);
+      return paso();
     }
     // Ruleta: una vuelta y lo que falte hasta el elegido. La lista se desliza de forma continua (fotograma a
     // fotograma, sin saltos de casilla en casilla) y frena suavemente al final (≈2,2 s).
@@ -427,11 +447,15 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       const d = d0 - desfase;
       const a = Math.abs(d);
       el.style.transition = salto ? "none" : "";
-      const ac = Math.min(a, 3.2);
-      el.style.transform = `translate(${(ac * ac * 0.5).toFixed(2)}rem, calc(-50% + ${d * PASO}rem)) scale(${1 - Math.min(a, 4) * 0.045})`;
-      // Los lejanos se leen (como poco ~55 %) y solo se desvanecen al salir por los bordes de la lista.
-      const borde = alcance - 0.5;
-      el.style.opacity = String(a <= borde ? Math.max(0.55, 1 - a * 0.12) : Math.max(0, (0.55 * (alcance + 0.1 - a)) / 0.6));
+      // Forma de «(»: un arco de círculo (el elegido, el más a la izquierda; los de los extremos, a la derecha).
+      const yMax = Math.max(1, alcance) * paso;
+      const radio = (yMax * yMax + curva * curva) / (2 * curva);
+      const y = Math.min(a, alcance + 1) * paso;
+      const x = radio - Math.sqrt(Math.max(0, radio * radio - y * y));
+      el.style.transform = `translate(${x.toFixed(2)}rem, calc(-50% + ${(d * paso).toFixed(3)}rem)) scale(${1 - Math.min(a, 5) * 0.03})`;
+      // Los lejanos se leen (como poco ~60 %) y solo se desvanecen al salir por los bordes de la lista.
+      const borde = alcance - 0.45;
+      el.style.opacity = String(a <= borde ? Math.max(0.6, 1 - a * 0.1) : Math.max(0, (0.6 * (alcance + 0.15 - a)) / 0.6));
       el.style.zIndex = String(10 - a);
       el.classList.toggle("elegido", d0 === 0);
       el.setAttribute("aria-selected", String(d0 === 0));
@@ -475,7 +499,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
 
   // ---- dedo / ratón: la rueda sigue al dedo; al soltar sigue girando un poco (inercia) y encaja.
   let arrastre = null;
-  const pasoPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) * PASO;
+  const pasoPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) * paso;
   // Inercia: al soltar deprisa, la rueda sigue girando de uno en uno y va frenando hasta pararse.
   let inercia = null;
   function pararInercia() {

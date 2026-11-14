@@ -3,11 +3,30 @@
 // definiciones del diccionario, calculada de antemano (herramientas/preparar_semantica.py).
 // Todos buscan la misma palabra. Gana quien la encuentre (con menos intentos y pistas); si nadie, quien
 // se haya quedado más cerca.
-import { cargarSemantica, clave } from "../lexico.js";
+import { cargarSemantica, cargarCrucigrama, clave } from "../lexico.js";
 import { nivelDificultad } from "../util.js";
 
 // Pistas: enseñan la palabra que está en ese puesto (cada vez más cerca). Menos en difícil.
 const PISTAS = [[500, 150, 40, 10], [500, 100, 20], [300]];
+
+// Palabra de salida (gratis, ya en la lista al empezar): en este puesto, más o menos, según el nivel.
+const SALIDA = [[25, 60], [80, 160], [200, 400]];
+
+/** Tema (ámbito del diccionario) de una palabra, si lo tiene: «Marina», «Música»… (o null). */
+let temas = null;
+function temaDe(c) {
+  try {
+    if (!temas) {
+      temas = new Map();
+      for (const [ambito, lista] of Object.entries(cargarCrucigrama() ?? {})) for (const [k] of lista) if (!temas.has(k)) temas.set(k, ambito);
+    }
+    const t = temas.get(c) ?? null;
+    if (!temas.size) temas = null; // el diccionario aún no estaba: se mira otra vez la próxima
+    return t;
+  } catch {
+    return null;
+  }
+}
 
 let cache = null; // { datos, indice: Map(clave -> i), vec: [Map], normas }
 function preparar() {
@@ -66,7 +85,8 @@ export default {
     // Fácil: la secreta es siempre una palabra muy común (de las 3000 más usadas).
     const facil = nivelDificultad(config) < 0 && c.datos.faciles?.length;
     const objetivo = azar.elegir(facil ? c.datos.faciles : c.datos.secretas);
-    return { objetivo, pistas: PISTAS[nivelDificultad(config) + 1], jugadores: {}, tabla: null };
+    const [a, b] = SALIDA[nivelDificultad(config) + 1];
+    return { objetivo, pistas: PISTAS[nivelDificultad(config) + 1], salida: azar.entero(a, b), jugadores: {}, tabla: null };
   },
 
   /** La clasificación se calcula la primera vez que hace falta (y se guarda en la ronda). */
@@ -76,7 +96,16 @@ export default {
   },
 
   estadoJugador(ronda, id) {
-    return (ronda.jugadores[id] ??= { intentos: [], pistas: 0, encontrada: null, ultimo: null, n: 0 });
+    if (ronda.jugadores[id]) return ronda.jugadores[id];
+    const j = (ronda.jugadores[id] = { intentos: [], pistas: 0, encontrada: null, ultimo: null, n: 0 });
+    // Para no empezar a ciegas: una palabra de salida a una distancia razonable (no cuenta como intento).
+    if (!ronda.sinDatos && ronda.salida != null) {
+      const c = preparar();
+      const t = this.tabla(ronda);
+      const i = t.orden[Math.min(ronda.salida, t.orden.length - 1)];
+      j.intentos.push({ i, forma: c.datos.formas[i], puesto: t.puesto[i], sim: Math.round(t.sim[i] * 100), pista: true, salida: true });
+    }
+    return j;
   },
 
   vistaJugador(ronda, id) {
@@ -91,6 +120,8 @@ export default {
       pistasMax: ronda.pistas.length,
       encontrada: j.encontrada,
       secreta: j.encontrada ? c.datos.formas[ronda.objetivo] : null,
+      // Pista de tema: el ámbito de la secreta (o, si no tiene, el de la palabra de salida).
+      tema: (ronda.tema ??= temaDe(c.datos.palabras[ronda.objetivo]) ?? temaDe(c.datos.palabras[j.intentos.find((x) => x.salida)?.i]) ?? ""),
     };
   },
 
@@ -98,7 +129,7 @@ export default {
     if (ronda.sinDatos) return { jugadores: {} };
     return {
       jugadores: Object.fromEntries(
-        Object.entries(ronda.jugadores).map(([id, j]) => [id, { mejor: j.intentos.length ? Math.min(...j.intentos.map((x) => x.puesto)) : null, n: j.intentos.length, encontrada: Boolean(j.encontrada) }])
+        Object.entries(ronda.jugadores).map(([id, j]) => [id, { mejor: j.intentos.some((x) => !x.salida) ? Math.min(...j.intentos.filter((x) => !x.salida).map((x) => x.puesto)) : null, n: j.intentos.length, encontrada: Boolean(j.encontrada) }])
       ),
     };
   },
@@ -137,7 +168,7 @@ export default {
   resultados(ronda, ids) {
     return ids.map((id) => {
       const j = ronda.jugadores[id];
-      if (!j || !j.intentos.length) return { id, valor: null, texto: "No jugó" };
+      if (!j || !j.intentos.some((x) => !x.salida)) return { id, valor: null, texto: "No jugó" };
       const n = j.intentos.filter((x) => !x.pista).length;
       if (j.encontrada) {
         const p = j.pistas ? ` · ${j.pistas} ${j.pistas === 1 ? "pista" : "pistas"}` : "";

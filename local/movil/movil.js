@@ -76,7 +76,7 @@ function ventanaDescarga() {
     { onclick: (ev) => ev.target === capa && cerrar() },
     h(
       "div.caja.tarjeta",
-      h("div.records-cabeza", h("h2", "📲 Descargar NYP"), h("button.icono-btn", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
+      h("div.records-cabeza", h("h2", "📲 Descargar NYP"), h("button.icono-btn.cerrar", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
       qr,
       h("p.suave", "Que lo escaneen con la cámara del móvil: les lleva a la página para instalar la app."),
       compartir

@@ -37,7 +37,7 @@ const tonoPct = (a, b) => (!b ? undefined : a / b >= 0.5 ? "bien" : "mal");
 /** Casillas de cada juego: [icono, etiqueta, valor, tono?]  (tono: "oro" | "bien" | "mal") */
 const POR_JUEGO = {
   "palabra-larga": (j) => [
-    ["🏅", "Mejor palabra", j.mejor ? j.mejor.forma.toUpperCase() : "—", "oro"],
+    ["🏅", "Mejor", j.mejor ? j.mejor.forma.toUpperCase() : "—", "oro"],
     ["📏", "Letras", j.mejor?.largo ?? 0],
     ["✅", "Válidas", j.validas?.length ?? 0, "bien"],
     ["✍️", "Intentos", j.intentos ?? 0],
@@ -57,7 +57,7 @@ const POR_JUEGO = {
     for (let k = 0; k + 1 < hechas.length; k += 2) if (hechas[k].ok && hechas[k + 1].ok) completos++;
     return [
       ["🔤", "Palabras", `${j.aciertos} / ${ronda.revueltos.length * 2}`, "oro"],
-      ["🧩", "Revueltos completos", completos, "bien"],
+      ["🧩", "Completos", completos, "bien"],
       ["⏭", "Pasados", Math.max(0, j.i - completos)],
       ...(j.ms != null ? [["⏱", "Tiempo", reloj(j.ms)]] : []),
     ];
@@ -65,7 +65,7 @@ const POR_JUEGO = {
   paraulogico: (j) => [
     ["⭐", "Puntos", j.puntos, "oro"],
     ["🔤", "Palabras", j.encontradas.length, "bien"],
-    ["📏", "La más larga", j.encontradas.reduce((m, w) => Math.max(m, String(w.forma ?? w.clave ?? w).length), 0) || "—"],
+    ["📏", "Larga", j.encontradas.reduce((m, w) => Math.max(m, String(w.forma ?? w.clave ?? w).length), 0) || "—"],
   ],
   crucigrama: (j, ronda) => {
     const n = Object.keys(j.resueltas ?? {}).length;
@@ -84,7 +84,7 @@ const POR_JUEGO = {
     const intentos = j.intentos.filter((x) => !x.pista);
     const mejor = Math.min(...intentos.map((x) => x.puesto), Infinity);
     return [
-      j.encontrada ? ["🎯", "Palabra secreta", "¡Encontrada!", "bien"] : ["🔥", "Lo más cerca", Number.isFinite(mejor) ? `#${mejor + 1}` : "—", "oro"],
+      j.encontrada ? ["🎯", "Secreta", "¡Encontrada!", "bien"] : ["🔥", "Cerca", Number.isFinite(mejor) ? `#${mejor + 1}` : "—", "oro"],
       ["✍️", "Intentos", intentos.length],
       ["💡", "Pistas", j.pistas],
     ];
@@ -93,7 +93,7 @@ const POR_JUEGO = {
     ["✅", "Aciertos", j.aciertos, "oro"],
     ["🃏", "Pruebas", j.i],
     ["🎯", "Acierto", porcentaje(j.aciertos, j.i), tonoPct(j.aciertos, j.i)],
-    ["⚡", "Respuesta media", media(j.ms, j.i)],
+    ["⚡", "Media", media(j.ms, j.i)],
   ],
   "calculo-mental": (j, ronda) => {
     const r = j.respuestas.filter(Boolean);
@@ -101,12 +101,12 @@ const POR_JUEGO = {
     return [
       ["✅", "Aciertos", `${ok.length} / ${ronda.cadenas.length}`, "oro"],
       ["❌", "Fallos", r.length - ok.length, r.length - ok.length ? "mal" : "bien"],
-      ["⚡", "Respuesta media", media(ok.reduce((s, x) => s + x.ms, 0), ok.length)],
+      ["⚡", "Media", media(ok.reduce((s, x) => s + x.ms, 0), ok.length)],
     ];
   },
   "llegar-resultado": (j, ronda) => [
     ["🎯", "Objetivo", ronda.objetivo, "oro"],
-    ["🔢", "Tu número", j.mejor?.valor ?? "—"],
+    ["🔢", "Tuyo", j.mejor?.valor ?? "—"],
     ["📐", "Distancia", j.mejor ? (j.mejor.dist === 0 ? "¡Exacto!" : j.mejor.dist) : "—", j.mejor?.dist === 0 ? "bien" : undefined],
     ["🧮", "Operaciones", j.mejor?.pasos?.length ?? j.ops?.length ?? 0],
   ],
@@ -116,15 +116,15 @@ const POR_JUEGO = {
     ["🎯", "Acierto", porcentaje(j.aciertos, j.aciertos + j.fallos), tonoPct(j.aciertos, j.aciertos + j.fallos)],
   ],
   laberinto: (j) => [
-    ["✅", "Cuentas bien", j.correctas, "oro"],
-    ["🧩", "Casillas puestas", Object.keys(j.puestos ?? {}).length],
+    ["✅", "Cuentas", j.correctas, "oro"],
+    ["🧩", "Puestas", Object.keys(j.puestos ?? {}).length],
     ...(j.ms != null ? [["⏱", "Tiempo", reloj(j.ms), "bien"]] : []),
   ],
   kenken: (j, ronda) => {
     const bien = kkBien(j, ronda).filter(Boolean).length;
     return [
-      ["✅", "Casillas bien", `${bien} / ${ronda.n * ronda.n}`, "oro"],
-      ["🧮", "Zonas que cuadran", `${kkJaulasBien(j, ronda)} / ${ronda.jaulas.length}`],
+      ["✅", "Casillas", `${bien} / ${ronda.n * ronda.n}`, "oro"],
+      ["🧮", "Zonas", `${kkJaulasBien(j, ronda)} / ${ronda.jaulas.length}`],
       ...(j.ms != null ? [["⏱", "Tiempo", reloj(j.ms), "bien"]] : []),
     ];
   },
@@ -137,7 +137,7 @@ const POR_JUEGO = {
     const sol = new Set(ronda.solucion);
     const puestas = j.marcas.filter((x) => x === 2).length;
     return [
-      ["👑", "Coronas bien", `${j.marcas.filter((x, k) => x === 2 && sol.has(k)).length} / ${ronda.n}`, "oro"],
+      ["👑", "Coronas", `${j.marcas.filter((x, k) => x === 2 && sol.has(k)).length} / ${ronda.n}`, "oro"],
       ["✕", "Marcas", j.marcas.filter((x) => x === 1).length],
       ...(j.ms != null ? [["⏱", "Tiempo", reloj(j.ms), "bien"]] : [["📍", "Puestas", puestas]]),
     ];
@@ -146,7 +146,7 @@ const POR_JUEGO = {
     const t = tableroParcelas(ronda);
     const bien = j.rects.filter((x) => t.valida(x) >= 0).length;
     return [
-      ["📐", "Rectángulos bien", `${bien} / ${ronda.pistas.length}`, "oro"],
+      ["📐", "Parcelas", `${bien} / ${ronda.pistas.length}`, "oro"],
       ["✏️", "Dibujados", j.rects.length],
       ...(j.ms != null ? [["⏱", "Tiempo", reloj(j.ms), "bien"]] : []),
     ];

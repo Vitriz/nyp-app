@@ -159,7 +159,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
       "div.barra-sup.barra-juego",
       icono,
       reloj.el,
-      h("button.icono-btn", { type: "button", onclick: preguntarSalir, "aria-label": "Salir de la partida" }, "✕")
+      h("button.icono-btn.cerrar", { type: "button", onclick: preguntarSalir, "aria-label": "Salir de la partida" }, "✕")
     );
     return { el, actualizar: (e) => banFijo(e.yo) };
   }
@@ -191,7 +191,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
       cabTitulo ? null : chipSala,
       batalla || cabTitulo ? null : pts,
       reloj?.el,
-      h("button.icono-btn", { type: "button", onclick: preguntarSalir, "aria-label": "Salir de la partida" }, "✕")
+      h("button.icono-btn.cerrar", { type: "button", onclick: preguntarSalir, "aria-label": "Salir de la partida" }, "✕")
     );
     return {
       el,
@@ -220,7 +220,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
       { onclick: (ev) => ev.target === capa && cerrar() },
       h(
         "div.caja.tarjeta",
-        h("div.records-cabeza", h("h2", "📲 Invitar a la sala"), h("button.icono-btn", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
+        h("div.records-cabeza", h("h2", "📲 Invitar a la sala"), h("button.icono-btn.cerrar", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
         qr,
         h("div.batalla-codigo-texto", h("small", "Código de la sala"), h("b", codigoBonito(c)), h("span.suave", "Que lo escaneen, o que entren en «Batalla multijugador → Unirse a sala» y escriban el código."))
       )
@@ -312,11 +312,14 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
             "div.ajuste-fila.ajuste-meta",
             h("span", "🏁 Gana quien llegue a"),
             h("div.meta-control", h("button.icono-btn", { type: "button", onclick: () => cambiar(-1), "aria-label": "Menos puntos" }, "−"), h("b", String(t.meta || rec)), h("button.icono-btn", { type: "button", onclick: () => cambiar(1), "aria-label": "Más puntos" }, "+")),
-            h("small.suave", n >= 2 ? `Recomendado: ${rec} para ${n} jugadores${metaTocada && t.meta !== rec ? " · " : ""}` : "Se ajusta cuando entre más gente", metaTocada && t.meta !== rec ? h("button.enlace", { type: "button", onclick: () => ((metaTocada = false), host("meta", { valor: rec })) }, "usar") : null)
+            // Solo si la cambiaste a mano: volver a la recomendada.
+            metaTocada && n >= 2 && t.meta !== rec
+              ? h("small.suave", `Recomendado: ${rec} · `, h("button.enlace", { type: "button", onclick: () => ((metaTocada = false), host("meta", { valor: rec })) }, "usar"))
+              : null
           ),
       e.equipos
         ? h("div.ajuste-fila", h("small.suave", "Toca a un jugador para cambiarlo de equipo"), h("button.boton.suave.mini", { type: "button", onclick: () => host("repartir") }, "🔀 Repartir"))
-        : null
+        : ""
     );
   }
 
@@ -538,9 +541,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
 
     resultados(e) {
       const mio = e.resultados?.find((r) => r.id === e.yo.id);
-      const barra = barraSuperior(e);
-      const NIVEL = { facil: "Fácil", normal: "Medio", dificil: "Difícil" };
-      const cabJuego = infoPartida(e.juego, e.juego.duracion, NIVEL[e.juego.dificultad ?? e.sala?.dificultad] ?? null);
+      const barra = barraSuperior(e, { titulo: true });
       const lista = e.resultados ?? [];
       const empate = (r) => r.puesto != null && lista.filter((x) => x.puesto === r.puesto).length > 1;
       // Tu partida, en una sola tarjeta: puesto, tu marca y los puntos que ganas.
@@ -569,7 +570,6 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
       const el = h(
         "section.res-party.pantalla-final",
         barra.el,
-        cabJuego,
         h("div.rp-col.zona-final", cabeza, siguiente),
         h("div.rp-cuerpo.zona-final", solucion, palabraPendiente(mio?.pendiente), ...filas)
       );
@@ -588,7 +588,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
       { onclick: (ev) => ev.target === capa && cerrar() },
       h(
         "div.caja.tarjeta.rp-ventana",
-        h("div.records-cabeza", h("div.rp-ventana-quien", avatar(r), h("h2", r.nombre)), h("button.icono-btn", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
+        h("div.records-cabeza", h("div.rp-ventana-quien", avatar(r), h("h2", r.nombre)), h("button.icono-btn.cerrar", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
         h("p.suave", r.texto),
         detalleJugador(det)
       )

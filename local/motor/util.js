@@ -1,7 +1,7 @@
 // Utilidades compartidas del servidor.
 
 /** Tiempos de las pruebas (en segundos). 0 = sin límite. */
-export const TIEMPOS = [30, 45, 60, 90, 120, 0];
+export const TIEMPOS = [30, 45, 60, 120, 0]; // (sin 90 s)
 /** Sin límite: la ronda dura hasta que todos acaban (con un tope muy largo por si acaso). */
 export const SIN_LIMITE_MS = 12 * 3600 * 1000;
 export const msDuracion = (s) => (s > 0 ? s * 1000 : SIN_LIMITE_MS);

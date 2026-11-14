@@ -462,7 +462,9 @@ html, body {
 .cx-estudio > small { color: var(--texto-suave); font-weight: 800; text-align: center; }
 .cx-estudio-tablero { display: flex; flex-direction: column; gap: 0.4rem; }
 .cx-estudio-titulo { font-size: 0.75rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texto-suave); }
-.cx-estudio .cx-franja.perdido::after { content: "No lo encontraste"; font-size: 0.7em; font-weight: 800; text-align: center; color: rgba(255, 255, 255, 0.75); }
+/* Al final: ✔ o ✘ en el título del grupo (sin frases) */
+.cx-estudio .cx-grupo-nombre::before { content: "✔"; display: inline-grid; place-items: center; width: 1.35em; height: 1.35em; margin-right: 0.4em; border-radius: 50%; background: #2fa36b; color: #fff; font-size: 0.85em; vertical-align: 0.05em; }
+.cx-estudio .cx-franja.perdido .cx-grupo-nombre::before { content: "✘"; background: #e5534b; }
 .cx-franja .cx-mini { font-size: 1em; }
 
 /* ---------- KenKen: zonas de color, cuenta «signo = resultado» y casillas siempre del mismo tamaño ---------- */

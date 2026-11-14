@@ -23,7 +23,7 @@ export function codigoBatalla(texto) {
  */
 export function crearBatalla({ app, perfil, mostrar, alVolver }) {
   const cabecera = (titulo, volver) =>
-    h("div.barra-sup", h("button.icono-btn", { type: "button", onclick: volver, "aria-label": "Volver" }, "←"), h("span.nombre", titulo));
+    h("div.barra-sup", h("button.icono-btn.volver", { type: "button", onclick: volver, "aria-label": "Volver" }, "←"), h("span.nombre", titulo));
 
   const avisoMenu = h("div.pl-aviso.mal");
   function menu() {

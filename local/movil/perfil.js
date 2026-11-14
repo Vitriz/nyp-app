@@ -72,7 +72,7 @@ export function recuperarPerfil() {
     const capa = h(
       "div.capa-movil",
       { onclick: (ev) => ev.target === capa && cerrar(null) },
-      h("div.caja.tarjeta", h("div.records-cabeza", h("h2", "☁️ ¿Quién eres?"), h("button.icono-btn", { type: "button", onclick: () => cerrar(null), "aria-label": "Cerrar" }, "✕")), lista)
+      h("div.caja.tarjeta", h("div.records-cabeza", h("h2", "☁️ ¿Quién eres?"), h("button.icono-btn.cerrar", { type: "button", onclick: () => cerrar(null), "aria-label": "Cerrar" }, "✕")), lista)
     );
     document.body.append(capa);
     leerJugadores()
@@ -176,7 +176,7 @@ function camaraCircular() {
       aviso,
       h(
         "div.cam-botones",
-        h("button.icono-btn.cam-lateral", { type: "button", onclick: () => cerrar(null), "aria-label": "Cancelar" }, "✕"),
+        h("button.icono-btn.cam-lateral.cerrar", { type: "button", onclick: () => cerrar(null), "aria-label": "Cancelar" }, "✕"),
         h("button.cam-disparo", { type: "button", onclick: disparar, "aria-label": "Hacer la foto" }),
         h("button.icono-btn.cam-lateral", { type: "button", onclick: () => ((frontal = !frontal), abrir().catch(() => {})), "aria-label": "Cambiar de cámara" }, "🔄")
       )
@@ -380,7 +380,7 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
   elegir("nombre");
   const el = h(
     "section.perfil",
-    h("div.barra-sup", alVolver || editando ? h("button.icono-btn", { type: "button", onclick: volver, "aria-label": "Volver" }, "←") : null, h("span.nombre", titulo), editando ? h("small.perfil-auto", "✔ Se guarda solo") : null),
+    h("div.barra-sup", alVolver || editando ? h("button.icono-btn.volver", { type: "button", onclick: volver, "aria-label": "Volver" }, "←") : null, h("span.nombre", titulo), editando ? h("small.perfil-auto", "✔ Se guarda solo") : null),
     vista,
     botonesPestaña,
     cuerpo,

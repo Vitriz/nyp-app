@@ -562,3 +562,9 @@
 .est-record span { font-size: 0.68rem; color: var(--texto-suave); font-weight: 700; }
 .familia-modo { display: block; font-size: 0.7rem; color: var(--texto-suave); font-weight: 700; }
 @media (max-width: 380px) { .est-cifras small { display: none; } }
+/* Rueda: casillas más grandes, que llenan la lista de arriba abajo (sin medias casillas en los bordes) */
+.sel-rueda { --paso-item: 3.9rem; mask-image: linear-gradient(transparent, #000 3%, #000 97%, transparent); -webkit-mask-image: linear-gradient(transparent, #000 3%, #000 97%, transparent); }
+.sel-rueda .sel-item { height: calc(var(--paso-item) - 0.55rem); font-size: 1.18rem; right: 0.4rem; }
+.sel-rueda .sel-item-icono { width: calc(var(--paso-item) - 0.2rem); height: auto; font-size: 2rem; }
+.sel-guia { height: var(--paso-item); }
+@media (min-width: 900px) { .sel-rueda .sel-item { font-size: 1.35rem; } .sel-rueda .sel-item-icono { font-size: 2.4rem; } }

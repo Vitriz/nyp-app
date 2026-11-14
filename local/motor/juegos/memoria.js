@@ -53,7 +53,7 @@ export default {
   id: "memoria",
   nombre: "Memoria fotográfica",
   categoria: "palabras",
-  duracion: 90,
+  duracion: 120,
   breve: "Mira las tarjetas, se tapan… ¿te acuerdas?",
   descripcion: "Se enseñan unas tarjetas unos segundos y se tapan. Luego: tócalas en orden, toca los pares o impares, di dónde estaba una palabra o un color, dónde había un hueco o cuál ha cambiado. Cada 4 pruebas, una tarjeta más. Gana quien acierte más.",
 
