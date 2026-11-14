@@ -50,7 +50,7 @@ export const TECLAS_NUMEROS = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "⌫
 
 /**
  * Tarjetas de jugadores para la TV con un número que rebota al cambiar.
- * valorDe(e, id) -> { valor, extra } | null
+ * valorDe(e, id) -> { valor, extra, total? } | null  (con total se dibuja una barra de progreso)
  */
 export function tarjetasJugadores(contenedor, ctx, valorDe) {
   const rejilla = h("div.mf-rejilla");
@@ -64,7 +64,8 @@ export function tarjetasJugadores(contenedor, ctx, valorDe) {
       if (!c) {
         const num = h("span.ficha", "0");
         const extra = h("span.pl-estado");
-        c = { el: h("div.mf-carta.tarjeta.aparece", avatar(j), h("span.nombre", j.nombre), extra, num), num, extra, valor: 0 };
+        const barra = h("span.mf-progreso", h("i"));
+        c = { el: h("div.mf-carta.tarjeta.aparece", { style: { "--c": j.color } }, avatar(j), h("span.mf-quien", h("span.nombre", j.nombre), extra, barra), num), num, extra, barra, valor: 0 };
         cartas.set(j.id, c);
         rejilla.append(c.el);
       }
@@ -77,6 +78,9 @@ export function tarjetasJugadores(contenedor, ctx, valorDe) {
         ctx.onda(r.left + r.width / 2, r.top + r.height / 2, 0.6);
       }
       c.extra.textContent = d?.extra ?? "";
+      // Con total (p. ej. 3 de 8 rectángulos), una barra de progreso bajo el nombre.
+      c.barra.classList.toggle("oculto", !d?.total);
+      if (d?.total) c.barra.firstChild.style.width = `${Math.min(100, (Number(d.valor) / d.total) * 100) || 0}%`;
       c.el.querySelector(".avatar").classList.toggle("desconectado", !j.conectado);
     }
   };

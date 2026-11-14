@@ -8,11 +8,11 @@ export function montar(cuerpo, e, ctx) {
   const t = crearTablero({ ...d, numeros: new Map(d.numeros) });
   t.pintar([], { cabeza: false });
   const lado = h("div.sopa-lado");
-  cuerpo.append(h("div.sopa-tv", h("div.puzle-tv", t.el), lado));
+  cuerpo.append(h("div.sopa-tv.puzle-escena", h("div.puzle-tv", h("span.puzle-tv-etiqueta", "🧩 El mismo tablero para todos"), t.el), lado));
   const actualizar = tarjetasJugadores(lado, ctx, (e, id) => {
     const j = e.datos?.jugadores?.[id];
     if (!j) return null;
-    return j.resuelto ? { valor: "✔", extra: "¡completo!" } : { valor: j.casillas, extra: `de ${d.n * d.n}` };
+    return j.resuelto ? { valor: "✔", extra: "¡completo!" } : { valor: j.casillas, total: d.n * d.n, extra: `${j.casillas}/${d.n * d.n} casillas` };
   });
   actualizar(e);
   return { actualizar };

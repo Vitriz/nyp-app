@@ -6,11 +6,11 @@ import { crearTablero } from "./rejilla.js";
 export function montar(cuerpo, e, ctx) {
   const d = e.datos;
   const lado = h("div.sopa-lado");
-  cuerpo.append(h("div.sopa-tv", h("div.puzle-tv", crearTablero(d).el), lado));
+  cuerpo.append(h("div.sopa-tv.puzle-escena", h("div.puzle-tv", h("span.puzle-tv-etiqueta", "🧩 El mismo tablero para todos"), crearTablero(d).el), lado));
   const actualizar = tarjetasJugadores(lado, ctx, (e, id) => {
     const j = e.datos?.jugadores?.[id];
     if (!j) return null;
-    return j.resuelto ? { valor: "✔", extra: "¡resuelto!" } : { valor: j.coronas, extra: `de ${d.n} 👑` };
+    return j.resuelto ? { valor: "✔", extra: "¡resuelto!" } : { valor: j.coronas, total: d.n, extra: `${j.coronas}/${d.n} coronas` };
   });
   actualizar(e);
   return { actualizar };

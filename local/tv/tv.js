@@ -1,7 +1,7 @@
 // Pantalla de la TV: la maneja el presentador con ratón y teclado.
 import { iniciarFondo } from "../comun/fondo.js";
 import { conectar } from "../comun/conexion.js";
-import { h, fotosMemoria, cambiarPantalla, avatar, crearReloj, TIEMPOS, msDuracion, textoSegundos, textoPuesto, textoCuenta, piezaCuenta, botonMantener, detalleJugador, vigilarEncaje, confeti } from "../comun/ui.js";
+import { h, rango, fotosMemoria, cambiarPantalla, avatar, crearReloj, TIEMPOS, msDuracion, textoSegundos, textoPuesto, textoCuenta, piezaCuenta, botonMantener, detalleJugador, vigilarEncaje, confeti } from "../comun/ui.js";
 import { selectorJuegos } from "../solo/selector.js";
 import { ICONOS_AMBITO } from "../comun/ambitos.js";
 import { svgQR } from "../comun/qr.js";
@@ -276,7 +276,7 @@ function botonSalirVisor() {
 
 /** ⏻ Salir de PARTY, arriba a la derecha (mantener pulsado para no salir sin querer). */
 function botonSalir() {
-  return window.nypParty ? botonMantener("⏻ Salir", () => window.nypParty.salir(), { clase: ".suave.salir" }) : undefined;
+  return botonSalirVisor();
 }
 
 /** El QR en una ventana encima (para quien llega tarde). */
@@ -285,6 +285,15 @@ function ventanaQR(e) {
   qr.actualizar(e);
   const capa = h("div.capa", { onclick: (ev) => ev.target === capa && capa.remove() }, h("div.capa-caja.capa-qr", qr.el, h("button.boton.acento", { onclick: () => capa.remove() }, "Cerrar")));
   document.body.append(capa);
+}
+
+/** Reglas de la sala para la tarjeta de la pantalla grande: [icono, texto]. */
+function reglasSala(t) {
+  return [
+    [{ individual: "🏆", equipos: "👥", torneo: "⚔️" }[t.modo] ?? "🎮", { individual: "Todos contra todos", equipos: `Por equipos (${t.equipos})`, torneo: "Torneo eliminatorio" }[t.modo] ?? ""],
+    t.modo === "torneo" ? ["❌", "Cae el último de cada juego"] : ["🏁", t.meta ? `Gana quien llegue a ${t.meta} puntos` : "Sin límite de puntos"],
+    t.pruebas === "azar" ? ["🎲", "Juegos al azar"] : ["👆", "El anfitrión elige los juegos"],
+  ];
 }
 
 function resumenSala(t) {
@@ -377,12 +386,13 @@ const PANTALLAS = {
     const equipos = listaEquipos();
     const resumen = h("div.sala-resumen");
     const codigo = h("span.codigo-mini");
+    const reglas = h("div.reglas.tarjeta");
     const izq = h(
       "section.lobby-izq",
       h("span.etiqueta", "Jugadores"),
       h("div.lobby-jugadores", jugadores.el, equipos.el),
       h("div.lobby-unirse", codigo, h("button.boton.suave.mini", { onclick: () => ventanaQR(estado) }, "📱 Ver QR")),
-      resumen
+      reglas
     );
     const lado = h("section.lado");
     const t = e.sala;
@@ -429,7 +439,7 @@ const PANTALLAS = {
         h(
           "div.visor-unirse.tarjeta",
           qr,
-          h("div.visor-texto", h("span.etiqueta", "Únete a la sala"), h("b.visor-codigo", `${visor.codigo.slice(0, 3)} ${visor.codigo.slice(3)}`), h("p.suave", "Escanea el QR o entra en NYP → «Batalla multijugador» → «Unirse a sala»."), h("p.suave.visor-espera", "El anfitrión elige los juegos desde su móvil."))
+          h("div.visor-texto", h("span.etiqueta", "Únete a la sala"), h("b.visor-codigo", `${visor.codigo.slice(0, 3)} ${visor.codigo.slice(3)}`), h("p.visor-paso", "Escanea el QR o escribe el código en ", h("b", "NYP")), h("p.suave.visor-espera", "El anfitrión elige los juegos desde su móvil."))
         )
       );
     } else {
@@ -445,10 +455,11 @@ const PANTALLAS = {
         codigo.textContent = e.red.codigo ? `Código: ${e.red.codigo}` : "";
         const t = e.sala;
         const campeon = t.campeon && e.jugadores.find((j) => j.id === t.campeon);
-        resumen.replaceChildren(
-          ...(campeon ? [h("div.campeon.tarjeta", "🏆 Campeón del torneo: ", h("b", campeon.nombre))] : []),
-          // El nivel se elige ahora en cada juego (en la rueda), así que no se enseña aquí.
-          ...resumenSala(t).filter((x) => !/^Dificultad/.test(String(x))).map((x) => h("span.chip-juego", x))
+        // Las reglas de la partida, juntas en una tarjeta (el nivel se elige en cada juego, no aquí).
+        reglas.replaceChildren(
+          h("span.etiqueta", "Reglas"),
+          ...(campeon ? [h("div.campeon", "🏆 Campeón: ", h("b", campeon.nombre))] : []),
+          ...reglasSala(t).map(([ico, txt]) => h("div.regla", h("span.regla-ico", ico), h("span", txt)))
         );
         jugadores.el.classList.toggle("oculto", Boolean(e.equipos));
         equipos.el.classList.toggle("oculto", !e.equipos);
@@ -619,7 +630,8 @@ const PANTALLAS = {
         )
       );
     }
-    const el = h("section", cabecera(e.juego.nombre, reloj.el), cuerpo, pie);
+    const jugandoTxt = h("span.chip-jugando");
+    const el = h("section", cabecera(e.juego.nombre, h("div.cabecera-der", jugandoTxt, reloj.el)), cuerpo, pie);
     let modulo = null;
     cargarModulo(e.juego.id).then((m) => {
       if (actual?.el !== el) return;
@@ -631,7 +643,7 @@ const PANTALLAS = {
       actualizar(e) {
         reloj.fijar(e.fin, e.fin - inicio);
         const conectados = e.jugadores.filter((j) => j.conectado).length;
-        pie.firstChild.textContent = `${conectados} jugando`;
+        jugandoTxt.textContent = `👥 ${conectados} jugando`;
         modulo?.actualizar(e);
       },
       desmontar() {
@@ -650,12 +662,12 @@ const PANTALLAS = {
       (e.resultados ?? []).map((r, i) =>
         h(
           `div.fila-res.tarjeta.aparece${r.puesto === 1 ? ".p1" : ""}${r.detalle?.length ? ".con-detalle" : ""}`,
-          { style: { animationDelay: `${(e.resultados.length - 1 - i) * 140}ms` } },
-          h("span.puesto", r.puesto ? medalla(r.puesto) : "–"),
+          { style: { animationDelay: `${(e.resultados.length - 1 - i) * 140}ms`, "--c": r.color } },
+          h("span.puesto", rango(r.puesto, { empate: (e.resultados ?? []).filter((x) => x.puesto === r.puesto).length > 1 })),
           avatar(r),
-          h("span", r.nombre),
+          h("span.res-nombre", r.nombre),
           h("span.detalle", r.texto),
-          h("span.suma", r.puntos ? `+${r.puntos}` : ""),
+          h(`span.suma${r.puntos ? "" : ".cero"}`, `+${r.puntos ?? 0}`),
           detalleJugador(r.detalle, { max: maxChips, clase: ".fila-respuestas" })
         )
       )
@@ -708,10 +720,13 @@ const PANTALLAS = {
         f.avatarEl(),
         f.animo === "gana" ? h("span.col-fiesta", "🎉") : f.animo === "pierde" ? h("span.col-lagrima", "💧") : null
       );
+      const gano = Math.round((f.puntos - f.antes) * 10) / 10;
+      const mas = gano > 0 ? h("span.col-mas", { style: { animationDelay: `${700 + i * 90}ms` } }, `+${gano.toLocaleString("es-ES")}`) : null;
+      if (gano > 0) setTimeout(() => relleno.classList.add("destello"), 600 + i * 90);
       const col = h(
         `div.col${f.eliminado ? ".eliminado" : ""}${(t.desempate ?? []).includes(f.id) ? ".desempate" : ""}`,
         { style: { "--c": f.color, animationDelay: `${i * 70}ms` } },
-        h("div.col-carril", relleno, cima),
+        h("div.col-carril", relleno, cima, mas),
         h("b.col-puntos", f.puntos.toLocaleString("es-ES")),
         h("span.col-nombre", f.eliminado ? `❌ ${f.nombre}` : f.nombre)
       );
@@ -725,8 +740,8 @@ const PANTALLAS = {
 
     const carrera = h(
       `div.carrera${filas.length > 7 ? ".muchos" : ""}`,
-      meta ? h("div.carrera-meta", h("span", `🏁 ${meta}`)) : null,
-      h("div.carrera-cols", columnas)
+      meta ? h("div.carrera-meta", h("span", `🏁 Meta: ${meta}`)) : null,
+      h("div.carrera-cols", { style: { "--n": filas.length } }, columnas)
     );
     const avisoArriba = t.campeon
       ? h("div.campeon.tarjeta.aparece", "🏆 ¡", h("b", nombreDe(t.campeon)), t.modo === "torneo" ? " gana el torneo!" : " gana la partida!")

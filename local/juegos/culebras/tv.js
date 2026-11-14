@@ -8,10 +8,10 @@ export function montar(cuerpo, e, ctx) {
   const t = crearTablero(d);
   t.pintar([]);
   const lado = h("div.sopa-lado");
-  cuerpo.append(h("div.sopa-tv", h("div.puzle-tv", t.el), lado));
+  cuerpo.append(h("div.sopa-tv.puzle-escena", h("div.puzle-tv", h("span.puzle-tv-etiqueta", "🐍 El mismo tablero para todos"), t.el), lado));
   const actualizar = tarjetasJugadores(lado, ctx, (e, id) => {
     const v = e.datos?.jugadores?.[id];
-    return v == null ? null : { valor: v, extra: `de ${d.total}` };
+    return v == null ? null : { valor: v, total: d.total, extra: `${v}/${d.total} palabras` };
   });
   actualizar(e);
   return { actualizar };

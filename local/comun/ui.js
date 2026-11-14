@@ -475,6 +475,16 @@ export function tituloJuego() {
   );
 }
 
+/**
+ * El puesto, igual en todas las pantallas: medalla de oro, plata o bronce (sin número dentro) para el
+ * podio y el número para el resto. empate: «=2º» cuando se comparte; sinPuntos: «–» si nadie ha puntuado.
+ */
+export function rango(p, { empate = false } = {}) {
+  if (p == null) return h("span.rango.sin", "–");
+  if (p <= 3) return h(`span.rango.medalla.m${p}`, { title: `${empate ? "Empate · " : ""}${p}º`, "aria-label": `${p}º${empate ? " (empate)" : ""}` }, empate ? h("i.rango-igual", "=") : null);
+  return h("span.rango.num", `${empate ? "=" : ""}${p}º`);
+}
+
 export function textoPuesto(p) {
   return p == null ? "–" : `${p}º`;
 }

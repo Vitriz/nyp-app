@@ -1446,3 +1446,57 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .batalla-gente .item.con-equipo { border-left: 0.35rem solid var(--eq); }
 .batalla-gente button.item { appearance: none; font: inherit; color: inherit; width: 100%; cursor: pointer; }
 .batalla-gente .item .n small.eq { display: block; font-size: 0.72rem; color: var(--texto-suave); font-weight: 700; }
+
+/* =====================================================================
+   Revisión de diseño · móvil: una sola fila de jugador, tu tarjeta y qué pasa después
+   ===================================================================== */
+/* Fila de jugador: puesto · avatar · nombre ……… dato · +puntos · total (72 px) */
+.fila-j {
+  display: grid; grid-template-columns: 2.2rem auto minmax(0, 1fr) auto auto auto; align-items: center; gap: 0.6rem;
+  min-height: 3.6rem; padding: 0.35rem 0.8rem 0.35rem 0.6rem; border-left: 0.35rem solid var(--c, transparent); text-align: left;
+  font: inherit; color: inherit; width: 100%;
+}
+button.fila-j { appearance: none; cursor: pointer; }
+.fila-j.yo { border-color: var(--oro); border-left-color: var(--c, var(--oro)); background: linear-gradient(90deg, rgba(233, 199, 90, 0.2), rgba(233, 199, 90, 0.06)); }
+.fila-j .avatar { font-size: 0.72rem; }
+.fila-j-pos { display: grid; place-items: center; font-size: 1.5rem; }
+.fila-j-pos .rango.num, .fila-j-pos .rango.sin { font-size: 1rem; }
+.fila-j-nombre { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fila-j-nombre small { display: block; font-size: 0.72rem; color: var(--texto-suave); font-weight: 700; }
+.fila-j-dato { color: #d6e2ff; font-weight: 700; font-size: 0.85rem; text-align: right; font-variant-numeric: tabular-nums; }
+.fila-j-mas { font-family: var(--fuente-ficha); color: var(--oro); font-size: 1.05rem; min-width: 2.2rem; text-align: right; }
+.fila-j-mas.cero { color: var(--texto-suave); opacity: 0.75; }
+.fila-j-pts { font-family: var(--fuente-ficha); font-size: 1.25rem; min-width: 2ch; text-align: right; }
+/* Las filas antiguas de la lista ya no se apilan en vertical */
+.lista-mini .item { flex-direction: row; align-items: center; }
+.sala-jugador .lista-mini { max-width: 32rem; margin-inline: auto; }
+
+
+/* Resultados: tu partida en una tarjeta, y debajo (o al lado, en el ordenador) todos */
+.pantalla.res-party { display: flex; flex-direction: column; gap: 0.8rem; }
+.rp-col { display: flex; flex-direction: column; gap: 0.7rem; flex: none; }
+.rp-tarjeta { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.9rem; padding: 0.8rem 1rem; }
+.rp-tarjeta.oro { background: linear-gradient(180deg, rgba(255, 228, 138, 0.3), rgba(233, 199, 90, 0.12)); border-color: var(--oro); }
+.rp-rango { font-size: 2.6rem; display: grid; place-items: center; min-width: 2.6rem; }
+.rp-rango .rango.num, .rp-rango .rango.sin { font-size: 1.6rem; }
+.rp-tu { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.rp-tu small { color: var(--texto-suave); font-weight: 800; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.rp-tu b { font-size: 1.1rem; line-height: 1.25; }
+.rp-gana { font-family: var(--fuente-ficha); font-size: 2rem; color: var(--oro); display: flex; flex-direction: column; align-items: center; line-height: 1; }
+.rp-gana small { font-size: 0.75rem; color: var(--texto-suave); }
+.rp-gana.cero { color: var(--texto-suave); }
+.rp-espera { display: flex; align-items: center; justify-content: center; gap: 0.6rem; margin: 0; padding: 0.7rem 1rem; border-radius: 0.9rem; background: rgba(120, 160, 255, 0.12); color: #d6e2ff; font-weight: 800; }
+.rp-espera-punto { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: #8ed3e6; animation: espera-late 1.2s ease-in-out infinite; }
+@keyframes espera-late { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.15); } }
+.rp-jugador { display: flex; flex-direction: column; gap: 0.35rem; flex: none; }
+.rp-jugador .respuestas { padding-left: 0.6rem; }
+.info-partida-chips { flex-wrap: nowrap; }
+/* En el ordenador: dos columnas (tu partida a la izquierda; todos a la derecha), sin el hueco vacío */
+@media (min-width: 900px) {
+  .pantalla.res-party { --ancho: min(100vw, 64rem); display: grid; grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: 1.4rem; }
+  .res-party > .barra-sup { grid-column: 1 / -1; }
+  .res-party > .rp-col { grid-column: 1; align-self: start; }
+  .res-party > .rp-cuerpo { grid-column: 2; }
+  .pantalla.sala-jugador { --ancho: min(100vw, 48rem); }
+}
+@media (prefers-reduced-motion: reduce) { .rp-espera-punto { animation: none; } }

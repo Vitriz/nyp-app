@@ -444,3 +444,76 @@ body { cursor: default; }
 .lobby-v4 .equipo-col { flex-direction: row; flex-wrap: wrap; align-content: flex-start; }
 .lobby-v4 .equipo-col > .equipo-cab { flex-basis: 100%; }
 .lobby-v4 .jugadores > .vacio.oculto { display: none; }
+
+/* =====================================================================
+   Pantalla grande · revisión de diseño (escala de TV, sin solapes ni recortes)
+   ===================================================================== */
+/* Cabecera: a la derecha, «N jugando» junto al reloj */
+.cabecera-der { display: flex; align-items: center; gap: 1.6rem; }
+.chip-jugando { font-size: 1.8rem; font-weight: 800; padding: 0.5rem 1.2rem; border-radius: 999px; background: rgba(120, 160, 255, 0.18); color: #e8eeff; white-space: nowrap; }
+
+/* Puzles en vivo: tablero y jugadores en dos columnas que nunca se pisan */
+.sopa-tv.puzle-escena { --lado: min(calc(100vh - 26rem), 56vw); display: grid; grid-template-columns: var(--lado) minmax(26rem, 1fr); gap: 3rem; align-items: start; height: auto; }
+.puzle-escena .puzle-tv { width: var(--lado); height: auto; container-type: normal; display: flex; flex-direction: column; gap: 0.8rem; align-items: stretch; }
+.puzle-escena .puzle-tv > .hilo, .puzle-escena .puzle-tv > .cor, .puzle-escena .puzle-tv > .pc, .puzle-escena .puzle-tv > .cul {
+  width: var(--lado); height: var(--lado); font-size: calc(var(--lado) / var(--n));
+}
+.puzle-tv-etiqueta { font-size: 1.7rem; font-weight: 800; color: var(--texto-suave); }
+.puzle-escena .sopa-lado { min-width: 0; padding-top: 1.4rem; overflow: visible; }
+.puzle-escena .sopa-lado .mf-rejilla { grid-template-columns: 1fr; gap: 1.2rem; }
+/* El tablero no deslumbra: algo más azulado, con marco oscuro y un resplandor suave */
+.puzle-tv > .hilo, .puzle-tv > .pc, .puzle-tv > .cul, .puzle-tv > .cor { filter: brightness(0.93) saturate(1.05); box-shadow: 0 0 0 0.5rem #0a1b4a, 0 0 3rem rgba(95, 183, 208, 0.35); }
+
+/* Tarjetas de jugador en vivo: color del jugador como acento, progreso con barra y cifras grandes */
+.mf-carta { border-left: 0.6rem solid var(--c, transparent); }
+.mf-quien { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.mf-quien .nombre { font-size: 2rem; }
+.mf-quien .pl-estado { font-size: 1.6rem; font-weight: 800; color: #cfe0ff; }
+.mf-progreso { display: block; height: 0.7rem; border-radius: 1rem; background: rgba(160, 190, 255, 0.18); overflow: hidden; }
+.mf-progreso i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--c, #5fb7d0), #ffd34d); transition: width 600ms var(--curva); }
+.mf-carta .avatar { flex: none; }
+
+
+/* Resultados: columnas fijas (puesto · avatar · nombre ……… marca · puntos), los puntos siempre visibles */
+.fila-res { grid-template-columns: 5rem 4.5rem minmax(0, 1fr) minmax(12rem, auto) 7rem; border-left: 0.6rem solid var(--c, transparent); }
+.fila-res .puesto { font-size: 3.2rem; display: grid; place-items: center; }
+.fila-res .res-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fila-res .detalle { text-align: right; color: #d6e2ff; font-variant-numeric: tabular-nums; }
+.fila-res .suma { font-family: var(--fuente-ficha); font-size: 2.6rem; text-align: right; }
+.fila-res .suma.cero { color: var(--texto-suave); opacity: 0.7; }
+/* La solución, entera: se ajusta a la altura que queda (nunca se corta por abajo) */
+.res-cuerpo .pl-resumen { overflow: visible; max-height: none; }
+.res-cuerpo .pl-resumen:has(.puzle-mini) { padding: 1.4rem 1.8rem 1.8rem; }
+.puzle-mini > .hilo, .puzle-mini > .cor, .puzle-mini > .pc, .puzle-mini > .cul { width: min(36rem, 100vh - 30rem); font-size: calc(min(36rem, 100vh - 30rem) / var(--n)); }
+.kk-resumen .kk { width: min(32rem, 100vh - 30rem); font-size: calc(min(32rem, 100vh - 30rem) / var(--n)); }
+
+/* Clasificación: carriles repartidos por todo el ancho, avatar siempre encima de la barra */
+.carrera-cols { justify-content: space-evenly; gap: 1.6rem; }
+.col { flex: 0 1 min(16rem, calc(80vw / var(--n, 2))); }
+.col-carril { width: 70%; }
+.col-relleno { min-height: 1rem; }
+.col-relleno.destello { animation: barra-destello 1200ms ease-out; }
+@keyframes barra-destello { 0%, 100% { filter: none; } 30% { filter: brightness(1.6) drop-shadow(0 0 1.2rem var(--c)); } }
+.col-cima { margin-bottom: 1rem; font-size: 3.2rem; }
+.col-mas { position: absolute; left: 50%; bottom: 40%; translate: -50% 0; font-family: var(--fuente-ficha); font-size: 3rem; font-weight: 900; color: var(--oro); text-shadow: 0 0.1em 0.3em rgba(4, 12, 40, 0.6); opacity: 0; animation: sube-mas 1800ms ease-out forwards; z-index: 3; }
+@keyframes sube-mas { 0% { opacity: 0; transform: translateY(1rem) scale(0.6); } 25% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-8rem); } }
+.col-puntos { font-size: 3.4rem; }
+.col-nombre { font-size: 2.1rem; }
+.carrera-meta span { font-size: 2.2rem; top: -3rem; padding: 0.1rem 0.8rem; border-radius: 0.6rem; background: rgba(10, 27, 74, 0.85); }
+@media (prefers-reduced-motion: reduce) { .col-mas { animation: none; opacity: 1; } .col-relleno.destello { animation: none; } }
+
+/* Sala: «Jugadores» en horizontal; reglas en una tarjeta legible; QR grande y cerca */
+.lobby-v4 .lobby-izq { grid-template-columns: 1fr auto; grid-template-rows: auto auto; row-gap: 0.8rem; align-items: start; }
+.lobby-v4 .lobby-izq > .etiqueta { grid-column: 1; grid-row: 1; writing-mode: horizontal-tb; transform: none; font-size: 1.6rem; }
+.lobby-v4 .lobby-jugadores { grid-column: 1; grid-row: 2; margin-top: -1rem; }
+.lobby-v4 .lobby-unirse { grid-column: 2; grid-row: 3; }
+.reglas { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: 0.7rem; padding: 1.2rem 1.6rem; min-width: 26rem; }
+.reglas .etiqueta { font-size: 1.4rem; }
+.regla { display: flex; align-items: center; gap: 0.8rem; font-size: 1.8rem; font-weight: 800; color: #eef4ff; }
+.regla-ico { width: 2.6rem; height: 2.6rem; display: grid; place-items: center; border-radius: 0.8rem; background: rgba(255, 255, 255, 0.92); font-size: 1.5rem; flex: none; }
+.reglas .campeon { font-size: 1.8rem; }
+.lobby-v4 .lado { align-items: start; }
+.visor-unirse { margin-top: 1rem; }
+.visor-qr { width: 26rem; height: 26rem; }
+.visor-paso { font-size: 2rem; margin: 0; color: #eef4ff; }
+.visor-texto .visor-espera { font-size: 1.6rem; }

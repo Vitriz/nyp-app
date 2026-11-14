@@ -595,3 +595,13 @@ html, body {
 .victoria-trofeo { display: inline-block; font-size: 3.2em; animation: trofeo-brilla 1.6s ease-in-out infinite; filter: drop-shadow(0 0 0.4em rgba(255, 211, 77, 0.7)); }
 @keyframes trofeo-brilla { 0%, 100% { transform: scale(1) rotate(-4deg); } 50% { transform: scale(1.12) rotate(4deg); } }
 @media (prefers-reduced-motion: reduce) { .podio-sitio { animation: none; opacity: 1; } .podio-corona, .victoria-trofeo { animation: none; } }
+
+/* Rango: medalla (oro, plata, bronce) para el podio y número para el resto — igual en móvil y TV */
+.rango { display: inline-grid; place-items: center; font-family: var(--fuente-ficha); font-weight: 900; }
+.rango.medalla { width: 1em; height: 1em; border-radius: 50%; position: relative; box-shadow: inset 0 -0.08em 0 rgba(0, 0, 0, 0.25), inset 0 0.06em 0 rgba(255, 255, 255, 0.6), 0 0.06em 0.2em rgba(4, 12, 40, 0.5); }
+.rango.medalla::after { content: ""; position: absolute; inset: 22%; border-radius: 50%; border: 0.05em solid rgba(255, 255, 255, 0.55); }
+.rango.m1 { background: radial-gradient(circle at 35% 30%, #fff6c8, #f4c430 45%, #b8860b); }
+.rango.m2 { background: radial-gradient(circle at 35% 30%, #ffffff, #c9d1dd 45%, #7d8798); }
+.rango.m3 { background: radial-gradient(circle at 35% 30%, #ffe0c2, #d48a4a 45%, #8a4b1c); }
+.rango-igual { font-style: normal; font-size: 0.5em; color: #0a1b4a; position: relative; z-index: 1; }
+.rango.num, .rango.sin { color: var(--texto-suave); }

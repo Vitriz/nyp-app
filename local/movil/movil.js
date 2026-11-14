@@ -2,8 +2,6 @@
 import { iniciarFondo } from "../comun/fondo.js";
 import { h, cambiarPantalla, bannerFijo, servidor, vigilarEncaje, tituloJuego } from "../comun/ui.js";
 import { cargarPerfil, pantallaPerfil } from "./perfil.js";
-import { entrarParty } from "./party.js";
-import { pantallaGrupo, resolverSala } from "./grupo.js";
 import { crearBatalla, codigoBatalla } from "./batalla.js";
 import { actualizarPaquete } from "../solo/paquete.js";
 import { subirLuego } from "../comun/nube.js";
@@ -146,33 +144,6 @@ function conPerfil(siguiente) {
 // ------------------------------------------------------------------ batalla, partida y solo
 const batalla = () => (soltarBanner(), crearBatalla({ app, perfil, mostrar, alVolver: inicio }));
 
-function irParty(aviso = "") {
-  soltarBanner(); // PARTY lleva su propio banner
-  pantallaCompleta();
-  const p = pantallaGrupo({
-    baseLocal,
-    aviso,
-    alVolver: inicio,
-    alEntrar: (base) => {
-      carcasa?.alConectar?.(base); // la app instalada se actualiza con la versión de PARTY
-      entrarParty({ app, base, perfil, alSalir: inicio, alPaquete: cambioPaquete });
-    },
-  });
-  mostrar(p.el);
-}
-
-/** Abierta desde el QR de la TV: entramos directo a esa partida. */
-async function irPartyDirecto(texto) {
-  soltarBanner();
-  pantallaCompleta();
-  const base = texto ? await resolverSala(texto) : baseLocal;
-  if (base) {
-    carcasa?.alConectar?.(base);
-    return entrarParty({ app, base, perfil, alSalir: inicio, alPaquete: cambioPaquete });
-  }
-  irParty("No encuentro esa partida. ¿Está abierta en la TV?");
-}
-
 async function irSolo() {
   pantallaCompleta();
   const { entrarSolo } = await import("../solo/solo.js");
@@ -314,9 +285,6 @@ if (mismoSitio && !carcasa && "serviceWorker" in navigator && window.isSecureCon
 }
 
 // ------------------------------------------------------------------ arranque
-// El QR de la TV lleva #party: quien lo escanea entra directo a la partida.
-const sala = carcasa?.salaInicial ?? null;
-const directo = location.hash.includes("party") || sala;
 // El QR de una Batalla lleva #b=123456: quien lo escanea entra directo a esa sala.
 const salaBatalla = /[#&]ver=/.test(location.hash) ? null : codigoBatalla(location.hash);
 // Enlace de la pantalla grande: #ver=123456 abre directamente la vista de esa sala.
@@ -327,7 +295,6 @@ if (location.hash) history.replaceState(null, "", location.pathname);
 function arrancar() {
   if (salaVer) iniciarVisor(salaVer);
   else if (salaBatalla) conPerfil(() => batalla().entrarSala(salaBatalla));
-  else if (directo) conPerfil(() => irPartyDirecto(sala));
   // La primera vez, lo primero es crear tu perfil.
   else if (!perfil) editarPerfil(inicio);
   else inicio();

@@ -1,6 +1,6 @@
 // Modo partida: conectado a PARTY (la TV). Esperar, jugar y ver resultados.
 import { conectar, almacen } from "../comun/conexion.js";
-import { h, confeti, cambiarPantalla, avatar, banner, bannerFijo, fotosMemoria, TIEMPOS, crearReloj, msDuracion, textoSegundos, textoPuesto, textoCuenta, piezaCuenta, servidor, detalleJugador, finalLlegar, palabraPendiente } from "../comun/ui.js";
+import { h, rango, confeti, cambiarPantalla, avatar, banner, bannerFijo, fotosMemoria, TIEMPOS, crearReloj, msDuracion, textoSegundos, textoPuesto, textoCuenta, piezaCuenta, servidor, detalleJugador, finalLlegar, palabraPendiente } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { actualizarPaquete } from "../solo/paquete.js";
 import { mensajeRecords, guardarFamilia } from "../comun/familia.js";
@@ -270,6 +270,25 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
     return h("div.titulo-fichas", { style: { "--n": largo } }, texto.toUpperCase().split(" ").map((p) => h("div.palabra", [...p].map((l) => h("span.ficha", l)))));
   }
 
+  /**
+   * Fila de jugador, igual en todas las pantallas: puesto · avatar · nombre ……… dato · puntos.
+   * El color del jugador va como acento a la izquierda; tu fila, resaltada en dorado.
+   */
+  function filaJugador(j, { yo = false, puesto = null, empate = false, dato = null, puntos = null, mas = null, onclick = null, equipo = null } = {}) {
+    return h(
+      `${onclick ? "button" : "div"}.fila-j.tarjeta${yo ? ".yo" : ""}`,
+      { type: onclick ? "button" : undefined, onclick, style: { "--c": equipo?.color ?? j.color } },
+      h("span.fila-j-pos", rango(puesto, { empate })),
+      avatar(j),
+      h("span.fila-j-nombre", j.nombre, equipo ? h("small", equipo.nombre) : null),
+      dato != null ? h("span.fila-j-dato", dato) : null,
+      mas != null ? h(`span.fila-j-mas${mas ? "" : ".cero"}`, `+${mas}`) : null,
+      puntos != null ? h("b.fila-j-pts", String(puntos)) : null
+    );
+  }
+  /** Puesto que se enseña: «–» si nadie ha puntuado todavía; si hay empate, se marca. */
+  const puestoVisible = (lista, j) => (lista.every((x) => !x.puntos) ? { puesto: null } : { puesto: j.puesto, empate: lista.filter((x) => x.puesto === j.puesto).length > 1 });
+
   /** Puntos de victoria recomendados: que la partida dure unos 6-8 juegos (2 → 5, 3 → 8, 4 → 12…). */
   const metaRecomendada = (n) => (n <= 2 ? 5 : (n - 1) * 4);
   let metaTocada = false; // si el anfitrión la cambia a mano, ya no se ajusta sola
@@ -325,7 +344,6 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
       const puesto = h("p.suave");
       const lista = h("div.lista-mini");
       const equipos = h("div.elegir-equipo");
-      const grande = bannerVivo(".banner-grande");
       const mensaje = h("p.suave", "Esperando al presentador…");
       // Batalla: el anfitrión ve el código para invitar y elige el juego; los demás, quién hay en la sala.
       const esHostBatalla = batalla && e.esHost;
@@ -335,12 +353,11 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
       const ajustesSala = esHostBatalla ? h("div.batalla-ajustes.tarjeta") : null;
       const el = esHostBatalla
         ? h("section.batalla-sala", barra.el, ajustesSala, panelHost, h("div.batalla-gente", puesto, lista))
-        : h("section", barra.el, h("div.espera", grande.el, mensaje, equipos, puesto, lista));
+        : h("section.sala-jugador", barra.el, h("div.espera", mensaje, equipos, puesto, lista));
       return {
         el,
         actualizar(e) {
           barra.actualizar(e);
-          grande.actualizar(e.yo);
           const yo = e.jugadores.find((j) => j.id === e.yo.id);
           puesto.textContent = e.yo.puntos ? `Vas ${textoPuesto(yo?.puesto)} con ${e.yo.puntos} puntos` : "";
           const t = e.sala ?? {};
@@ -388,14 +405,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
               const q = e.equipos?.find((x) => x.id === j.equipo);
               // Por equipos, el anfitrión toca a un jugador para pasarlo al siguiente equipo.
               const mover = esHostBatalla && e.equipos ? () => host("moverEquipo", { id: j.id }) : null;
-              return h(
-                `${mover ? "button" : "div"}.item.tarjeta${j.id === e.yo.id ? ".yo" : ""}${q ? ".con-equipo" : ""}`,
-                { type: mover ? "button" : undefined, onclick: mover, style: q ? { "--eq": q.color } : {} },
-                h("span", textoPuesto(j.puesto)),
-                avatar(j),
-                h("span.n", j.nombre, q ? h("small.eq", q.nombre) : null),
-                h("span", `${j.puntos}`)
-              );
+              return filaJugador(j, { yo: j.id === e.yo.id, ...puestoVisible(top, j), puntos: j.puntos, onclick: mover, equipo: q });
             })
           );
         },
@@ -529,47 +539,37 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
       const mio = e.resultados?.find((r) => r.id === e.yo.id);
       const barra = barraSuperior(e, { titulo: true });
       const lista = e.resultados ?? [];
-      // Arriba, pequeño: tu puesto (con los puntos que ganas) y tus datos de la partida.
+      const empate = (r) => r.puesto != null && lista.filter((x) => x.puesto === r.puesto).length > 1;
+      // Tu partida, en una sola tarjeta: puesto, tu marca y los puntos que ganas.
       const cabeza = h(
-        "div.rp-cabeza",
-        h(
-          `div.rp-puesto.aparece${mio?.puesto === 1 ? ".oro" : ""}`,
-          h("span.rp-medalla", mio?.puesto ? medalla(mio.puesto) : "–"),
-          h("b", mio?.puesto ? `${mio.puesto}º` : "Sin puesto"),
-          mio?.puntos ? h("small", `+${mio.puntos} pts`) : null
-        ),
-        h("div.rp-datos", h("small", "Tu partida"), h("b", mio?.texto ?? "No has jugado"))
+        `div.rp-tarjeta.tarjeta.aparece${mio?.puesto === 1 ? ".oro" : ""}`,
+        h("span.rp-rango", rango(mio?.puesto, { empate: mio ? empate(mio) : false })),
+        h("div.rp-tu", h("small", mio?.puesto ? `${empate(mio) ? "Empate · " : ""}${mio.puesto}º puesto` : "Sin puesto"), h("b", mio?.texto ?? "No has jugado")),
+        h(`b.rp-gana${mio?.puntos ? "" : ".cero"}`, `+${mio?.puntos ?? 0}`, h("small", "pts"))
       );
-      // Lo importante: las respuestas. Las tuyas enteras y las de los demás (toca su fila para verlas todas).
-      const solucion =
-        e.juego.id === "llegar-resultado" ? finalLlegar(e.resumen, mio?.detalle) : null;
+      const solucion = e.juego.id === "llegar-resultado" ? finalLlegar(e.resumen, mio?.detalle) : null;
+      // Todos en filas iguales (la tuya resaltada); debajo, sus respuestas. Tocar una fila las enseña todas.
       const filas = lista.map((r) => {
         const yoMismo = r.id === e.yo.id;
         const det = yoMismo && r.pendiente ? r.detalle?.slice(0, -1) : r.detalle;
-        const abrir = () => ventanaRespuestas(r, det);
         return h(
-          `div.rp-jugador.tarjeta${yoMismo ? ".yo" : ""}`,
-          h(
-            "button.rp-fila",
-            { type: "button", onclick: abrir, disabled: !det?.length, "aria-label": `Ver las respuestas de ${r.nombre}` },
-            h("span.rp-pos", textoPuesto(r.puesto)),
-            avatar(r),
-            h("span.rp-nombre", r.nombre),
-            h("span.rp-texto", r.corto ?? r.texto),
-            det?.length ? h("span.rp-ver", "›") : null
-          ),
+          "div.rp-jugador",
+          filaJugador(r, { yo: yoMismo, puesto: r.puesto, empate: empate(r), dato: r.corto ?? r.texto, mas: r.puntos ?? 0, onclick: det?.length ? () => ventanaRespuestas(r, det) : null }),
           e.juego.id === "llegar-resultado" ? null : detalleJugador(det, { max: yoMismo ? Infinity : 10 })
         );
       });
+      // Qué pasa ahora: el anfitrión da paso; los demás esperan.
+      const siguiente =
+        batalla && e.esHost
+          ? h("div.pl-botones.batalla-siguiente", h("button.boton.acento.grande", { type: "button", onclick: () => host("siguiente") }, "Ver la clasificación ▶"))
+          : h("p.rp-espera", h("span.rp-espera-punto"), batalla ? "Esperando a que el anfitrión siga…" : "Mira la TV: enseguida, la clasificación");
       const el = h(
         "section.res-party",
         barra.el,
-        cabeza,
+        h("div.rp-col", cabeza, siguiente),
         h("div.rp-cuerpo", solucion, palabraPendiente(mio?.pendiente), ...filas)
       );
       if (mio?.puesto === 1) navigator.vibrate?.([60, 60, 120]);
-      // Batalla: el anfitrión pasa a la clasificación (y desde allí elige el siguiente juego).
-      if (batalla && e.esHost) el.append(h("div.pl-botones.batalla-siguiente", h("button.boton.acento.grande", { type: "button", onclick: () => host("siguiente") }, "Ver la clasificación ▶")));
       return { el, actualizar: (e) => barra.actualizar(e) };
     },
   };
