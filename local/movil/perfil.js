@@ -4,7 +4,7 @@ import { almacen } from "../comun/conexion.js";
 import { campoTexto } from "../comun/teclado.js";
 import { selectorColor } from "../comun/color.js";
 import { editarFoto, cuadrado, entera } from "./recorte.js";
-import { premiosGanados, hazanaDe, HAZANAS, leerHazanas } from "../solo/hazanas.js";
+import { premiosGanados, hazanaDe } from "../solo/hazanas.js";
 import { idMovil } from "../comun/familia.js";
 import { subirFoto, leerFotos, borrarFoto, leerJugadores, leerFicha, subirFicha } from "../comun/nube.js";
 
@@ -202,20 +202,9 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
     guardarPerfil({ ...p });
     return true;
   };
-  // Tu banner y, en el ordenador, debajo tus datos (rango, hazañas y juegos).
+  // Tu banner, en grande.
   const vistaBanner = h("div.perfil-banner");
-  const hechasN = Object.keys(leerHazanas()).length;
-  const rangoDe = (n) => (n >= 15 ? ["🏆", "Leyenda"] : n >= 10 ? ["🧭", "Explorador"] : n >= 5 ? ["🎒", "Aventurero"] : n >= 1 ? ["🌱", "Aprendiz"] : ["✨", "Recién llegado"]);
-  const [rIco, rNombre] = rangoDe(hechasN);
-  vista.append(
-    vistaBanner,
-    h(
-      "div.pasaporte-datos",
-      h("div.pasaporte-dato", h("span", rIco), h("small", "Rango"), h("b", rNombre)),
-      h("div.pasaporte-dato", h("span", "🎖️"), h("small", "Hazañas"), h("b", `${hechasN} / ${HAZANAS.length}`)),
-      h("div.pasaporte-dato", h("span", "🎮"), h("small", "Juegos"), h("b", "18 por descubrir"))
-    )
-  );
+  vista.append(vistaBanner);
   const pintarVista = () => {
     vistaBanner.replaceChildren(banner(p, ".banner-grande"));
     if (editando) {
@@ -395,11 +384,11 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
   const ICONOS_PESTAÑA = { nombre: "✍️", colores: "🎨", foto: "📸", premios: "🏅", cuenta: "🛡️" };
   // Cada pestaña con su título y una frase con personalidad (el viaje que empieza).
   const CABEZAS = {
-    nombre: ["¿Cómo te llamarán en la aventura?", "Tu nombre aparecerá en las clasificaciones y en la pantalla grande."],
-    colores: ["Los colores de tu expedición", "Elige el fondo, las letras y el contorno de tu banner."],
-    foto: ["Tu cara de explorador", "Una foto, un recorte de tu cabeza o tus iniciales."],
-    premios: ["Tu vitrina de trofeos", "Sombreros y animaciones que se ganan con las hazañas de «Jugar solo»."],
-    cuenta: ["Tu cuaderno de bitácora", "Copia en la nube, otro móvil o empezar de cero."],
+    nombre: ["Tu nombre en la lista de clase", "Así aparecerás en las clasificaciones y en la pantalla grande."],
+    colores: ["Los colores de tu facultad", "El fondo, las letras y el contorno de tu banner."],
+    foto: ["Tu foto de carné", "Una foto, un recorte de tu cabeza o tus iniciales."],
+    premios: ["Tu cuadro de honor", "Sombreros y animaciones que se ganan con las hazañas de «Jugar solo»."],
+    cuenta: ["Tu expediente", "Copia en la nube, otro móvil o empezar de cero."],
   };
   const paneles = {
     nombre: h("div.panel-perfil", campo.visor, campo.teclado),
@@ -430,13 +419,19 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
     // Al cambiar de pestaña, lo cambiado se guarda (y se sube a la nube).
     if (guardarLocal()) alCambiar?.({ ...p });
     const [t1, t2] = CABEZAS[k] ?? ["", ""];
-    cuerpo.replaceChildren(h("div.panel-cabeza", h("span.panel-cabeza-ico", ICONOS_PESTAÑA[k]), h("div", h("h3", t1), h("p", t2))), paneles[k]);
+    infoPestaña.replaceChildren(h("div", h("h3", t1), h("p", t2)));
+    cuerpo.replaceChildren(paneles[k]);
     botonesPestaña.querySelectorAll("button").forEach((b) => b.classList.toggle("activa", b.dataset.k === k));
   };
+  // Los botones (icono y nombre) y, debajo, en la misma barra, de qué va la pestaña elegida.
+  const infoPestaña = h("div.pestanas-info");
+  const nPestañas = Object.keys(pestañas).length;
+  botonesPestaña.style.gridTemplateColumns = `repeat(${nPestañas}, 1fr)`;
   botonesPestaña.append(
-    ...Object.entries(pestañas).map(([k, t], i) =>
-      h("button.pestana-viaje", { type: "button", "data-k": k, onclick: () => elegir(k) }, h("span.pestana-ico", ICONOS_PESTAÑA[k]), h("span.pestana-txt", h("small", `Paso ${i + 1}`), t))
-    )
+    ...Object.entries(pestañas).map(([k, t]) =>
+      h("button.pestana-viaje", { type: "button", "data-k": k, onclick: () => elegir(k) }, h("span.pestana-ico", ICONOS_PESTAÑA[k]), h("span.pestana-txt", t))
+    ),
+    infoPestaña
   );
 
   const guardar = () => {

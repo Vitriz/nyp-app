@@ -1960,3 +1960,12 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
   .pantalla.perfil .panel-perfil .tecla-l.borrar, .pantalla.perfil .panel-perfil .tecla-l.mayus { flex: 1.5; max-width: none; }
   .pantalla.perfil .panel-perfil .tecla-l.espacio { flex: 5; font-size: 1.1rem; }
 }
+/* La información de la pestaña elegida: dentro de la misma barra, debajo de los botones */
+.pestanas-info { grid-column: 1 / -1; display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0.6rem 0.25rem; margin-top: 0.1rem; border-top: 1px solid rgba(170, 200, 255, 0.2); text-align: left; }
+.pestanas-info h3 { margin: 0; font-family: var(--fuente-ficha); font-size: 0.98rem; line-height: 1.15; color: #fff; }
+.pestanas-info p { margin: 0.1rem 0 0; font-size: 0.78rem; font-weight: 700; color: #cfe0ff; }
+@media (orientation: landscape) and (min-width: 900px) {
+  .pantalla.perfil .pestanas-info { padding: 0.55rem 0.8rem 0.35rem; }
+  .pantalla.perfil .pestanas-info h3 { font-size: 1.1rem; }
+  .pantalla.perfil .pestanas-info p { font-size: 0.85rem; }
+}
