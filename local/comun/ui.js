@@ -98,7 +98,7 @@ export function avatar(j, extra = "") {
 export function iconoQR(clase = "") {
   const el = h(`span.icono-qr${clase}`, { "aria-hidden": "true" });
   el.innerHTML =
-    '<svg viewBox="0 0 21 21" width="1em" height="1em" fill="currentColor"><path d="M0 0h7v7H0zM2 2v3h3V2zM14 0h7v7h-7zm2 2v3h3V2zM0 14h7v7H0zm2 2v3h3v-3z" fill-rule="evenodd"/><path d="M9 0h2v2H9zM9 4h3v3H9zM9 9h3v2H9zM13 9h2v3h-2zM17 9h4v2h-4zM0 9h2v3H0zM4 9h3v2H4zM9 13h2v4H9zM12 14h3v2h-3zM16 13h2v2h-2zM19 13h2v4h-2zM13 18h2v3h-2zM16 17h3v2h-3zM9 19h3v2H9z"/></svg>';
+    '<svg viewBox="0 0 21 21" width="1em" height="1em" fill="currentColor" shape-rendering="crispEdges"><path d="M0 0h7v7H0zM2 2v3h3V2zM14 0h7v7h-7zm2 2v3h3V2zM0 14h7v7H0zm2 2v3h3v-3z" fill-rule="evenodd"/><path d="M9 0h2v2H9zM9 4h3v3H9zM9 9h3v2H9zM13 9h2v3h-2zM17 9h4v2h-4zM0 9h2v3H0zM4 9h3v2H4zM9 13h2v4H9zM12 14h3v2h-3zM16 13h2v2h-2zM19 13h2v4h-2zM13 18h2v3h-2zM16 17h3v2h-3zM9 19h3v2H9z"/></svg>';
   return el;
 }
 

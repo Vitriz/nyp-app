@@ -10,13 +10,13 @@
 // choques se miran entre parejas (19 × 18 / 2 = 171 comprobaciones, nada) y el bucle de animación solo corre
 // mientras alguna letra está fuera de su sitio.
 
-const VUELTA_MS = 4000;
+const VUELTA_MS = 2500; // sin tocar ninguna letra este tiempo, vuelven a su sitio
 const VUELTA_DURA = 1600; // lo que tarda cada letra en volver (con suavidad)
 const suave = (p) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2); // entra y sale despacio
 const REBOTE = 0.88; // en los choques se conserva casi toda la energía (como en el billar)
 // Muelle que lleva la letra agarrada hacia el dedo (rigidez y amortiguación: algo de retraso, poco vaivén).
 const MUELLE = 380;
-const SOLTAR = 1.5; // si el dedo se aleja de la letra más de 1,5 veces su tamaño, se suelta (yendo muy rápido, se escapa)
+const SOLTAR = 2.6; // si el dedo se aleja de la letra más de 1,5 veces su tamaño, se suelta (yendo muy rápido, se escapa)
 const FRENO = 2 * Math.sqrt(MUELLE) * 0.62;
 
 export function tituloVivo(titulo, { alExpulsar = null } = {}) {
@@ -34,12 +34,18 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
   // que en el móvil (≈ 1 en un móvil normal).
   const escala = () => Math.max(0.85, Math.hypot(innerWidth, innerHeight) / 950);
 
-  /** Centro de cada letra en su sitio (sin el desplazamiento) y su radio para los choques. */
+  /**
+   * Centro de cada letra en su sitio y su radio para los choques. Se mide con la maqueta (offsetLeft/Top):
+   * no cuenta el desplazamiento ni el ondeo, que sigue siempre en marcha por debajo. Así, al volver, cada
+   * letra cae justo donde el ondeo la tiene en ese momento (todas a la vez, como si nunca se hubieran ido).
+   */
   function casas() {
-    return fichas.map((el, k) => {
-      const r = el.getBoundingClientRect();
-      return { x: r.left + r.width / 2 - est[k].x, y: r.top + r.height / 2 - est[k].y, radio: (Math.min(el.offsetWidth, el.offsetHeight) / 2) * 0.9 };
-    });
+    const t = titulo.getBoundingClientRect();
+    return fichas.map((el) => ({
+      x: t.left + titulo.clientLeft + el.offsetLeft + el.offsetWidth / 2,
+      y: t.top + titulo.clientTop + el.offsetTop + el.offsetHeight / 2,
+      radio: (Math.min(el.offsetWidth, el.offsetHeight) / 2) * 0.9,
+    }));
   }
 
   // Alcance de un toque cerca de las letras: unos 2 cm (1 cm ≈ 38 px de CSS). Cuanto más lejos, menos.
@@ -69,6 +75,7 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
       s.vr += (dx / Math.max(r.width, 1)) * 160 * f;
     });
     if (tocadas) navigator.vibrate?.(8);
+    return tocadas;
   }
 
   /** Choques entre letras: se separan y se reparten la velocidad (la agarrada empuja sin frenarse). */
@@ -283,23 +290,21 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
   });
   const soltar = (ev) => {
     if (!agarre || ev.pointerId !== agarre.id) return;
-    const { k, movida, t0, pt } = agarre;
+    const { k, movida, pt } = agarre;
     const agarreSoltado = agarre;
     const s = est[k];
     fichas[k].classList.remove("agarrada");
     titulo.classList.remove("agarrando");
     agarre = null;
     sinClicHasta = performance.now() + 450; // el clic llega justo después de soltar
-    if (movida < 6 && ev.timeStamp - t0 < 350) {
-      // Un toque rápido sin arrastrar: un golpecito solo a esa letra.
-      s.vx = s.vy = 0;
-      golpe(ev.clientX, ev.clientY, { solo: k });
-    } else {
-      // Lanzamiento: sale con la velocidad y la dirección que llevaba la letra (más el último empujón del
-      // dedo): rápido si iba rápido, despacio si iba despacio.
-      const quieto = ev.timeStamp - pt > 90;
+    // Solo sale lanzada si la estabas moviendo al soltarla, y tanto más cuanto más deprisa iba la letra.
+    // Cogerla y soltarla sin moverla (o con el dedo ya quieto) la deja donde está.
+    const quieto = movida < 6 || ev.timeStamp - pt > 90;
+    if (quieto) s.vx = s.vy = 0;
+    else {
       const { fvx = 0, fvy = 0 } = agarreSoltado;
-      if (!quieto) (s.vx += fvx * 0.35), (s.vy += fvy * 0.35); // su inercia, más el último empujón del dedo
+      s.vx += fvx * 0.25;
+      s.vy += fvy * 0.25;
       const tope = 4500 * escala();
       const v = Math.hypot(s.vx, s.vy);
       if (v > tope) (s.vx *= tope / v), (s.vy *= tope / v);
@@ -317,8 +322,7 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
     if (ev.target.closest?.(".titulo-nyp .ficha, button, a, input, textarea, select, label, [role=button], .capa-movil")) return;
     const r = titulo.getBoundingClientRect();
     if (ev.clientX < r.left - ALCANCE || ev.clientX > r.right + ALCANCE || ev.clientY < r.top - ALCANCE || ev.clientY > r.bottom + ALCANCE) return;
-    golpe(ev.clientX, ev.clientY);
-    arrancar();
+    if (golpe(ev.clientX, ev.clientY)) arrancar(); // un toque que no mueve ninguna letra no cuenta
   }
   document.addEventListener("pointerdown", cerca);
 }

@@ -62,8 +62,15 @@ export function iniciarFondo({ espaciado = 34, color = "150, 185, 255" } = {}) {
     for (let k = 0; k < vivas.length - 40; k++) vivas[k].apagar = t0;
   }
 
+  // Pase lo que pase en un fotograma, el siguiente se pide igual (si no, los puntos desaparecerían para siempre).
   function dibujar(ms) {
-    if (calma && quieto) return requestAnimationFrame(dibujar);
+    try {
+      pintarFotograma(ms);
+    } catch {}
+    requestAnimationFrame(dibujar);
+  }
+  function pintarFotograma(ms) {
+    if (calma && quieto) return;
     if (calma) {
       ondas.length = 0;
       quieto = true;
@@ -101,7 +108,8 @@ export function iniciarFondo({ espaciado = 34, color = "150, 185, 255" } = {}) {
       let extra = 0, mejor = -1, mejorV = 0;
       for (let k = 0; k < ondas.length; k++) {
         const o = ondas[k];
-        const dt = t - o.t0;
+        // (El tiempo del fotograma puede ser un pelín anterior al del toque: nunca negativo.)
+        const dt = Math.max(0, t - o.t0);
         const d = Math.hypot(x - o.x, y - o.y);
         const z = (d - dt * vel) / grosor;
         // Entra y sale con suavidad (sin golpe al principio) y se apaga al final de su vida.
@@ -113,8 +121,8 @@ export function iniciarFondo({ espaciado = 34, color = "150, 185, 255" } = {}) {
         extra += v;
         if (v > mejorV) (mejorV = v), (mejor = k);
       }
-      extra = Math.min(1.8, extra); // con muchas ondas juntas, un tope (para que no tapen los textos)
-      r += extra * rMax * 1.05;
+      extra = Math.min(1.8, Math.max(0, extra)); // con muchas ondas juntas, un tope (para que no tapen los textos)
+      r = Math.max(0.5, r + extra * rMax * 1.05); // un radio negativo rompería el dibujo (y el fondo se quedaría vacío)
       if (mejor >= 0 && mejorV > 0.12) {
         const nivel = mejorV > 0.6 ? 2 : mejorV > 0.3 ? 1 : 0;
         const camino = tenidos[mejor][nivel];
@@ -133,7 +141,6 @@ export function iniciarFondo({ espaciado = 34, color = "150, 185, 255" } = {}) {
         ctx.fill(tenidos[k][nivel]);
       })
     );
-    requestAnimationFrame(dibujar);
   }
 
   medir();

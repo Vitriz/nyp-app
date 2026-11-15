@@ -1543,7 +1543,7 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
 .ambito-jugar:disabled { opacity: 0.55; }
 
 /* Inicio: botón del QR para descargar la app */
-.barra-inicio .boton-qr { margin-left: auto; font-size: 1.3rem; width: 2.9rem; height: 2.9rem; }
+
 .dicc-lema { margin: 0 0 0.5rem; color: var(--texto-suave); font-weight: 700; } .dicc-lema b { color: #fff; }
 
 /* ---------- Resultados: el juego y sus ajustes a la derecha del perfil (en la barra, que no se mueve) ---------- */
@@ -1659,7 +1659,8 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
 .inicio .titulo-nyp .ficha { transition: scale 120ms var(--curva), filter 120ms; }
 .inicio .titulo-nyp .ficha.agarrada { z-index: 3; scale: 1.12; filter: drop-shadow(0 0.5rem 0.6rem rgba(4, 12, 40, 0.55)); }
 /* Mientras juegas con las letras, su ondeo se queda en pausa (así sus sitios no se mueven y los choques son exactos) */
-.inicio .titulo-nyp .ficha.suelta { animation-play-state: paused; } /* solo la que se mueve; las demás siguen ondeando */
+/* El ondeo no se para nunca (ni al moverlas): así, al volver, cada letra cae justo en su punto de la ola */
+.inicio .titulo-nyp { position: relative; }
 
 /* =====================================================================
    Perfil en el ordenador (y móvil en horizontal): dos columnas, sin desplazamientos de móvil.
@@ -1955,14 +1956,14 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
 .icono-qr { display: inline-grid; place-items: center; line-height: 0; }
 .icono-qr svg { display: block; }
 .barra-inicio .boton-qr {
-  appearance: none; margin-left: auto; display: inline-flex; align-items: center; gap: 0.5rem; height: 2.9rem; padding: 0 0.9rem 0 0.45rem;
+  appearance: none; margin-left: auto; display: inline-flex; align-items: center; gap: 0.5rem; width: auto; height: 2.9rem; padding: 0 1rem 0 0.75rem; white-space: nowrap; flex: none;
   border-radius: 999px; font: inherit; font-weight: 900; font-size: 0.95rem; color: var(--texto); cursor: var(--cursor-mano, pointer);
   background: linear-gradient(180deg, #2d58b0, #1f4594); border: 1px solid rgba(170, 200, 255, 0.45); box-shadow: 0 0.2rem 0 rgba(4, 12, 40, 0.5);
 }
-.barra-inicio .boton-qr .icono-qr { width: 2.1rem; height: 2.1rem; border-radius: 0.55rem; background: #fff; color: #0a1b4a; font-size: 1.35rem; box-shadow: inset 0 0 0 2px rgba(10, 27, 74, 0.08); }
+.barra-inicio .boton-qr .icono-qr { font-size: 1.45rem; color: #fff; filter: drop-shadow(0 0.08rem 0 rgba(4, 12, 40, 0.5)); }
 .barra-inicio .boton-qr:active { transform: translateY(0.12rem); box-shadow: none; }
 @media (max-width: 380px) { .barra-inicio .boton-qr span:not(.icono-qr) { display: none; } .barra-inicio .boton-qr { padding: 0 0.4rem; } }
-.batalla-chip-qr .icono-qr, .batalla-chip-qr.icono-qr { width: 2.4rem; height: 2.4rem; border-radius: 0.6rem; background: #fff; color: #0a1b4a; font-size: 1.5rem; box-shadow: 0 0.15rem 0 rgba(4, 12, 40, 0.4); }
+.batalla-chip-qr .icono-qr { font-size: 1.7rem; color: #fff; filter: drop-shadow(0 0.08rem 0 rgba(4, 12, 40, 0.5)); }
 /* Invitación a una sala (QR abierto con la cámara, sin la app) */
 .invitacion { justify-content: center; gap: 1.6rem; }
 .invitacion-caja { display: flex; flex-direction: column; align-items: stretch; gap: 0.7rem; padding: 1.3rem; width: min(100%, 26rem); text-align: center; }
