@@ -202,21 +202,19 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
     guardarPerfil({ ...p });
     return true;
   };
-  // El «pasaporte» del viajero: tu banner y, en el ordenador, tus datos de la aventura.
+  // Tu banner y, en el ordenador, debajo tus datos (rango, hazañas y juegos).
   const vistaBanner = h("div.perfil-banner");
   const hechasN = Object.keys(leerHazanas()).length;
   const rangoDe = (n) => (n >= 15 ? ["🏆", "Leyenda"] : n >= 10 ? ["🧭", "Explorador"] : n >= 5 ? ["🎒", "Aventurero"] : n >= 1 ? ["🌱", "Aprendiz"] : ["✨", "Recién llegado"]);
   const [rIco, rNombre] = rangoDe(hechasN);
   vista.append(
-    h("div.pasaporte-cabeza", h("span.pasaporte-sello", "NYP"), h("div", h("small", "Pasaporte de viajero"), h("b", editando ? "Tu aventura sigue" : "Tu gran viaje empieza aquí"))),
     vistaBanner,
     h(
       "div.pasaporte-datos",
       h("div.pasaporte-dato", h("span", rIco), h("small", "Rango"), h("b", rNombre)),
       h("div.pasaporte-dato", h("span", "🎖️"), h("small", "Hazañas"), h("b", `${hechasN} / ${HAZANAS.length}`)),
       h("div.pasaporte-dato", h("span", "🎮"), h("small", "Juegos"), h("b", "18 por descubrir"))
-    ),
-    h("div.pasaporte-ruta", { "aria-hidden": "true" }, ["📖", "🔢", "🧩", "🧠", "🏆"].map((e, i) => h(`span${i <= Math.min(4, Math.floor(hechasN / 4)) ? ".hecho" : ""}`, e)))
+    )
   );
   const pintarVista = () => {
     vistaBanner.replaceChildren(banner(p, ".banner-grande"));

@@ -1932,3 +1932,31 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
   .rec-avatar-redondo, .rec-previa-vacia { width: 3.8rem; height: 3.8rem; }
   .rec-herr { min-height: 2.6rem; font-size: 0.85rem; }
 }
+
+/* ---------- Perfil (revisión): menos adornos, pestañas separadas y teclado que llena su sitio ---------- */
+/* Cabecera de cada pestaña, discreta: una línea con icono */
+.panel-cabeza { padding: 0.4rem 0.7rem; margin-bottom: 0.6rem; gap: 0.55rem; border-left-width: 0.2rem; }
+.panel-cabeza-ico { font-size: 1.15rem; }
+.panel-cabeza h3 { font-size: 0.98rem; }
+.panel-cabeza p { font-size: 0.78rem; margin-top: 0.05rem; }
+/* Pestañas: cada una es un botón propio dentro de la barra (con su separación) */
+.pestanas:has(.pestana-viaje) { gap: 0.35rem; }
+.pestanas .pestana-viaje { background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(170, 200, 255, 0.28); }
+.pestanas .pestana-viaje:not(.activa):hover { background: rgba(255, 255, 255, 0.13); }
+.pestanas .pestana-viaje.activa { border-color: #fff3b0; }
+@media (orientation: landscape) and (min-width: 900px) {
+  /* Sin pasaporte ni ruta: tu banner en grande y tus datos debajo, sin marco */
+  .pasaporte-cabeza, .pasaporte-ruta { display: none !important; }
+  .pantalla.perfil > .perfil-vista { background: none; border: 0; box-shadow: none; padding: 0; justify-content: center; gap: 1.6rem; }
+  .pantalla.perfil > .perfil-vista .banner-grande { font-size: 2rem; }
+  .perfil-banner { flex: none; min-height: 0; }
+  .pantalla.perfil .panel-cabeza { padding: 0.5rem 0.9rem; }
+  .pantalla.perfil .panel-cabeza h3 { font-size: 1.1rem; }
+  .pantalla.perfil .panel-cabeza p { font-size: 0.85rem; }
+  /* Teclado: llena el ancho y es más alto (en tablet y móvil en horizontal se usa con el dedo) */
+  .pantalla.perfil .panel-perfil .teclado-letras { width: 100%; max-width: none; gap: 0.5rem; margin-top: 0.4rem; }
+  .pantalla.perfil .panel-perfil .fila-teclas { gap: 0.5rem; }
+  .pantalla.perfil .panel-perfil .tecla-l { flex: 1; max-width: none; height: clamp(3rem, 9dvh, 4.6rem); font-size: 1.5rem; border-radius: 0.8rem; }
+  .pantalla.perfil .panel-perfil .tecla-l.borrar, .pantalla.perfil .panel-perfil .tecla-l.mayus { flex: 1.5; max-width: none; }
+  .pantalla.perfil .panel-perfil .tecla-l.espacio { flex: 5; font-size: 1.1rem; }
+}
