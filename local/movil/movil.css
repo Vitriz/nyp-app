@@ -1706,3 +1706,10 @@ button.fila-j { appearance: none; cursor: pointer; }
    overflow-y: clip recorta sin hacer la pantalla desplazable y deja que salgan por los lados. */
 .pantalla.inicio { overflow-x: visible; overflow-y: clip; }
 @media (max-height: 480px) { .pantalla.inicio { overflow-y: auto; } } /* pantallas muy bajas: que se pueda bajar */
+/* La letra agarrada del título: por encima de las demás y un poco más grande, como levantada */
+.inicio .titulo-nyp .ficha { position: relative; }
+/* Sin transiciones en su posición (la mueve la física, fotograma a fotograma): solo el «levantarla» se anima */
+.inicio .titulo-nyp .ficha { transition: scale 120ms var(--curva), filter 120ms; }
+.inicio .titulo-nyp .ficha.agarrada { z-index: 3; scale: 1.12; filter: drop-shadow(0 0.5rem 0.6rem rgba(4, 12, 40, 0.55)); }
+/* Mientras juegas con las letras, su ondeo se queda en pausa (así sus sitios no se mueven y los choques son exactos) */
+.inicio .titulo-nyp.agitado .ficha { animation-play-state: paused; }

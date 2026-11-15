@@ -1,14 +1,19 @@
-// Título del inicio con letras que se pueden golpear: al tocarlas se apartan como si flotaran en un líquido
-// (frenan poco a poco y giran) y, con golpes fuertes, pueden salir de la pantalla; al arrastrar el dedo, lo
-// remueves. Si no se tocan en 4 segundos, cada letra vuelve despacio a su sitio y sigue ondeando.
+// Título del inicio con letras que se pueden agarrar y lanzar: al agarrar una, solo se mueve esa (sigue al
+// dedo) y, al soltarla, sale con la velocidad que llevaba. Las letras chocan entre ellas como bolas de billar
+// o bolos: una lanzada muy fuerte se lleva por delante a las demás (más o menos según la fuerza del golpe).
+// Flotan como en un líquido (frenan poco a poco y giran) y pueden salir de la pantalla. Un toque rápido sobre
+// una letra le da un golpecito; un toque cerca (a menos de ~2 cm) la aparta un poco.
+// Si no se tocan en 4 segundos, cada letra vuelve despacio a su sitio.
 // alExpulsar(): todas las letras fuera de la pantalla a la vez (hazaña «Machaca títulos»).
 //
-// Rendimiento: solo se mueven `translate` y `rotate` de unas 19 fichas (lo hace la tarjeta gráfica) y el
-// bucle de animación solo corre mientras alguna letra está fuera de su sitio.
+// Rendimiento: solo se mueven `translate` y `rotate` de unas 19 fichas (lo hace la tarjeta gráfica), los
+// choques se miran entre parejas (19 × 18 / 2 = 171 comprobaciones, nada) y el bucle de animación solo corre
+// mientras alguna letra está fuera de su sitio.
 
 const VUELTA_MS = 4000;
 const VUELTA_DURA = 1600; // lo que tarda cada letra en volver (con suavidad)
 const suave = (p) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2); // entra y sale despacio
+const REBOTE = 0.88; // en los choques se conserva casi toda la energía (como en el billar)
 
 export function tituloVivo(titulo, { alExpulsar = null } = {}) {
   if (!titulo || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -18,79 +23,139 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
   let ultimoToque = 0;
   let bucle = 0;
   let tAnterior = 0;
-  let pulsado = null; // { id, x, y, t }
-
-  const centro = (k) => {
-    const r = fichas[k].getBoundingClientRect();
-    return [r.left + r.width / 2, r.top + r.height / 2, r.width];
-  };
+  // La letra agarrada: { id (dedo), k, ox, oy (dónde la cogiste, respecto a su centro), px, py, t0, vx, vy, movida }
+  let agarre = null;
 
   // La fuerza va con el tamaño de la pantalla: en el ordenador las letras recorren lo mismo, en proporción,
   // que en el móvil (≈ 1 en un móvil normal).
   const escala = () => Math.max(0.85, Math.hypot(innerWidth, innerHeight) / 950);
 
-  // Alcance del golpe: unos 2 cm (1 cm ≈ 38 px de CSS). Si golpeas encima de la letra se mueve más; cerca
-  // de ella, menos cuanto más lejos. Siempre sale hacia el lado contrario a donde golpeaste (sin azar):
-  // golpe por debajo → hacia arriba; por la izquierda → hacia la derecha…
+  /** Centro de cada letra en su sitio (sin el desplazamiento) y su radio para los choques. */
+  function casas() {
+    return fichas.map((el, k) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2 - est[k].x, y: r.top + r.height / 2 - est[k].y, radio: (Math.min(el.offsetWidth, el.offsetHeight) / 2) * 0.9 };
+    });
+  }
+
+  // Alcance de un toque cerca de las letras: unos 2 cm (1 cm ≈ 38 px de CSS). Cuanto más lejos, menos.
   const ALCANCE = 76;
 
-  /** Golpe en (x, y): las letras cercanas salen despedidas en sentido contrario al golpe. */
-  function golpe(x, y, fuerza = 1) {
+  /** Golpe en (x, y): las letras indicadas (o todas las cercanas) salen en sentido contrario al golpe. */
+  function golpe(x, y, { solo = null, fuerza = 1 } = {}) {
     let tocadas = 0;
     const e = escala();
     fichas.forEach((el, k) => {
+      if (solo != null && k !== solo) return;
       const r = el.getBoundingClientRect();
       const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-      const dx = cx - x, dy = cy - y;
-      const d = Math.hypot(dx, dy);
-      // Distancia al borde de la letra (0 si el golpe cae encima).
+      let dx = cx - x, dy = cy - y;
+      let d = Math.hypot(dx, dy);
       const fuera = Math.hypot(Math.max(0, Math.abs(dx) - r.width / 2), Math.max(0, Math.abs(dy) - r.height / 2));
       if (fuera > ALCANCE) return;
-      const encima = fuera === 0;
-      // Encima: fuerza entera (más si cae lejos del centro, hacia su borde); fuera: baja con la distancia.
-      const f = (encima ? 1 : 0.55 * (1 - fuera / ALCANCE) ** 1.4) * fuerza;
-      if (f < 0.02 || d < 0.5) return;
+      const f = (fuera === 0 ? 1 : 0.55 * (1 - fuera / ALCANCE) ** 1.4) * fuerza;
+      if (f < 0.02) return;
+      if (d < 0.5) (dx = 0), (dy = 1), (d = 1); // justo en el centro: un saltito hacia arriba… o abajo, da igual
       tocadas++;
       const s = est[k];
-      s.vuelta = null; // si estaba volviendo, deja de volver
-      const impulso = 260 * f * e; // poco a poco: hacen falta varios golpes para echarlas
+      s.vuelta = null;
+      const impulso = 260 * f * e;
       s.vx += (dx / d) * impulso;
       s.vy += (dy / d) * impulso;
-      // Giro según dónde la golpeas: un golpe a un lado del centro la hace girar.
       s.vr += (dx / Math.max(r.width, 1)) * 160 * f;
     });
     if (tocadas) navigator.vibrate?.(8);
   }
 
-  /** Remover: al arrastrar el dedo, las letras cercanas se llevan parte de su velocidad. */
-  function remover(x, y, vx, vy) {
-    fichas.forEach((_, k) => {
-      const [cx, cy, lado] = centro(k);
-      const d = Math.hypot(cx - x, cy - y);
-      const f = Math.exp(-(d * d) / (2 * (lado * 1.6) ** 2));
-      if (f < 0.05) return;
-      const s = est[k];
-      s.vuelta = null;
-      s.vx += vx * f * 0.25;
-      s.vy += vy * f * 0.25;
-      s.vr += (vx - vy) * f * 0.05;
-    });
+  /** Choques entre letras: se separan y se reparten la velocidad (la agarrada empuja sin frenarse). */
+  function choques(c) {
+    const quieta = (k) => (!agarre || agarre.k !== k) && Math.hypot(est[k].vx, est[k].vy) < 15;
+    for (let i = 0; i < fichas.length; i++) {
+      for (let j = i + 1; j < fichas.length; j++) {
+        if (quieta(i) && quieta(j)) continue; // dos letras paradas no chocan (en su sitio ni se tocan)
+        const a = est[i], b = est[j];
+        const ax = c[i].x + a.x, ay = c[i].y + a.y, bx = c[j].x + b.x, by = c[j].y + b.y;
+        const dx = bx - ax, dy = by - ay;
+        const d = Math.hypot(dx, dy);
+        const minimo = c[i].radio + c[j].radio;
+        if (d >= minimo || d < 0.01) continue;
+        const nx = dx / d, ny = dy / d;
+        const iAgarrada = agarre?.k === i, jAgarrada = agarre?.k === j;
+        // Se separan (la agarrada no se mueve: va con el dedo).
+        const solape = minimo - d;
+        if (iAgarrada) (b.x += nx * solape), (b.y += ny * solape);
+        else if (jAgarrada) (a.x -= nx * solape), (a.y -= ny * solape);
+        else (a.x -= (nx * solape) / 2), (a.y -= (ny * solape) / 2), (b.x += (nx * solape) / 2), (b.y += (ny * solape) / 2);
+        // Velocidad relativa en la dirección del choque: si se acercan, rebotan.
+        const vrel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+        if (vrel >= 0) continue;
+        const tx = -ny, ty = nx; // lo que se rozan de lado: las hace girar
+        const roce = (b.vx - a.vx) * tx + (b.vy - a.vy) * ty;
+        if (iAgarrada) {
+          b.vx -= (1 + REBOTE) * vrel * nx;
+          b.vy -= (1 + REBOTE) * vrel * ny;
+          b.vr += roce * 0.25;
+        } else if (jAgarrada) {
+          a.vx += (1 + REBOTE) * vrel * nx;
+          a.vy += (1 + REBOTE) * vrel * ny;
+          a.vr -= roce * 0.25;
+        } else {
+          const J = ((1 + REBOTE) * vrel) / 2; // misma masa
+          a.vx += J * nx, a.vy += J * ny;
+          b.vx -= J * nx, b.vy -= J * ny;
+          a.vr -= roce * 0.12;
+          b.vr += roce * 0.12;
+        }
+        a.vuelta = b.vuelta = null;
+        if (Math.abs(vrel) > 150) navigator.vibrate?.(Math.min(25, Math.abs(vrel) / 60));
+      }
+    }
   }
 
   function paso(t) {
     if (!titulo.isConnected) {
       document.removeEventListener("click", comerClic, true);
+      document.removeEventListener("pointerdown", cerca);
       return void (bucle = 0);
     }
     const dt = Math.min(0.033, (t - (tAnterior || t)) / 1000) || 0.016;
     tAnterior = t;
-    // (Si un dedo se quedó «pulsado» sin soltar —p. ej. el sistema se tragó el evento— tampoco bloquea la vuelta.)
-    if (pulsado && performance.now() - ultimoToque > 8000) pulsado = null;
-    const volviendo = performance.now() - ultimoToque > VUELTA_MS && !pulsado;
+    // (Si un dedo se quedó agarrando sin soltar —p. ej. el sistema se tragó el evento— tampoco bloquea la vuelta.)
+    if (agarre && performance.now() - ultimoToque > 8000) agarre = null;
+    const volviendo = performance.now() - ultimoToque > VUELTA_MS && !agarre;
     const ancho = innerWidth, alto = innerHeight;
     let quietas = 0;
     let fuera = 0;
     const ahora = performance.now();
+    const c = volviendo ? null : casas();
+
+    if (!volviendo) {
+      fichas.forEach((el, k) => {
+        const s = est[k];
+        if (agarre?.k === k) {
+          // La agarrada va pegada al dedo (por donde la cogiste).
+          s.x = agarre.px - agarre.ox - c[k].x;
+          s.y = agarre.py - agarre.oy - c[k].y;
+          s.vr *= Math.exp(-6 * dt);
+          // Si el dedo se para, su velocidad baja enseguida (sujeta quieta no empuja a nadie).
+          s.vx *= Math.exp(-12 * dt);
+          s.vy *= Math.exp(-12 * dt);
+          s.r += s.vr * dt;
+          return;
+        }
+        // Líquido: frena poco a poco y se mece un poco (y puede salir de la pantalla).
+        const roce = Math.exp(-2.3 * dt);
+        s.vx *= roce;
+        s.vy *= roce;
+        s.vr *= Math.exp(-1.4 * dt);
+        if (Math.hypot(s.vx, s.vy) > 1 || s.x || s.y) s.vy += Math.sin(t / 600 + k) * 8 * dt; // se mece
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        s.r += s.vr * dt;
+      });
+      choques(c);
+    }
+
     fichas.forEach((el, k) => {
       const s = est[k];
       if (volviendo && !s.vuelta && s.x === 0 && s.y === 0 && s.r === 0) {
@@ -115,23 +180,14 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
           return;
         }
       } else {
-        // Líquido: frena poco a poco y se mece un poco (y puede salir de la pantalla).
-        const roce = Math.exp(-2.3 * dt);
-        s.vx *= roce;
-        s.vy *= roce;
-        s.vr *= Math.exp(-1.4 * dt);
-        s.vy += Math.sin(t / 600 + k) * 8 * dt; // se mece (sube y baja por igual)
-        s.x += s.vx * dt;
-        s.y += s.vy * dt;
-        s.r += s.vr * dt;
         const r = el.getBoundingClientRect();
         if (r.right < 0 || r.left > ancho || r.bottom < 0 || r.top > alto) fuera++;
-      }
-      // En su sitio y quieta: ya no hace falta seguir moviéndola.
-      if (!volviendo && Math.abs(s.x) + Math.abs(s.y) + Math.abs(s.r) < 0.3 && Math.hypot(s.vx, s.vy) + Math.abs(s.vr) < 1) {
-        el.style.translate = el.style.rotate = "";
-        quietas++;
-        return;
+        // En su sitio y quieta: ya no hace falta seguir moviéndola.
+        if (agarre?.k !== k && Math.abs(s.x) + Math.abs(s.y) + Math.abs(s.r) < 0.3 && Math.hypot(s.vx, s.vy) + Math.abs(s.vr) < 1) {
+          el.style.translate = el.style.rotate = "";
+          quietas++;
+          return;
+        }
       }
       el.style.translate = `${s.x.toFixed(1)}px ${s.y.toFixed(1)}px`;
       el.style.rotate = `${s.r.toFixed(1)}deg`;
@@ -156,8 +212,8 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
     if (!bucle) bucle = requestAnimationFrame(paso);
   };
 
-  // Golpear una letra que está encima de un botón no pulsa el botón: la letra sale volando y, al levantar
-  // el dedo, el navegador «haría clic» en lo que queda debajo. Ese clic se descarta.
+  // Agarrar una letra que está encima de un botón no pulsa el botón: al levantar el dedo, el navegador
+  // «haría clic» en lo que queda debajo. Ese clic se descarta.
   let sinClicHasta = 0;
   const comerClic = (ev) => {
     if (!titulo.isConnected) return document.removeEventListener("click", comerClic, true);
@@ -168,44 +224,73 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
   document.addEventListener("click", comerClic, true);
   const vetar = (ms) => (sinClicHasta = Math.max(sinClicHasta, performance.now() + ms));
 
+  // Agarrar: solo esa letra (las demás no se mueven… hasta que choque con ellas).
   titulo.addEventListener("pointerdown", (ev) => {
-    if (!ev.target.closest(".ficha")) return;
+    const el = ev.target.closest(".ficha");
+    if (!el || agarre) return;
     ev.preventDefault();
     vetar(10000); // hasta que se suelte
-    pulsado = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, t: ev.timeStamp };
+    const k = fichas.indexOf(el);
+    if (k < 0) return;
+    const r = el.getBoundingClientRect();
+    const s = est[k];
+    s.vuelta = null;
+    s.vx = s.vy = 0;
+    agarre = { id: ev.pointerId, k, ox: ev.clientX - (r.left + r.width / 2), oy: ev.clientY - (r.top + r.height / 2), px: ev.clientX, py: ev.clientY, pt: ev.timeStamp, t0: ev.timeStamp, movida: 0 };
     try {
       titulo.setPointerCapture(ev.pointerId);
     } catch {}
-    golpe(ev.clientX, ev.clientY);
+    el.classList.add("agarrada");
     arrancar();
   });
-  // Golpes cerca de las letras (sin tocarlas): en el fondo, a menos de ~2 cm, también las mueven (algo menos).
+  titulo.addEventListener("pointermove", (ev) => {
+    if (!agarre || ev.pointerId !== agarre.id) return;
+    ultimoToque = performance.now();
+    const dt = Math.max(8, ev.timeStamp - agarre.pt) / 1000;
+    const vx = (ev.clientX - agarre.px) / dt, vy = (ev.clientY - agarre.py) / dt;
+    // Velocidad del dedo (suavizada): es la que lleva la letra al chocar y al soltarla.
+    const s = est[agarre.k];
+    s.vx = s.vx * 0.5 + vx * 0.5;
+    s.vy = s.vy * 0.5 + vy * 0.5;
+    s.vr += (vx / 900) * 4; // al arrastrarla se ladea un poco
+    agarre.movida += Math.hypot(ev.clientX - agarre.px, ev.clientY - agarre.py);
+    Object.assign(agarre, { px: ev.clientX, py: ev.clientY, pt: ev.timeStamp });
+    arrancar();
+  });
+  const soltar = (ev) => {
+    if (!agarre || ev.pointerId !== agarre.id) return;
+    const { k, movida, t0, pt } = agarre;
+    const s = est[k];
+    fichas[k].classList.remove("agarrada");
+    agarre = null;
+    sinClicHasta = performance.now() + 450; // el clic llega justo después de soltar
+    if (movida < 6 && ev.timeStamp - t0 < 350) {
+      // Un toque rápido sin arrastrar: un golpecito solo a esa letra.
+      s.vx = s.vy = 0;
+      golpe(ev.clientX, ev.clientY, { solo: k });
+    } else {
+      // Lanzamiento: sale con la velocidad del dedo (si el dedo ya estaba quieto al soltar, se queda ahí).
+      const quieto = ev.timeStamp - pt > 90;
+      const tope = 4500 * escala();
+      const v = Math.hypot(s.vx, s.vy);
+      if (quieto) s.vx = s.vy = 0;
+      else if (v > tope) (s.vx *= tope / v), (s.vy *= tope / v);
+    }
+    arrancar();
+  };
+  titulo.addEventListener("pointerup", soltar);
+  titulo.addEventListener("pointercancel", soltar);
+  titulo.addEventListener("lostpointercapture", soltar);
+
+  // Toques cerca de las letras (sin tocarlas): en el fondo, a menos de ~2 cm, las apartan un poco.
   // Sobre botones u otros controles no: así pulsarlos no mueve el título.
-  const cerca = (ev) => {
+  function cerca(ev) {
     if (!titulo.isConnected) return document.removeEventListener("pointerdown", cerca);
     if (ev.target.closest?.(".titulo-nyp .ficha, button, a, input, textarea, select, label, [role=button], .capa-movil")) return;
     const r = titulo.getBoundingClientRect();
     if (ev.clientX < r.left - ALCANCE || ev.clientX > r.right + ALCANCE || ev.clientY < r.top - ALCANCE || ev.clientY > r.bottom + ALCANCE) return;
     golpe(ev.clientX, ev.clientY);
     arrancar();
-  };
+  }
   document.addEventListener("pointerdown", cerca);
-  titulo.addEventListener("pointermove", (ev) => {
-    if (!pulsado || ev.pointerId !== pulsado.id) return;
-    ultimoToque = performance.now();
-    const dt = Math.max(8, ev.timeStamp - pulsado.t) / 1000;
-    remover(ev.clientX, ev.clientY, (ev.clientX - pulsado.x) / dt, (ev.clientY - pulsado.y) / dt);
-    pulsado = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, t: ev.timeStamp };
-    arrancar();
-  });
-  const soltar = (ev) => {
-    if (pulsado && ev.pointerId === pulsado.id) {
-      pulsado = null;
-      sinClicHasta = performance.now() + 450; // el clic llega justo después de soltar
-    }
-    ultimoToque = performance.now();
-  };
-  titulo.addEventListener("pointerup", soltar);
-  titulo.addEventListener("pointercancel", soltar);
-  titulo.addEventListener("lostpointercapture", soltar);
 }
