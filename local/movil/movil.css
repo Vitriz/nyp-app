@@ -1702,3 +1702,7 @@ button.fila-j { appearance: none; cursor: pointer; }
 .cuenta-bloque p { margin: 0; font-size: 0.88rem; }
 .cuenta-bloque.peligro { border-color: rgba(232, 106, 98, 0.4); }
 .cuenta-copia-estado { font-weight: 800; color: #cfe0ff; }
+/* Inicio: sin barra de desplazamiento vertical (las letras del título que salen por abajo no la crean).
+   overflow-y: clip recorta sin hacer la pantalla desplazable y deja que salgan por los lados. */
+.pantalla.inicio { overflow-x: visible; overflow-y: clip; }
+@media (max-height: 480px) { .pantalla.inicio { overflow-y: auto; } } /* pantallas muy bajas: que se pueda bajar */
