@@ -35,7 +35,7 @@
 .sel-item {
   position: absolute; left: 0.3rem; right: 0.8rem; top: 50%; height: 3.3rem; transform-origin: left center;
   display: flex; align-items: center; gap: 0.7rem; padding: 0 0.9rem 0 0.5rem; text-align: left;
-  font: inherit; font-weight: 900; font-size: 1.1rem; color: var(--texto); cursor: pointer;
+  font: inherit; font-weight: 900; font-size: 1.1rem; color: var(--texto); cursor: var(--cursor-mano, pointer);
   background: linear-gradient(90deg, rgba(36, 72, 150, 0.95), rgba(23, 52, 111, 0.92));
   border: 2px solid rgba(170, 200, 255, 0.42); border-left: 0.45rem solid var(--cat, var(--acento)); border-radius: 0.9rem;
   box-shadow: 0 0.2rem 0 rgba(4, 12, 40, 0.45);
@@ -94,13 +94,13 @@
 .sel-chip { flex: none; padding: 0.45rem 0.9rem; font-weight: 800; }
 .sel-pil-icono { flex: none; width: 1.6rem; text-align: center; font-size: 1rem; opacity: 0.75; }
 .sel-pil-flecha {
-  appearance: none; flex: none; width: 2.75rem; height: 2.75rem; border: none; border-radius: 50%; cursor: pointer;
+  appearance: none; flex: none; width: 2.75rem; height: 2.75rem; border: none; border-radius: 50%; cursor: var(--cursor-mano, pointer);
   font: inherit; font-size: 0.8rem; color: var(--texto); background: rgba(44, 80, 166, 0.66);
   transition: background 150ms, transform 120ms;
 }
 .sel-pil-flecha:hover:not(:disabled) { background: rgba(120, 160, 255, 0.26); }
 .sel-pil-flecha:active:not(:disabled) { transform: scale(0.9); }
-.sel-pil-flecha:disabled { opacity: 0.25; cursor: default; }
+.sel-pil-flecha:disabled { opacity: 0.25; cursor: var(--cursor-flecha, default); }
 .sel-pil-ventana {
   flex: 1; min-width: 0; height: 2.75rem; display: grid; place-items: center; overflow: hidden;
   touch-action: none; cursor: ns-resize; user-select: none;
@@ -162,7 +162,7 @@
 /* Récords: pestañas «Míos» / «Familia» y la clasificación */
 .records-pestanas { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; padding: 0.25rem; border-radius: 999px; background: rgba(6, 18, 56, 0.45); }
 .records-pestana {
-  appearance: none; border: none; font: inherit; font-weight: 900; padding: 0.55rem; border-radius: 999px; cursor: pointer;
+  appearance: none; border: none; font: inherit; font-weight: 900; padding: 0.55rem; border-radius: 999px; cursor: var(--cursor-mano, pointer);
   color: var(--texto-suave); background: transparent; transition: background 200ms, color 200ms;
 }
 .records-pestana[aria-selected="true"] { background: linear-gradient(180deg, #fff, var(--ficha-2)); color: var(--ficha-texto); }
@@ -186,7 +186,7 @@
 .sel-cabeza-textos { flex: 1; min-width: 0; }
 .sel-nombre { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sel-ayuda-btn {
-  appearance: none; flex: none; align-self: flex-start; width: 2.6rem; height: 2.6rem; border-radius: 50%; cursor: pointer;
+  appearance: none; flex: none; align-self: flex-start; width: 2.6rem; height: 2.6rem; border-radius: 50%; cursor: var(--cursor-mano, pointer);
   font: inherit; font-family: var(--fuente-ficha); font-weight: 900; font-size: 1.35rem; color: var(--texto);
   background: rgba(44, 80, 166, 0.66); border: 2px solid var(--borde-suave); transition: background 150ms, transform 120ms;
 }
@@ -270,7 +270,7 @@
 .sel-titulo { align-items: center; }
 .sel-titulo-der { display: flex; align-items: center; gap: 0.6rem; }
 .sel-vista-btn {
-  appearance: none; font: inherit; font-size: 1.25rem; font-weight: 900; line-height: 1; width: 2.4rem; height: 2.4rem; border-radius: 0.7rem; cursor: pointer;
+  appearance: none; font: inherit; font-size: 1.25rem; font-weight: 900; line-height: 1; width: 2.4rem; height: 2.4rem; border-radius: 0.7rem; cursor: var(--cursor-mano, pointer);
   display: grid; place-items: center; color: var(--texto); background: rgba(44, 80, 166, 0.66); border: 2px solid var(--borde-suave);
 }
 .sel-vista-btn:active { transform: scale(0.92); }
@@ -280,7 +280,7 @@
 }
 .sel-cuadricula::-webkit-scrollbar { display: none; }
 .sel-casilla {
-  --cat: var(--acento); appearance: none; aspect-ratio: 1; border-radius: 1.1rem; cursor: pointer; font: inherit; padding: 0;
+  --cat: var(--acento); appearance: none; aspect-ratio: 1; border-radius: 1.1rem; cursor: var(--cursor-mano, pointer); font: inherit; padding: 0;
   display: grid; place-items: center; font-size: 2rem; line-height: 1;
   background: linear-gradient(180deg, color-mix(in srgb, var(--cat) 30%, #1b3b80), color-mix(in srgb, var(--cat) 18%, #12306f));
   border: 0.15rem solid color-mix(in srgb, var(--cat) 55%, transparent); box-shadow: 0 0.25rem 0 rgba(4, 12, 40, 0.5);
@@ -316,7 +316,7 @@
 .sel-cabeza-textos { container-type: inline-size; }
 .sel-nombre { font-size: min(1.7rem, calc(100cqi / (var(--letras, 12) * 0.6))); white-space: nowrap; overflow: hidden; text-overflow: clip; }
 @container (min-width: 44rem) { .sel-nombre { font-size: min(2.3rem, calc(100cqi / (var(--letras, 12) * 0.6))); } }
-.sel-icono.con-ayuda { position: relative; appearance: none; padding: 0; cursor: pointer; font-family: inherit; color: inherit; transition: transform 140ms var(--curva); }
+.sel-icono.con-ayuda { position: relative; appearance: none; padding: 0; cursor: var(--cursor-mano, pointer); font-family: inherit; color: inherit; transition: transform 140ms var(--curva); }
 .sel-icono.con-ayuda:active { transform: scale(0.92); }
 .sel-icono-ayuda {
   position: absolute; right: -0.45rem; top: -0.45rem; display: grid; place-items: center; width: 1.45rem; height: 1.45rem; border-radius: 50%;
@@ -430,7 +430,7 @@
 .sel-seg-etiqueta { font-size: 0.78rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: #bcd0f5; white-space: nowrap; }
 .sel-seg-opciones { display: flex; gap: 0.3rem; padding: 0.3rem; border-radius: 0.95rem; background: rgba(6, 18, 56, 0.55); border: 1px solid rgba(170, 200, 255, 0.18); }
 .sel-seg {
-  appearance: none; flex: 1; min-width: 0; height: 2.6rem; border: none; border-radius: 0.7rem; cursor: pointer; white-space: nowrap;
+  appearance: none; flex: 1; min-width: 0; height: 2.6rem; border: none; border-radius: 0.7rem; cursor: var(--cursor-mano, pointer); white-space: nowrap;
   font: inherit; font-family: var(--fuente-ficha); font-weight: 900; font-size: 1.05rem; color: #dbe6ff; background: transparent;
   transition: background 160ms, color 160ms, transform 120ms, box-shadow 160ms;
 }
@@ -512,7 +512,7 @@
 .records-filtro .etiqueta { font-size: 0.68rem; letter-spacing: 0.08em; }
 .records-opciones { display: flex; gap: 0.25rem; padding: 0.25rem; border-radius: 0.8rem; background: rgba(6, 18, 56, 0.5); }
 .records-op {
-  appearance: none; flex: 1; min-width: 0; border: none; border-radius: 0.55rem; padding: 0.4rem 0.1rem; cursor: pointer; white-space: nowrap;
+  appearance: none; flex: 1; min-width: 0; border: none; border-radius: 0.55rem; padding: 0.4rem 0.1rem; cursor: var(--cursor-mano, pointer); white-space: nowrap;
   font: inherit; font-family: var(--fuente-ficha); font-weight: 900; font-size: 0.85rem; color: #dbe6ff; background: transparent;
 }
 .records-op.elegida { background: linear-gradient(180deg, #fff, var(--ficha-2)); color: var(--ficha-texto); box-shadow: 0 0.12rem 0 rgba(4, 12, 40, 0.5); }
