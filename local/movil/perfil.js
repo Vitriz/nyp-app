@@ -3,8 +3,8 @@ import { h, banner, botonMantener, SOMBREROS, ANIMACIONES } from "../comun/ui.js
 import { almacen } from "../comun/conexion.js";
 import { campoTexto } from "../comun/teclado.js";
 import { selectorColor } from "../comun/color.js";
-import { editarFoto, cuadrado } from "./recorte.js";
-import { premiosGanados, hazanaDe } from "../solo/hazanas.js";
+import { editarFoto, cuadrado, entera } from "./recorte.js";
+import { premiosGanados, hazanaDe, HAZANAS, leerHazanas } from "../solo/hazanas.js";
 import { idMovil } from "../comun/familia.js";
 import { subirFoto, leerFotos, borrarFoto, leerJugadores, leerFicha, subirFicha } from "../comun/nube.js";
 
@@ -118,14 +118,15 @@ export function recuperarPerfil() {
   });
 }
 
-/** Foto de la galería: el cuadrado central, para el editor (recortar la cara o dejarla redonda). */
+/** Foto de la galería: entera (con su forma), para el editor (recortar la cara o dejarla redonda). */
 function prepararFoto(archivo) {
   return new Promise((ok, mal) => {
     const img = new Image();
     const url = URL.createObjectURL(archivo);
     img.onload = () => {
       URL.revokeObjectURL(url);
-      ok(editarFoto(cuadrado(img, img.naturalWidth, img.naturalHeight), 1));
+      // En la foto redonda, al abrir, el círculo abarca el 90 % de su lado menor.
+      ok(editarFoto(entera(img, img.naturalWidth, img.naturalHeight), 0.9));
     };
     img.onerror = mal;
     img.src = url;
@@ -201,8 +202,24 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
     guardarPerfil({ ...p });
     return true;
   };
+  // El «pasaporte» del viajero: tu banner y, en el ordenador, tus datos de la aventura.
+  const vistaBanner = h("div.perfil-banner");
+  const hechasN = Object.keys(leerHazanas()).length;
+  const rangoDe = (n) => (n >= 15 ? ["🏆", "Leyenda"] : n >= 10 ? ["🧭", "Explorador"] : n >= 5 ? ["🎒", "Aventurero"] : n >= 1 ? ["🌱", "Aprendiz"] : ["✨", "Recién llegado"]);
+  const [rIco, rNombre] = rangoDe(hechasN);
+  vista.append(
+    h("div.pasaporte-cabeza", h("span.pasaporte-sello", "NYP"), h("div", h("small", "Pasaporte de viajero"), h("b", editando ? "Tu aventura sigue" : "Tu gran viaje empieza aquí"))),
+    vistaBanner,
+    h(
+      "div.pasaporte-datos",
+      h("div.pasaporte-dato", h("span", rIco), h("small", "Rango"), h("b", rNombre)),
+      h("div.pasaporte-dato", h("span", "🎖️"), h("small", "Hazañas"), h("b", `${hechasN} / ${HAZANAS.length}`)),
+      h("div.pasaporte-dato", h("span", "🎮"), h("small", "Juegos"), h("b", "18 por descubrir"))
+    ),
+    h("div.pasaporte-ruta", { "aria-hidden": "true" }, ["📖", "🔢", "🧩", "🧠", "🏆"].map((e, i) => h(`span${i <= Math.min(4, Math.floor(hechasN / 4)) ? ".hecho" : ""}`, e)))
+  );
   const pintarVista = () => {
-    vista.replaceChildren(banner(p, ".banner-grande"));
+    vistaBanner.replaceChildren(banner(p, ".banner-grande"));
     if (editando) {
       clearTimeout(guardarT);
       guardarT = setTimeout(guardarLocal, 350);
@@ -303,7 +320,7 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
         `button.premio${elegido ? ".elegido" : ""}${ok ? "" : ".bloqueado"}`,
         { type: "button", disabled: !ok, title: de ? `Se consigue con la hazaña «${de.nombre}»` : texto, onclick: () => ((p[tipo] = id), pintarPremios(), pintarVista()) },
         h("span.premio-icono", ok ? icono : "🔒"),
-        h("small", ok ? texto : de?.nombre ?? texto)
+        ok ? h("small", texto) : h("small.premio-bloq", h("i", "Hazaña"), de?.nombre ?? texto)
       );
     };
     cajaPremios.replaceChildren(
@@ -377,6 +394,15 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
       : null;
 
   const pestañas = { nombre: "Nombre", colores: "Colores", foto: "Foto", premios: "Premios", ...(editando ? { cuenta: "Cuenta" } : {}) };
+  const ICONOS_PESTAÑA = { nombre: "✍️", colores: "🎨", foto: "📸", premios: "🏅", cuenta: "🛡️" };
+  // Cada pestaña con su título y una frase con personalidad (el viaje que empieza).
+  const CABEZAS = {
+    nombre: ["¿Cómo te llamarán en la aventura?", "Tu nombre aparecerá en las clasificaciones y en la pantalla grande."],
+    colores: ["Los colores de tu expedición", "Elige el fondo, las letras y el contorno de tu banner."],
+    foto: ["Tu cara de explorador", "Una foto, un recorte de tu cabeza o tus iniciales."],
+    premios: ["Tu vitrina de trofeos", "Sombreros y animaciones que se ganan con las hazañas de «Jugar solo»."],
+    cuenta: ["Tu cuaderno de bitácora", "Copia en la nube, otro móvil o empezar de cero."],
+  };
   const paneles = {
     nombre: h("div.panel-perfil", campo.visor, campo.teclado),
     colores: h("div.panel-perfil", interruptores, cajaColores),
@@ -405,10 +431,15 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
   const elegir = (k) => {
     // Al cambiar de pestaña, lo cambiado se guarda (y se sube a la nube).
     if (guardarLocal()) alCambiar?.({ ...p });
-    cuerpo.replaceChildren(paneles[k]);
+    const [t1, t2] = CABEZAS[k] ?? ["", ""];
+    cuerpo.replaceChildren(h("div.panel-cabeza", h("span.panel-cabeza-ico", ICONOS_PESTAÑA[k]), h("div", h("h3", t1), h("p", t2))), paneles[k]);
     botonesPestaña.querySelectorAll("button").forEach((b) => b.classList.toggle("activa", b.dataset.k === k));
   };
-  botonesPestaña.append(...Object.entries(pestañas).map(([k, t]) => h("button", { type: "button", "data-k": k, onclick: () => elegir(k) }, t)));
+  botonesPestaña.append(
+    ...Object.entries(pestañas).map(([k, t], i) =>
+      h("button.pestana-viaje", { type: "button", "data-k": k, onclick: () => elegir(k) }, h("span.pestana-ico", ICONOS_PESTAÑA[k]), h("span.pestana-txt", h("small", `Paso ${i + 1}`), t))
+    )
+  );
 
   const guardar = () => {
     p.nombre = campo.valor();
@@ -445,7 +476,7 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
     botonesPestaña,
     cuerpo,
     aviso,
-    editando ? null : h("button.boton.acento.grande", { type: "button", onclick: guardar }, "Guardar"),
+    editando ? null : h("button.boton.acento.grande.boton-aventura", { type: "button", onclick: guardar }, "🚀 ¡Empezar la aventura!"),
     // Perfil nuevo: recuperar uno de otro móvil, a la vista (luego también está en «Cuenta»).
     editando ? null : h("button.boton.suave.recuperar-btn", { type: "button", onclick: async () => { const r = await recuperarPerfil(); if (r) alGuardar(r); } }, "☁️ Recuperar mi perfil de otro móvil")
   );
