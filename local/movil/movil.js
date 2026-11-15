@@ -4,7 +4,7 @@ import { tituloVivo } from "../comun/titulo-vivo.js";
 import { h, cambiarPantalla, bannerFijo, servidor, vigilarEncaje, tituloJuego } from "../comun/ui.js";
 import { cargarPerfil, pantallaPerfil } from "./perfil.js";
 import { crearBatalla, codigoBatalla } from "./batalla.js";
-import { actualizarPaquete } from "../solo/paquete.js";
+import { actualizarPaquete, actualizarIncluido } from "../solo/paquete.js";
 import { subirLuego } from "../comun/nube.js";
 import { idMovil } from "../comun/familia.js";
 import { svgQR } from "../comun/qr.js";
@@ -351,3 +351,6 @@ if (paraInstalar && !enApp) pantallaInstalar();
 else arrancar();
 // Aunque no entremos a una partida, si estamos en el ordenador de PARTY, guardamos el diccionario.
 if (baseLocal) actualizarPaquete(baseLocal, cambioPaquete).catch(() => {});
+// App ya desbloqueada con la contraseña: al abrirla se pone al día el diccionario y se bajan las acepciones
+// si aún no las tiene (un poco después, para no frenar el arranque).
+setTimeout(() => actualizarIncluido().catch(() => {}), 3000);

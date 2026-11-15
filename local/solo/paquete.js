@@ -95,90 +95,99 @@ export async function diccionarioIncluido() {
   }
 }
 
-/** Descifra el diccionario de la app con la contraseña y lo guarda. Devuelve true si la contraseña vale. */
-export async function desbloquearDiccionario(clave, info) {
-  info ??= await diccionarioIncluido();
-  if (!info) throw new Error("sin-diccionario");
-  const bin = new Uint8Array(await (await fetch(DIC_DATOS)).arrayBuffer());
+/** Descifra un archivo cifrado de la app (sal · iv · datos) con la contraseña. Devuelve el texto o null si no vale. */
+async function descifrar(url, texto, info) {
+  const bin = new Uint8Array(await (await fetch(url)).arrayBuffer());
   const sal = bin.subarray(0, 16), iv = bin.subarray(16, 28), datos = bin.subarray(28);
-  const texto = String(clave).normalize("NFC").trim().toUpperCase();
   const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(texto), "PBKDF2", false, ["deriveKey"]);
-  const llave = await crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt: sal, iterations: info.iteraciones, hash: "SHA-256" },
-    base,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["decrypt"]
-  );
+  const llave = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: sal, iterations: info.iteraciones, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
   let gz;
   try {
     gz = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, llave, datos);
   } catch {
-    return false; // contraseña incorrecta
+    return null; // contraseña incorrecta
   }
-  const json = await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+  return new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+}
+
+// Las acepciones completas (datos de la RAE, para la ventana de significados) van, como el diccionario,
+// cifradas con la contraseña de la familia: se descargan a la vez que él, al desbloquear con la contraseña
+// (y al abrir la app, si ya estaba desbloqueada y aún no las tiene o hay versión nueva). Nunca sin contraseña.
+const AC_DATOS = new URL("../acepciones.bin", import.meta.url);
+
+/** Descarga, descifra y guarda las acepciones. true si quedaron guardadas. */
+async function guardarAcepciones(texto, info) {
+  const json = await descifrar(AC_DATOS, texto, info);
+  if (!json) return false;
+  JSON.parse(json); // comprobamos que está entero
+  await escribir("acepciones", { version: info.version, texto: json });
+  acepcionesEnCurso = null;
+  return true;
+}
+
+/** Descifra el diccionario de la app con la contraseña y lo guarda (con sus acepciones). Devuelve true si la contraseña vale. */
+export async function desbloquearDiccionario(clave, info) {
+  info ??= await diccionarioIncluido();
+  if (!info) throw new Error("sin-diccionario");
+  const texto = String(clave).normalize("NFC").trim().toUpperCase();
+  const json = await descifrar(DIC_DATOS, texto, info);
+  if (!json) return false; // contraseña incorrecta
   JSON.parse(json); // comprobamos que está entero
   await escribir("datos", json);
   await escribir("version", info.version);
   try {
     localStorage.setItem(CLAVE_GUARDADA, texto);
   } catch {}
+  // En la misma descarga, las acepciones (si fallan, se reintentan al abrir la app).
+  await guardarAcepciones(texto, info).catch(() => false);
   return true;
 }
 
-/** Si la app trae un diccionario más nuevo y ya se desbloqueó antes, lo actualiza sin preguntar. */
+/**
+ * Al abrir la app: si ya se desbloqueó con la contraseña, pone al día el diccionario (si la app trae uno
+ * más nuevo) y las acepciones (si faltan o son de otra versión). Sin contraseña guardada no hace nada.
+ */
 export async function actualizarIncluido() {
   const info = await diccionarioIncluido();
-  if (!info || info.version === (await versionGuardada())) return;
+  if (!info) return;
   let clave = null;
   try {
     clave = localStorage.getItem(CLAVE_GUARDADA);
   } catch {}
-  if (clave) await desbloquearDiccionario(clave, info).catch(() => false);
+  if (!clave) return;
+  if (info.version !== (await versionGuardada())) {
+    await desbloquearDiccionario(clave, info).catch(() => false);
+    return;
+  }
+  const g = await leer("acepciones").catch(() => null);
+  if (g?.version !== info.version) await guardarAcepciones(clave, info).catch(() => false);
 }
 
 // ------------------------------------------------------------------ todas las acepciones (ventana de significados)
-// Van aparte del diccionario (unos 4 MB): se bajan la primera vez que tocas una palabra en los resultados
-// y se guardan en el móvil. En la app vienen cifradas con la misma contraseña; en PARTY (ordenador), sin cifrar.
-const AC_DATOS = new URL("../acepciones.bin", import.meta.url);
 let acepcionesEnCurso = null;
 
-/** Todas las acepciones: [[clave, [[categoría, uso, ámbito, texto], …]], …], o null si no se pueden conseguir. */
+/**
+ * Todas las acepciones: [[clave, [[categoría, uso, ámbito, texto], …]], …], o null si este móvil no las tiene.
+ * En la app: las que se guardaron al desbloquear. En PARTY (el ordenador de casa, en la red local): sin cifrar.
+ */
 export function leerAcepciones() {
   acepcionesEnCurso ??= (async () => {
-    const version = (await diccionarioIncluido())?.version ?? (await versionGuardada());
     try {
       const g = await leer("acepciones");
-      if (g && g.version === version) return JSON.parse(g.texto);
+      if (g?.texto) return JSON.parse(g.texto);
     } catch {}
-    let texto = null;
-    // 1) La app publicada: el archivo cifrado, con la contraseña que ya se usó para el diccionario.
-    try {
-      const info = await diccionarioIncluido();
-      const clave = localStorage.getItem(CLAVE_GUARDADA);
-      if (info && clave) {
-        const bin = new Uint8Array(await (await fetch(AC_DATOS)).arrayBuffer());
-        const sal = bin.subarray(0, 16), iv = bin.subarray(16, 28), datos = bin.subarray(28);
-        const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(clave), "PBKDF2", false, ["deriveKey"]);
-        const llave = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: sal, iterations: info.iteraciones, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
-        const gz = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, llave, datos);
-        texto = await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
-      }
-    } catch {}
-    // 2) Abierta desde el ordenador (PARTY / pruebas): sin cifrar.
-    if (!texto) {
+    if (!(await diccionarioIncluido())) {
       try {
         const r = await fetch(new URL("../paquete/acepciones", import.meta.url), { cache: "no-store" });
-        if (r.ok) texto = await r.text();
+        if (r.ok) {
+          const texto = await r.text();
+          escribir("acepciones", { version: await versionGuardada(), texto }).catch(() => {});
+          return JSON.parse(texto);
+        }
       } catch {}
     }
-    if (!texto) {
-      acepcionesEnCurso = null; // se vuelve a intentar la próxima vez
-      return null;
-    }
-    const lista = JSON.parse(texto);
-    escribir("acepciones", { version, texto }).catch(() => {});
-    return lista;
+    acepcionesEnCurso = null; // se vuelve a mirar la próxima vez
+    return null;
   })();
   return acepcionesEnCurso;
 }
