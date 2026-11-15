@@ -1690,3 +1690,15 @@ button.fila-j { appearance: none; cursor: pointer; }
   .barra-sup > .info-partida .info-partida-nombre { font-size: 2rem; }
   .barra-sup > .info-partida .info-partida-ajustes { flex-direction: row; gap: 0.5rem; }
 }
+/* Perfil: pestaña «Cuenta» (5 pestañas) */
+.pestanas:has(> :nth-child(5)) { grid-template-columns: repeat(5, 1fr); }
+.pestanas:has(> :nth-child(5)) button { font-size: 0.85rem; padding-inline: 0.1rem; }
+.panel-cuenta { display: flex; flex-direction: column; gap: 0.8rem; text-align: left; }
+.cuenta-resumen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+.cuenta-dato { display: flex; flex-direction: column; align-items: center; padding: 0.5rem; border-radius: 0.9rem; background: rgba(120, 160, 255, 0.14); }
+.cuenta-dato b { font-family: var(--fuente-ficha); font-size: 1.5rem; }
+.cuenta-dato small { font-size: 0.7rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: var(--texto-suave); }
+.cuenta-bloque { display: flex; flex-direction: column; gap: 0.45rem; padding: 0.8rem; border-radius: 0.9rem; background: rgba(6, 18, 56, 0.35); border: 1px solid rgba(170, 200, 255, 0.16); }
+.cuenta-bloque p { margin: 0; font-size: 0.88rem; }
+.cuenta-bloque.peligro { border-color: rgba(232, 106, 98, 0.4); }
+.cuenta-copia-estado { font-weight: 800; color: #cfe0ff; }

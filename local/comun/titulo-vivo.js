@@ -25,22 +25,33 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
     return [r.left + r.width / 2, r.top + r.height / 2, r.width];
   };
 
-  /** Golpe en (x, y): las letras cercanas salen despedidas hacia fuera. */
+  // La fuerza va con el tamaño de la pantalla: en el ordenador las letras recorren lo mismo, en proporción,
+  // que en el móvil (≈ 1 en un móvil normal).
+  const escala = () => Math.max(0.85, Math.hypot(innerWidth, innerHeight) / 950);
+
+  /** Golpe en (x, y): las letras cercanas salen despedidas hacia fuera (igual hacia arriba que hacia abajo). */
   function golpe(x, y, fuerza = 1) {
     let tocadas = 0;
+    const e = escala();
     fichas.forEach((_, k) => {
       const [cx, cy, lado] = centro(k);
-      const dx = cx - x, dy = cy - y;
-      const d = Math.hypot(dx, dy) || 1;
+      let dx = cx - x, dy = cy - y;
+      let d = Math.hypot(dx, dy) || 1;
       const alcance = lado * 1.6; // radio del golpe: sobre todo la letra tocada y las de al lado
       const f = Math.exp(-(d * d) / (2 * alcance * alcance)) * fuerza;
       if (f < 0.04) return;
       tocadas++;
+      // La letra tocada de lleno sale en una dirección al azar: el dedo suele apoyarse por debajo del centro
+      // y, si no, casi siempre salían hacia arriba.
+      if (d < lado * 0.55) {
+        const ang = Math.random() * Math.PI * 2;
+        (dx = Math.cos(ang)), (dy = Math.sin(ang)), (d = 1);
+      }
       const s = est[k];
       s.vuelta = null; // si estaba volviendo, deja de volver
-      const impulso = 260 * f; // poco a poco: hacen falta varios golpes para echarlas
-      s.vx += (dx / d) * impulso + (Math.random() - 0.5) * 70 * f;
-      s.vy += (dy / d) * impulso - 60 * f; // un poco hacia arriba: queda más vistoso
+      const impulso = 260 * f * e; // poco a poco: hacen falta varios golpes para echarlas
+      s.vx += ((dx / d) * impulso + (Math.random() - 0.5) * 70 * f * e);
+      s.vy += ((dy / d) * impulso + (Math.random() - 0.5) * 70 * f * e);
       s.vr += (Math.random() - 0.5) * 300 * f;
     });
     if (tocadas) navigator.vibrate?.(8);
@@ -104,7 +115,7 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
         s.vx *= roce;
         s.vy *= roce;
         s.vr *= Math.exp(-1.4 * dt);
-        s.vy += Math.sin(t / 600 + k) * 8 * dt;
+        s.vy += Math.sin(t / 600 + k) * 8 * dt; // se mece (sube y baja por igual)
         s.x += s.vx * dt;
         s.y += s.vy * dt;
         s.r += s.vr * dt;

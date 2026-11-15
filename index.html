@@ -20,6 +20,8 @@
       padding: calc(env(safe-area-inset-top) + 1rem) 1.2rem calc(env(safe-area-inset-bottom) + 1rem); text-align: center; box-sizing: border-box; }
     #carcasa .marca { display: flex; flex-direction: column; align-items: center; gap: 0.25em; font-size: min(3.4rem, calc((100vw - 3rem) / 13.4), 7.5vh); margin-top: 3rem; }
     #carcasa .marca .fila { display: flex; gap: 0.18em; }
+    /* El título de la pantalla de carga no se puede seleccionar (ni mantener pulsado para copiar) */
+    #carcasa, #carcasa .marca, #carcasa .marca * { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
     #carcasa .marca .ficha { box-sizing: border-box; }
     #carcasa .marca .ficha { animation: bandera 2.4s linear infinite; animation-delay: calc(var(--x) * 0.28s - 2.4s); }
     #carcasa .marca .ficha.y { font-size: 0.8em; color: #5a3d00; background: linear-gradient(180deg, #fff6d6, #f6dc85 55%, #e9c75a); border-color: #5a3d00; }

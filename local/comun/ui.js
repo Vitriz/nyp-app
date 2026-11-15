@@ -34,7 +34,15 @@ export function h(selector, props = {}, ...hijos) {
 
 /** Sustituye la pantalla visible con una transición suave. */
 export function cambiarPantalla(contenedor, nueva) {
-  for (const vieja of contenedor.querySelectorAll(":scope > .pantalla:not(.sale)")) {
+  // Al abrir o cerrar el perfil, el cambio es inmediato (sin fundido: si no, se veía la otra pantalla por debajo).
+  const viejas = [...contenedor.querySelectorAll(":scope > .pantalla:not(.sale)")];
+  if (nueva.classList.contains("perfil") || viejas.some((v) => v.classList.contains("perfil"))) {
+    viejas.forEach((v) => v.remove());
+    nueva.classList.add("pantalla");
+    contenedor.append(nueva);
+    return nueva;
+  }
+  for (const vieja of viejas) {
     vieja.classList.remove("entra");
     vieja.classList.add("sale");
     vieja.addEventListener("animationend", () => vieja.remove(), { once: true });

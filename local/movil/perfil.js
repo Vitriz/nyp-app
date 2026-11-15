@@ -6,7 +6,7 @@ import { selectorColor } from "../comun/color.js";
 import { editarFoto, cuadrado } from "./recorte.js";
 import { premiosGanados, hazanaDe } from "../solo/hazanas.js";
 import { idMovil } from "../comun/familia.js";
-import { subirFoto, leerFotos, borrarFoto, leerJugadores, leerFicha } from "../comun/nube.js";
+import { subirFoto, leerFotos, borrarFoto, leerJugadores, leerFicha, subirFicha } from "../comun/nube.js";
 
 // ------------------------------------------------------------------ historial de fotos
 // Al cambiar de foto, la anterior se guarda aquí (en el móvil y en la nube) para poder volver a ella.
@@ -316,7 +316,67 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
   };
   pintarPremios();
 
-  const pestañas = { nombre: "Nombre", colores: "Colores", foto: "Foto", premios: "Premios" };
+  // Cuenta: la copia en la nube (con su estado y un botón para subirla ya), recuperar el perfil de otro
+  // móvil y borrarlo para empezar de cero (manteniendo pulsado).
+  const leerJ = (k, def) => {
+    try {
+      return JSON.parse(almacen.leer(k) ?? "null") ?? def;
+    } catch {
+      return def;
+    }
+  };
+  const estadoCopia = h("p.cuenta-copia-estado");
+  const pintarCopia = () => {
+    const f = almacen.leer("nyp-nube-subida");
+    const d = f ? new Date(f) : null;
+    estadoCopia.textContent = d && !isNaN(d)
+      ? `Última copia: ${d.toLocaleDateString("es-ES")} a las ${d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`
+      : "Aún no hay copia en la nube.";
+  };
+  pintarCopia();
+  const subirYa = h(
+    "button.boton.suave",
+    {
+      type: "button",
+      onclick: async () => {
+        subirYa.disabled = true;
+        estadoCopia.textContent = "Subiendo…";
+        let ok = false;
+        try {
+          ok = await subirFicha(idMovil(), { ...p, nombre: campo.valor() || p.nombre });
+        } catch {}
+        pintarCopia();
+        if (!ok) estadoCopia.textContent += " · No se pudo subir ahora (¿hay internet?)";
+        subirYa.disabled = false;
+      },
+    },
+    "☁️ Guardar copia ahora"
+  );
+  const records = Object.keys(leerJ("nyp-records", {})).length;
+  const hazanas = Object.keys(leerJ("nyp-hazanas", {})).length;
+  const partidas = Object.values(leerJ("nyp-estadisticas", {})).reduce((a, x) => a + (x?.j ?? 0), 0);
+  const dato = (n, t) => h("div.cuenta-dato", h("b", String(n)), h("small", t));
+  const recuperar = h(
+    "button.boton.suave.recuperar-btn",
+    {
+      type: "button",
+      onclick: async () => {
+        const r = await recuperarPerfil();
+        if (r) alGuardar(r);
+      },
+    },
+    "📲 Recuperar mi perfil de otro móvil"
+  );
+  // Borrar el perfil entero (récords, hazañas, fotos…) para empezar otro desde cero. Hay que mantenerlo pulsado.
+  const borrar =
+    editando && alBorrar
+      ? botonMantener("🗑️ Borrar perfil y empezar de cero", () => {
+          borrarDatosPerfil();
+          alBorrar();
+        }, { clase: ".suave.borrar-perfil", ms: 1500 })
+      : null;
+
+  const pestañas = { nombre: "Nombre", colores: "Colores", foto: "Foto", premios: "Premios", ...(editando ? { cuenta: "Cuenta" } : {}) };
   const paneles = {
     nombre: h("div.panel-perfil", campo.visor, campo.teclado),
     colores: h("div.panel-perfil", interruptores, cajaColores),
@@ -329,6 +389,15 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
       cajaFotos,
       entradaCamara,
       entradaGaleria
+    ),
+    cuenta: h(
+      "div.panel-perfil.panel-cuenta",
+      editando ? h("div.cuenta-resumen", dato(partidas, "partidas"), dato(records, "récords"), dato(hazanas, "hazañas")) : null,
+      editando
+        ? h("div.cuenta-bloque", h("span.etiqueta", "Copia en la nube"), h("p.suave", "Tu perfil, récords y hazañas se guardan solos en la nube: así no se pierden si cambias de móvil."), estadoCopia, subirYa)
+        : null,
+      h("div.cuenta-bloque", h("span.etiqueta", "Otro móvil"), h("p.suave", "¿Ya jugabas en otro móvil o borraste la app? Recupera tu perfil con todo lo que tenías."), recuperar),
+      borrar ? h("div.cuenta-bloque.peligro", h("span.etiqueta", "Empezar de cero"), h("p.suave", "Borra tu perfil, récords, hazañas y fotos de este móvil. Mantén pulsado para confirmar."), borrar) : null
     ),
   };
   const cuerpo = h("div.perfil-cuerpo");
@@ -367,15 +436,6 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
     alVolver?.();
   };
 
-  // Borrar el perfil entero (récords, hazañas, fotos…) para empezar otro desde cero. Hay que mantenerlo pulsado.
-  const borrar =
-    editando && alBorrar
-      ? botonMantener("🗑️ Borrar perfil y empezar de cero", () => {
-          borrarDatosPerfil();
-          alBorrar();
-        }, { clase: ".suave.borrar-perfil", ms: 1500 })
-      : null;
-
   pintarVista();
   elegir("nombre");
   const el = h(
@@ -386,19 +446,8 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
     cuerpo,
     aviso,
     editando ? null : h("button.boton.acento.grande", { type: "button", onclick: guardar }, "Guardar"),
-    borrar,
-    // ¿Ya jugabas en otro móvil (o borraste la app)? Se recupera todo de la nube.
-    h(
-      "button.boton.suave.recuperar-btn",
-      {
-        type: "button",
-        onclick: async () => {
-          const r = await recuperarPerfil();
-          if (r) alGuardar(r);
-        },
-      },
-      "☁️ Recuperar mi perfil de otro móvil"
-    )
+    // Perfil nuevo: recuperar uno de otro móvil, a la vista (luego también está en «Cuenta»).
+    editando ? null : h("button.boton.suave.recuperar-btn", { type: "button", onclick: async () => { const r = await recuperarPerfil(); if (r) alGuardar(r); } }, "☁️ Recuperar mi perfil de otro móvil")
   );
   return { el };
 }
