@@ -54,8 +54,12 @@ export function iniciarFondo({ espaciado = 34, color = "150, 185, 255" } = {}) {
   let siguienteColor = 0;
   function onda(x, y, fuerza = 1) {
     if (calma) return;
-    ondas.push({ x, y, t0: performance.now() / 1000, fuerza, color: COLORES_ONDA[siguienteColor++ % COLORES_ONDA.length] });
-    if (ondas.length > 5) ondas.shift();
+    const t0 = performance.now() / 1000;
+    ondas.push({ x, y, t0, fuerza, color: COLORES_ONDA[siguienteColor++ % COLORES_ONDA.length], apagar: null });
+    // Sin límite práctico: cada onda dura 3,4 s, así que aunque golpees muy deprisa hay pocas a la vez.
+    // Solo por seguridad (más de 40 a la vez), las más antiguas se apagan poco a poco, nunca de golpe.
+    const vivas = ondas.filter((o) => o.apagar == null);
+    for (let k = 0; k < vivas.length - 40; k++) vivas[k].apagar = t0;
   }
 
   function dibujar(ms) {
@@ -69,7 +73,11 @@ export function iniciarFondo({ espaciado = 34, color = "150, 185, 255" } = {}) {
     const rMin = esp * 0.045, rMax = esp * 0.14;
     // La onda: suave y lenta, crece poco y se apaga del todo (varias seguidas no se suman sin fin).
     const vel = esp * 7, grosor = esp * 3.2, VIDA = 3.4;
-    for (let k = ondas.length - 1; k >= 0; k--) if (t - ondas[k].t0 > VIDA) ondas.splice(k, 1);
+    const APAGADO = 0.5; // lo que tarda en desvanecerse una onda que se apaga antes de tiempo
+    for (let k = ondas.length - 1; k >= 0; k--) {
+      const o = ondas[k];
+      if (t - o.t0 > VIDA || (o.apagar != null && t - o.apagar > APAGADO)) ondas.splice(k, 1);
+    }
 
     const normal = new Path2D();
     // Puntos teñidos: por onda y por intensidad (3 niveles), para pintarlos de pocas veces.
@@ -97,13 +105,16 @@ export function iniciarFondo({ espaciado = 34, color = "150, 185, 255" } = {}) {
         const d = Math.hypot(x - o.x, y - o.y);
         const z = (d - dt * vel) / grosor;
         // Entra y sale con suavidad (sin golpe al principio) y se apaga al final de su vida.
-        const vida = Math.min(1, dt / 0.25) * Math.max(0, 1 - dt / VIDA) ** 1.5;
-        const v = o.fuerza * Math.exp(-z * z) * vida;
+        const vida = Math.min(1, dt / 0.25) * Math.max(0, 1 - dt / VIDA) ** 1.5 * (o.apagar == null ? 1 : Math.max(0, 1 - (t - o.apagar) / APAGADO));
+        // El anillo que se aleja y, además, un «golpe» donde tocaste: los puntos de ahí crecen más y
+        // vuelven a su tamaño en algo más de un segundo.
+        const impacto = Math.exp(-((d / (esp * 2.4)) ** 2)) * Math.exp(-dt * 2.2) * Math.min(1, dt / 0.12);
+        const v = o.fuerza * (Math.exp(-z * z) * vida + impacto * 1.6);
         extra += v;
         if (v > mejorV) (mejorV = v), (mejor = k);
       }
-      extra = Math.min(1, extra);
-      r += extra * rMax * 0.55;
+      extra = Math.min(1.8, extra); // con muchas ondas juntas, un tope (para que no tapen los textos)
+      r += extra * rMax * 1.05;
       if (mejor >= 0 && mejorV > 0.12) {
         const nivel = mejorV > 0.6 ? 2 : mejorV > 0.3 ? 1 : 0;
         const camino = tenidos[mejor][nivel];
@@ -130,12 +141,12 @@ export function iniciarFondo({ espaciado = 34, color = "150, 185, 255" } = {}) {
     medir();
     quieto = false;
   });
-  // La ola solo sale al tocar el fondo, nunca al pulsar botones, letras o campos.
+  // La ola solo sale al tocar el fondo, nunca al pulsar botones, letras o campos (salvo las letras del título).
   const INTERACTIVO = "button, a, input, textarea, select, label, [role=button], .ficha, .juego-carta, .interruptor, .sin-onda, .capa-movil";
   window.addEventListener(
     "pointerdown",
     (e) => {
-      if (e.target instanceof Element && e.target.closest(INTERACTIVO)) return;
+      if (e.target instanceof Element && e.target.closest(INTERACTIVO) && !e.target.closest(".titulo-nyp")) return;
       // Pantallas de resultado: en el móvil, sin olas (al desplazar salían muchas); en el ordenador,
       // solo fuera de la zona con los resultados.
       if (e.target instanceof Element && e.target.closest(".pantalla-final") && (e.pointerType !== "mouse" || e.target.closest(".zona-final"))) return;
