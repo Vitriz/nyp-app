@@ -95,6 +95,18 @@ export async function diccionarioIncluido() {
   }
 }
 
+/**
+ * Descomprime (gzip) a texto. Con DecompressionStream si el navegador la tiene; si no (iPhone con iOS
+ * anterior a 16.4), con una librería pequeña (fflate) que se baja solo en ese caso.
+ */
+async function descomprimir(gz) {
+  if (typeof DecompressionStream !== "undefined") {
+    return new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+  }
+  const { gunzipSync } = await import("https://cdn.jsdelivr.net/npm/fflate@0.8.2/esm/browser.js");
+  return new TextDecoder().decode(gunzipSync(new Uint8Array(gz)));
+}
+
 /** Descifra un archivo cifrado de la app (sal · iv · datos) con la contraseña. Devuelve el texto o null si no vale. */
 async function descifrar(url, texto, info) {
   const bin = new Uint8Array(await (await fetch(url)).arrayBuffer());
@@ -107,7 +119,7 @@ async function descifrar(url, texto, info) {
   } catch {
     return null; // contraseña incorrecta
   }
-  return new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+  return descomprimir(gz);
 }
 
 // Las acepciones completas (datos de la RAE, para la ventana de significados) van, como el diccionario,

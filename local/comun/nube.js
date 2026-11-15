@@ -85,7 +85,7 @@ export async function leerFicha(id) {
 }
 
 // ------------------------------------------------------------------ todos (clasificación global)
-const PRUEBAS = new Set(["3c683e1791484d3db1ff", "7869ffb70b2542358ca1", "a3647781984f461293f6", "b85a4fb7ab414f8db0db"]);
+const PRUEBAS = new Set(["3c683e1791484d3db1ff", "7869ffb70b2542358ca1", "a3647781984f461293f6", "b85a4fb7ab414f8db0db", "25b87f9b3c564921a7d5"]);
 /** Todos los jugadores, sin las fotos (para la clasificación). [{ id, nombre, color, records: {…}, hazanas: {…} }] */
 // (Los jugadores «Test» que subieron las pruebas antiguas no se enseñan.)
 export async function leerJugadores() {

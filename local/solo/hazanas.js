@@ -153,10 +153,27 @@ export function hazanaDe(tipo, id) {
   return HAZANAS.find((x) => x.premio?.[tipo] === id) ?? null;
 }
 
+// Un solo «altavoz» para toda la app. En iPhone (Safari) el sonido solo puede empezar con un toque: se crea
+// y se desbloquea con el primer toque en la pantalla; así la fanfarria suena aunque llegue después, sola.
+let altavoz = null;
+function crearAltavoz() {
+  try {
+    altavoz ??= new (window.AudioContext || window.webkitAudioContext)();
+    if (altavoz.state === "suspended") altavoz.resume?.();
+  } catch {}
+  return altavoz;
+}
+const desbloquear = () => {
+  const A = crearAltavoz();
+  if (A && A.state === "running") ["pointerdown", "touchend", "keydown"].forEach((t) => removeEventListener(t, desbloquear, true));
+};
+["pointerdown", "touchend", "keydown"].forEach((t) => addEventListener(t, desbloquear, true));
+
 /** Fanfarria de trompetas, hecha en el momento (sin archivos de sonido). */
 function fanfarria() {
   try {
-    const A = new (window.AudioContext || window.webkitAudioContext)();
+    const A = crearAltavoz();
+    if (!A) return;
     const t0 = A.currentTime + 0.05;
     const notas = [[523, 0, 0.14], [523, 0.15, 0.14], [523, 0.3, 0.14], [659, 0.45, 0.32], [523, 0.8, 0.16], [659, 0.97, 0.16], [784, 1.14, 0.7]];
     for (const [f, ini, dur] of notas) {
@@ -176,7 +193,6 @@ function fanfarria() {
         o.stop(t0 + ini + dur + 0.02);
       }
     }
-    setTimeout(() => A.close?.(), 2600);
   } catch {}
 }
 

@@ -19,6 +19,21 @@ export const leer = (ruta) => pedir(ruta);
 export const poner = (ruta, datos) => pedir(ruta, "PUT", datos);
 export const quitar = (ruta) => pedir(ruta, "DELETE");
 
+// Los mensajes viajan como texto JSON ({ j: "…" }): la base de datos de Firebase borra las listas vacías,
+// convierte listas en objetos y no admite algunas claves; así cada móvil (Android, iPhone, PC) recibe
+// exactamente lo mismo que se envió. (Los mensajes antiguos, sin envolver, también se entienden.)
+const envolver = (msg) => ({ j: JSON.stringify(msg) });
+const desenvolver = (x) => {
+  if (x && typeof x.j === "string") {
+    try {
+      return JSON.parse(x.j);
+    } catch {
+      return null;
+    }
+  }
+  return x;
+};
+
 /** Escucha una ruta: alCambio(ruta relativa, datos) con lo que hay y con cada cambio. Devuelve { cerrar }. */
 export function escuchar(ruta, alCambio, { alAbrir, alError } = {}) {
   const es = new EventSource(url(ruta));
@@ -66,7 +81,7 @@ export function atenderSala(codigo, sala, { nombre } = {}) {
     // El estado se sobrescribe (solo importa el último); si hay uno enviándose, se guarda el más nuevo.
     const enviarEstado = (msg) => {
       if (enCurso) return void (siguiente = msg);
-      enCurso = poner(`${raiz}/e/${cid}/estado`, msg)
+      enCurso = poner(`${raiz}/e/${cid}/estado`, envolver(msg))
         .catch(() => {})
         .finally(() => {
           enCurso = null;
@@ -83,7 +98,7 @@ export function atenderSala(codigo, sala, { nombre } = {}) {
       send: (texto) => {
         const msg = JSON.parse(texto);
         if (msg.t === "estado") enviarEstado(msg);
-        else poner(`${raiz}/e/${cid}/m/${num(nm++)}`, msg).catch(() => {});
+        else poner(`${raiz}/e/${cid}/m/${num(nm++)}`, envolver(msg)).catch(() => {});
       },
       ping() {},
       terminate() {},
@@ -95,6 +110,8 @@ export function atenderSala(codigo, sala, { nombre } = {}) {
   }
 
   function llega(cid, n, msg) {
+    msg = desenvolver(msg);
+    if (!msg) return;
     let c = clientes.get(cid);
     if (!c) clientes.set(cid, (c = { ws: crearSocket(cid), esperado: 0, pendientes: new Map() }));
     c.pendientes.set(n, msg);
@@ -134,6 +151,7 @@ export function conectarBatalla({ codigo, alAbrir, alMensaje, alEstadoConexion }
   let n = 0, desfase = 0, muestras = 0, abierto = false, cerrado = false;
   const vistos = new Set();
   const entregar = (msg) => {
+    msg = desenvolver(msg);
     if (!msg || cerrado) return;
     if (msg.t === "pong") {
       const ida = Date.now() - msg.eco;
@@ -174,7 +192,7 @@ export function conectarBatalla({ codigo, alAbrir, alMensaje, alEstadoConexion }
   );
   function enviar(msg) {
     if (cerrado) return false;
-    poner(`${raiz}/a/${cid}/${num(n++)}`, msg).catch(() => {});
+    poner(`${raiz}/a/${cid}/${num(n++)}`, envolver(msg)).catch(() => {});
     return true;
   }
   return {

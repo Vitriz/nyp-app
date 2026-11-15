@@ -1951,3 +1951,21 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
   .capa-movil .caja { border-radius: 1.3rem; max-height: 86dvh; }
   .capa-records .caja, .capa-ambitos .caja { max-width: 40rem; }
 }
+/* Botones que abren un código QR: con un QR en miniatura sobre una ficha blanca */
+.icono-qr { display: inline-grid; place-items: center; line-height: 0; }
+.icono-qr svg { display: block; }
+.barra-inicio .boton-qr {
+  appearance: none; margin-left: auto; display: inline-flex; align-items: center; gap: 0.5rem; height: 2.9rem; padding: 0 0.9rem 0 0.45rem;
+  border-radius: 999px; font: inherit; font-weight: 900; font-size: 0.95rem; color: var(--texto); cursor: var(--cursor-mano, pointer);
+  background: linear-gradient(180deg, #2d58b0, #1f4594); border: 1px solid rgba(170, 200, 255, 0.45); box-shadow: 0 0.2rem 0 rgba(4, 12, 40, 0.5);
+}
+.barra-inicio .boton-qr .icono-qr { width: 2.1rem; height: 2.1rem; border-radius: 0.55rem; background: #fff; color: #0a1b4a; font-size: 1.35rem; box-shadow: inset 0 0 0 2px rgba(10, 27, 74, 0.08); }
+.barra-inicio .boton-qr:active { transform: translateY(0.12rem); box-shadow: none; }
+@media (max-width: 380px) { .barra-inicio .boton-qr span:not(.icono-qr) { display: none; } .barra-inicio .boton-qr { padding: 0 0.4rem; } }
+.batalla-chip-qr .icono-qr, .batalla-chip-qr.icono-qr { width: 2.4rem; height: 2.4rem; border-radius: 0.6rem; background: #fff; color: #0a1b4a; font-size: 1.5rem; box-shadow: 0 0.15rem 0 rgba(4, 12, 40, 0.4); }
+/* Invitación a una sala (QR abierto con la cámara, sin la app) */
+.invitacion { justify-content: center; gap: 1.6rem; }
+.invitacion-caja { display: flex; flex-direction: column; align-items: stretch; gap: 0.7rem; padding: 1.3rem; width: min(100%, 26rem); text-align: center; }
+.invitacion-caja > small { font-size: 0.8rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texto-suave); }
+.invitacion-codigo { font-family: var(--fuente-ficha); font-size: 2.6rem; letter-spacing: 0.08em; color: var(--oro); }
+.invitacion-caja p { margin: 0 0 0.4rem; font-size: 0.88rem; }

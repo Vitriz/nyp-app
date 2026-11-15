@@ -1,6 +1,6 @@
 // Modo partida: conectado a PARTY (la TV). Esperar, jugar y ver resultados.
 import { conectar, almacen } from "../comun/conexion.js";
-import { h, rango, confeti, cambiarPantalla, avatar, banner, bannerFijo, fotosMemoria, TIEMPOS, crearReloj, msDuracion, textoSegundos, textoPuesto, textoCuenta, piezaCuenta, servidor, detalleJugador, finalLlegar, palabraPendiente } from "../comun/ui.js";
+import { h, iconoQR, rango, confeti, cambiarPantalla, avatar, banner, bannerFijo, fotosMemoria, TIEMPOS, crearReloj, msDuracion, textoSegundos, textoPuesto, textoCuenta, piezaCuenta, servidor, detalleJugador, finalLlegar, palabraPendiente } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { actualizarPaquete } from "../solo/paquete.js";
 import { mensajeRecords, guardarFamilia } from "../comun/familia.js";
@@ -180,7 +180,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
             { type: "button", onclick: () => ventanaQR(estado ?? e), title: "Ver el QR para invitar" },
             h("small", e.esHost ? "👑 Eres el anfitrión" : "Sala"),
             h("b", codigoBonito(e.batalla.codigo)),
-            h("span.batalla-chip-qr", "▦")
+            h("span.batalla-chip-qr", iconoQR())
           )
         : null;
     // El hueco del banner fijo: abierto, o cerrado en círculo en la cuenta atrás (se va a jugar).
@@ -220,7 +220,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
       { onclick: (ev) => ev.target === capa && cerrar() },
       h(
         "div.caja.tarjeta",
-        h("div.records-cabeza", h("h2", "📲 Invitar a la sala"), h("button.icono-btn.cerrar", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
+        h("div.records-cabeza", h("h2", "Invitar a la sala"), h("button.icono-btn.cerrar", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
         qr,
         h("div.batalla-codigo-texto", h("small", "Código de la sala"), h("b", codigoBonito(c)), h("span.suave", "Que lo escaneen, o que entren en «Batalla multijugador → Unirse a sala» y escriban el código."))
       )

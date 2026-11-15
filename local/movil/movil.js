@@ -1,7 +1,7 @@
 // App NYP del móvil: inicio (perfil · jugar en grupo con PARTY · jugar solo).
 import { iniciarFondo } from "../comun/fondo.js";
 import { tituloVivo } from "../comun/titulo-vivo.js";
-import { h, cambiarPantalla, bannerFijo, servidor, vigilarEncaje, tituloJuego } from "../comun/ui.js";
+import { h, cambiarPantalla, bannerFijo, servidor, vigilarEncaje, tituloJuego, iconoQR } from "../comun/ui.js";
 import { cargarPerfil, pantallaPerfil } from "./perfil.js";
 import { crearBatalla, codigoBatalla } from "./batalla.js";
 import { actualizarPaquete, actualizarIncluido } from "../solo/paquete.js";
@@ -76,7 +76,7 @@ function ventanaDescarga() {
     { onclick: (ev) => ev.target === capa && cerrar() },
     h(
       "div.caja.tarjeta",
-      h("div.records-cabeza", h("h2", "📲 Descargar NYP"), h("button.icono-btn.cerrar", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
+      h("div.records-cabeza", h("h2", "Descargar NYP"), h("button.icono-btn.cerrar", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
       qr,
       h("p.suave", "Que lo escaneen con la cámara del móvil: les lleva a la página para instalar la app."),
       compartir
@@ -117,7 +117,7 @@ async function inicio() {
       // Arriba a la izquierda, tu banner (tocarlo abre el perfil); en el centro, el título.
       barraPerfil(
         () => editarPerfil(inicio),
-        h("button.icono-btn.boton-qr", { type: "button", onclick: ventanaDescarga, "aria-label": "QR para descargar la app", title: "QR para descargar la app" }, "📲")
+        h("button.boton-qr", { type: "button", onclick: ventanaDescarga, "aria-label": "QR para descargar la app", title: "QR para descargar la app" }, iconoQR(), h("span", "Compartir"))
       ),
       h("div.inicio-centro", titulo),
       h(
@@ -340,9 +340,53 @@ const salaVer = location.hash.match(/[#&]ver=(\d{6})/)?.[1] ?? null;
 const paraInstalar = /instalar/.test(location.hash + location.search);
 if (location.hash) history.replaceState(null, "", location.pathname);
 
+// Sala a la que te invitaron con el QR (si instalas la app desde la invitación, al abrirla entras sola).
+const PENDIENTE = "nyp-sala-pendiente";
+function salaPendiente() {
+  try {
+    const x = JSON.parse(almacenLocal.getItem(PENDIENTE) ?? "null");
+    return x && Date.now() - x.t < 45 * 60 * 1000 ? x.codigo : null;
+  } catch {
+    return null;
+  }
+}
+const almacenLocal = (() => {
+  try {
+    return window.localStorage;
+  } catch {
+    return { getItem: () => null, setItem() {}, removeItem() {} };
+  }
+})();
+
+/** Invitación (QR abierto con la cámara, sin la app): jugar ya desde el navegador o instalar la app. */
+function pantallaInvitacion(codigo) {
+  try {
+    almacenLocal.setItem(PENDIENTE, JSON.stringify({ codigo, t: Date.now() }));
+  } catch {}
+  const bonito = `${codigo.slice(0, 3)} ${codigo.slice(3)}`;
+  mostrar(
+    h(
+      "section.inicio.invitacion",
+      tituloJuego(),
+      h("div.invitacion-caja.tarjeta",
+        h("small", "Te han invitado a una partida"),
+        h("b.invitacion-codigo", bonito),
+        h("button.boton.acento.grande", { type: "button", onclick: () => (almacenLocal.removeItem(PENDIENTE), conPerfil(() => batalla().entrarSala(codigo))) }, "🎮 Jugar ahora"),
+        h("p.suave", "Desde el navegador: creas tu perfil y entras directamente en la sala."),
+        h("button.boton.suave.grande", { type: "button", onclick: pantallaInstalar }, "Instalar la app"),
+        h("p.suave", esIOS ? "¿Ya tienes la app? Ábrela: te llevará a esta sala (o entra en «Batalla → Unirse» con el código)." : "Al abrir la app recién instalada, entrarás en esta sala.")
+      )
+    )
+  );
+}
+
 function arrancar() {
+  const pendiente = !salaBatalla && enApp ? salaPendiente() : null;
+  if (pendiente) almacenLocal.removeItem(PENDIENTE);
   if (salaVer) iniciarVisor(salaVer);
-  else if (salaBatalla) conPerfil(() => batalla().entrarSala(salaBatalla));
+  // Con la app instalada se entra directamente; en el navegador, primero se elige (jugar ya o instalar).
+  else if (salaBatalla && !enApp && esMovil) pantallaInvitacion(salaBatalla);
+  else if (salaBatalla || pendiente) conPerfil(() => batalla().entrarSala(salaBatalla ?? pendiente));
   // La primera vez, lo primero es crear tu perfil.
   else if (!perfil) editarPerfil(inicio);
   else inicio();
