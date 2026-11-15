@@ -55,16 +55,6 @@ body { cursor: default; }
 
 .panel-host { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; font-size: 1.5rem; }
 .interruptor { display: inline-flex; align-items: center; gap: 0.8rem; cursor: pointer; }
-.interruptor .pista-int {
-  width: 3.6rem; height: 2rem; border-radius: 2rem; background: rgba(160, 190, 255, 0.25);
-  position: relative; transition: background 200ms;
-}
-.interruptor .pista-int::after {
-  content: ""; position: absolute; top: 0.25rem; left: 0.25rem; width: 1.5rem; height: 1.5rem;
-  border-radius: 50%; background: var(--texto); transition: transform 220ms var(--curva);
-}
-.interruptor.on .pista-int { background: var(--acento); }
-.interruptor.on .pista-int::after { transform: translateX(1.6rem); }
 
 /* ---------- presentación ---------- */
 .presentacion { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3rem; text-align: center; }
@@ -102,7 +92,6 @@ body { cursor: default; }
 .fila-res .suma { text-align: right; color: var(--oro); }
 .fila-res.p1 { background: rgba(233, 199, 90, 0.16); border-color: rgba(233, 199, 90, 0.5); }
 
-.fila-clas { grid-template-columns: 5rem 4rem 18rem 1fr 7rem; }
 .barra { height: 1.6rem; border-radius: 1rem; background: rgba(160, 190, 255, 0.18); overflow: hidden; }
 .barra i { display: block; height: 100%; border-radius: 1rem; background: var(--c, var(--acento)); transform-origin: left; animation: crecer 1100ms var(--curva) both; }
 @keyframes crecer { from { transform: scaleX(0); } }
@@ -192,7 +181,7 @@ body { cursor: default; }
 .equipo-cab { display: flex; justify-content: space-between; align-items: baseline; font-size: 1.8rem; color: var(--c); }
 .equipo-cab .suave { font-size: 1.3rem; }
 .equipo-col .jugador { font-size: 1.5rem; padding: 0.3rem 0.6rem 0.3rem 0.3rem; background: none; border: 0; }
-.fila-equipo { border-color: var(--c); font-size: 2.4rem; }
+
 .duraciones .boton.elegida { background: linear-gradient(180deg, #8ed3e6, var(--acento)); color: var(--acento-texto); border-color: var(--ficha-borde); }
 
 /* ---------- capa (QR del mando) ---------- */
@@ -224,7 +213,6 @@ body { cursor: default; }
 .pul-capa b { font-size: 6rem; }
 .pul-capa span { font-size: 2.4rem; color: var(--texto-suave); }
 .pul-tv .mf-rejilla { width: 100%; }
-.pul-flecha { align-self: center; font-size: 0.5em; color: var(--texto-suave); }
 
 /* jugadores con su banner (colores elegidos en el móvil) */
 .jugador.banner-tv { background: var(--fondo); color: var(--texto); border-color: rgba(255, 255, 255, 0.8); }
@@ -472,7 +460,6 @@ body { cursor: default; }
 .mf-progreso { display: block; height: 0.7rem; border-radius: 1rem; background: rgba(160, 190, 255, 0.18); overflow: hidden; }
 .mf-progreso i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--c, #5fb7d0), #ffd34d); transition: width 600ms var(--curva); }
 .mf-carta .avatar { flex: none; }
-
 
 /* Resultados: columnas fijas (puesto · avatar · nombre ……… marca · puntos), los puntos siempre visibles */
 .fila-res { grid-template-columns: 5rem 4.5rem minmax(0, 1fr) minmax(12rem, auto) 7rem; border-left: 0.6rem solid var(--c, transparent); }

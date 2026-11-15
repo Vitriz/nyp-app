@@ -39,11 +39,6 @@ export function entera(fuente, ancho, alto, maximo = MAXIMO) {
   return c;
 }
 
-/** ¿Es una foto recortada (con transparencia)? */
-export function esRecorte(foto) {
-  return typeof foto === "string" && (/^data:image\/(png|webp)/.test(foto) || /[?&]r=1\b/.test(foto));
-}
-
 // ------------------------------------------------------------------ máscara → imagen final
 
 /** Recuadro de lo que la máscara deja ver (alfa > 50 %). */

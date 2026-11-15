@@ -86,9 +86,3 @@ export function elegirAmbito(lista) {
   });
 }
 
-/** Cómo se llama lo elegido: «Todos los temas», «Marina», «Marina · Música» o «5 temas». */
-export function nombreAmbito(a) {
-  if (a === "todos") return "Todos los temas";
-  if (Array.isArray(a)) return a.length <= 2 ? a.join(" · ") : `${a.length} temas`;
-  return a ?? "";
-}

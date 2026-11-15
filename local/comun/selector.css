@@ -15,11 +15,7 @@
 .sel-cat { display: inline-block; font-size: 0.75rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.1rem 0.5rem; border-radius: 1rem; background: rgba(95, 183, 208, 0.2); color: #8ed3e6; }
 .sel-nombre { margin: 0.15rem 0 0; font-size: 1.7rem; line-height: 1.05; }
 .sel-desc { margin: 0; font-size: 1rem; line-height: 1.35; color: var(--texto-suave); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.sel-datos { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem; }
-.sel-dato { display: flex; flex-direction: column; gap: 0.1rem; padding: 0.4rem 0.7rem; border-radius: 0.7rem; background: rgba(8, 20, 60, 0.45); border: 1px solid var(--borde-suave); min-width: 0; }
-.sel-dato small { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--texto-suave); }
-.sel-dato b { font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sel-dato.record b { color: var(--oro); }
+
 .sel-jugar { min-height: 3.4rem; font-size: 1.35rem; }
 .sel-jugar.bloqueado { background: var(--superficie-2); color: var(--texto); }
 
@@ -46,7 +42,7 @@
 .sel-item.bloqueado { color: var(--texto-suave); }
 .sel-item-icono { flex: none; display: grid; place-items: center; width: 2.3rem; height: 2.3rem; font-size: 1.3rem; border-radius: 0.6rem; background: rgba(8, 20, 60, 0.45); }
 .sel-item-nombre { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sel-item-copa { flex: none; font-size: 1rem; }
+
 .sel-item.elegido {
   background: linear-gradient(180deg, #fff, var(--ficha-2)); color: var(--ficha-texto); border-color: var(--oro); border-left-color: var(--cat);
   box-shadow: 0 0 0 0.18rem rgba(233, 199, 90, 0.45), 0 0.3rem 0 rgba(4, 12, 40, 0.5), 0 0.6rem 1.6rem rgba(4, 12, 40, 0.45);
@@ -77,7 +73,6 @@
 }
 .sel-desc { -webkit-line-clamp: unset; display: block; }
 .sel-contador { color: var(--texto-suave); font-size: 0.95rem; }
-
 
 /* Tu récord: una línea, no una caja */
 .sel-record { margin: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 0.3rem; font-size: 0.98rem; font-weight: 700; min-height: 1.4em; }
@@ -137,19 +132,9 @@
 @keyframes hoja { from { transform: translateY(40%); opacity: 0; } }
 .records-cabeza { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .records-lista { overflow-y: auto; display: flex; flex-direction: column; gap: 0.45rem; padding-right: 0.2rem; }
-.record-fila {
-  display: grid; grid-template-columns: 2.4rem 1fr auto; align-items: center; gap: 0.2rem 0.6rem; padding: 0.55rem 0.7rem;
-  border-radius: 0.9rem; background: rgba(36, 68, 150, 0.6); animation: sel-texto 340ms var(--curva) both;
-}
-.record-fila .ico { grid-row: span 2; font-size: 1.5rem; text-align: center; }
-.record-fila b { font-size: 1.02rem; }
-.record-fila .mejor { color: var(--oro); font-weight: 900; text-align: right; }
-.record-fila .marcas { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 0.25rem 0.4rem; font-size: 0.8rem; color: var(--texto-suave); font-weight: 700; }
-.record-fila .marcas span { white-space: nowrap; }
-.record-fila.sin { opacity: 0.55; }
 
 @media (prefers-reduced-motion: reduce) {
-  .sel-ficha.cambia, .sel-ficha.cambia *, .sel-record.cambia, .sel-pil-valor, .sel-jugar::after, .record-fila, .capa-records .caja { animation: none !important; }
+  .sel-ficha.cambia, .sel-ficha.cambia *, .sel-record.cambia, .sel-pil-valor, .sel-jugar::after, .capa-records .caja { animation: none !important; }
   .sel-item { transition: opacity 200ms; }
 }
 /* Móvil estrecho: flechas más finas (pero altas, para el dedo) y sin el iconito */
@@ -160,17 +145,12 @@
 @keyframes sel-texto { from { opacity: 0.4; transform: translateY(0.4rem); } }
 
 /* Récords: pestañas «Míos» / «Familia» y la clasificación */
-.records-pestanas { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; padding: 0.25rem; border-radius: 999px; background: rgba(6, 18, 56, 0.45); }
-.records-pestana {
-  appearance: none; border: none; font: inherit; font-weight: 900; padding: 0.55rem; border-radius: 999px; cursor: var(--cursor-mano, pointer);
-  color: var(--texto-suave); background: transparent; transition: background 200ms, color 200ms;
-}
-.records-pestana[aria-selected="true"] { background: linear-gradient(180deg, #fff, var(--ficha-2)); color: var(--ficha-texto); }
+
 .familia-nota { margin: 0; font-size: 0.82rem; color: var(--texto-suave); font-weight: 700; }
 .familia-juego { display: flex; flex-direction: column; gap: 0.35rem; padding: 0.6rem 0.7rem; border-radius: 0.9rem; background: rgba(36, 68, 150, 0.6); animation: sel-texto 340ms var(--curva) both; }
 .familia-titulo { display: flex; align-items: center; gap: 0.5rem; font-size: 1.02rem; }
 .familia-titulo .ico { font-size: 1.3rem; }
-.familia-grupo small { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.04em; color: var(--texto-suave); }
+
 .familia-podio { list-style: none; margin: 0.15rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; }
 .familia-podio li { display: grid; grid-template-columns: 1.8rem 1fr auto; align-items: center; gap: 0.4rem; padding: 0.25rem 0.45rem; border-radius: 0.6rem; font-weight: 800; font-size: 0.92rem; }
 .familia-podio li.yo { background: rgba(233, 199, 90, 0.16); }
@@ -185,13 +165,6 @@
 .sel-desc { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.7em; line-height: 1.35; }
 .sel-cabeza-textos { flex: 1; min-width: 0; }
 .sel-nombre { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sel-ayuda-btn {
-  appearance: none; flex: none; align-self: flex-start; width: 2.6rem; height: 2.6rem; border-radius: 50%; cursor: var(--cursor-mano, pointer);
-  font: inherit; font-family: var(--fuente-ficha); font-weight: 900; font-size: 1.35rem; color: var(--texto);
-  background: rgba(44, 80, 166, 0.66); border: 2px solid var(--borde-suave); transition: background 150ms, transform 120ms;
-}
-.sel-ayuda-btn:hover { background: rgba(120, 160, 255, 0.28); }
-.sel-ayuda-btn:active { transform: scale(0.92); }
 
 /* ---------- ventana de ayuda ---------- */
 .capa-ayuda { place-items: end center; }
@@ -323,7 +296,6 @@
   font-family: var(--fuente-ficha); font-size: 0.9rem; font-weight: 900; line-height: 1; color: #fff;
   background: linear-gradient(180deg, #6fb4ff, #3a74d8); border: 0.12rem solid #fff; box-shadow: 0 0.12rem 0.3rem rgba(4, 12, 40, 0.5);
 }
-.sel-ayuda-btn { display: none; }
 
 /* El botón de jugar va dentro del juego elegido de la lista (y ▶ en la cuadrícula); la ficha no lo lleva. */
 .sel-item-jugar {
@@ -338,14 +310,11 @@
 }
 .sel-item.bloqueado .sel-item-jugar { background: var(--superficie-2); color: var(--texto); }
 .sel-casilla { position: relative; }
-.sel-casilla-jugar {
-  display: none; position: absolute; right: -0.35rem; bottom: -0.35rem; width: 1.5rem; height: 1.5rem; border-radius: 50%; place-items: center;
-  font-size: 0.7rem; color: var(--ficha-texto); background: linear-gradient(180deg, #8fe0f0, #5fb7d0); border: 0.12rem solid #fff;
-}
+
 @container (max-width: 43.99rem) {
   .sel-jugar { display: none; }
   .sel-item.elegido .sel-item-jugar { display: inline-flex; }
-  .sel-casilla.elegido .sel-casilla-jugar { display: grid; }
+
   .sel { gap: 0.6rem; }
   .sel-ficha { padding: 0.75rem 0.85rem 0.85rem; gap: 0.55rem; }
   .sel-cabeza { gap: 0.75rem; }
@@ -377,7 +346,7 @@
 .sel-titulo .sel-vista-btn { width: 2.3rem; height: 2.3rem; border-radius: 0.7rem; font-size: 1.15rem; background: rgba(120, 160, 255, 0.2); box-shadow: 0 0.15rem 0 rgba(4, 12, 40, 0.45); }
 
 /* ---------- cuadrícula: se elige tocando; se juega con el botón de abajo ---------- */
-.sel-casilla-jugar { display: none !important; }
+
 .sel-jugar-abajo { flex: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; min-height: 3.3rem; font-size: 1.15rem; margin-top: 0.2rem; position: relative; overflow: hidden; isolation: isolate; }
 .sel-jugar-abajo.oculto { display: none; }
 .sel-jugar-nombre { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

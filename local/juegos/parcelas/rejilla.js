@@ -13,7 +13,6 @@ export function cumple(p, alto, ancho) {
 }
 
 /** El dibujo de la forma de una pista (cuadrado, alto, ancho o cualquiera). */
-export const iconoForma = (forma) => h(`span.pc-forma.${forma}`, { "aria-hidden": "true" });
 
 /** La insignia de una pista: la forma rellena de su color y, si lo tiene, el tamaño dentro. */
 export const insignia = (forma, numero, color) =>

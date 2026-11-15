@@ -1,10 +1,10 @@
 // Modo solo: los mismos juegos que en PARTY, ejecutados en el propio móvil, con récords personales.
-import { h, cambiarPantalla, banner, bannerFijo, avatar, TIEMPOS, msDuracion, crearReloj, textoCuenta, piezaCuenta, detalleJugador, confeti, contarHasta, finalLlegar, palabraPendiente } from "../comun/ui.js";
+import { h, cambiarPantalla, banner, bannerFijo, TIEMPOS, msDuracion, crearReloj, textoCuenta, piezaCuenta, detalleJugador, confeti, contarHasta, finalLlegar, palabraPendiente } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { almacen } from "../comun/conexion.js";
 import { leerPaquete, diccionarioIncluido, desbloquearDiccionario, actualizarIncluido } from "./paquete.js";
 import { campoTexto } from "../comun/teclado.js";
-import { selectorJuegos, ICONOS, textoSegundos, textoRecord, infoPartida } from "./selector.js";
+import { selectorJuegos, ICONOS, textoRecord, infoPartida } from "./selector.js";
 import { idMovil } from "../comun/familia.js";
 import { subirLuego } from "../comun/nube.js";
 import { comprobarHazanas, tarjetaHazanas, ventanaHazanas, celebrarHazanas } from "./hazanas.js";

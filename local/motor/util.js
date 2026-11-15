@@ -51,12 +51,6 @@ export function clasificar(entradas, { mayorEsMejor = true } = {}) {
   return [...validas, ...sin];
 }
 
-/** Puntos según el puesto: tabla configurable; más allá de la tabla, 1 punto. */
-export function puntosPorPuesto(puesto, tabla) {
-  if (puesto == null) return 0;
-  return tabla[puesto - 1] ?? 1;
-}
-
 export function limpiarNombre(texto) {
   return String(texto ?? "")
     .replace(/[\u0000-\u001f<>]/g, "")

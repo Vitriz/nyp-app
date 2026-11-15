@@ -460,8 +460,7 @@ html, body {
 /* Resumen para estudiar (modo solo) */
 .cx-estudio { width: 100%; display: flex; flex-direction: column; gap: 0.6rem; padding: 0.7rem; max-height: 46dvh; overflow-y: auto; text-align: left; }
 .cx-estudio > small { color: var(--texto-suave); font-weight: 800; text-align: center; }
-.cx-estudio-tablero { display: flex; flex-direction: column; gap: 0.4rem; }
-.cx-estudio-titulo { font-size: 0.75rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texto-suave); }
+
 /* Al final: ✔ o ✘ en el título del grupo (sin frases) */
 .cx-estudio .cx-grupo-nombre::before { content: "✔"; display: inline-grid; place-items: center; width: 1.35em; height: 1.35em; margin-right: 0.4em; border-radius: 50%; background: #2fa36b; color: #fff; font-size: 0.85em; vertical-align: 0.05em; }
 .cx-estudio .cx-franja.perdido .cx-grupo-nombre::before { content: "✘"; background: #e5534b; }
@@ -527,15 +526,9 @@ html, body {
 .pc-rect.previa.bien { background: rgba(95, 214, 142, 0.3); box-shadow: inset 0 0 0 0.05em #2c9b5c; }
 .pc-pista { z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.04em; pointer-events: none; min-width: 0; min-height: 0; }
 .pc-pista b { font-size: 0.4em; line-height: 1; color: #0b1f55; font-weight: 900; font-family: var(--fuente-ficha, system-ui); }
-.pc-pista .pc-forma { font-size: 0.42em; }
-.pc-pista.con-numero .pc-forma { font-size: 0.3em; }
+
 .pc-pista.hecha b { color: #fff; text-shadow: 0 0.04em 0 rgba(0, 0, 0, 0.3); }
-.pc-forma { display: inline-block; width: 1em; height: 1em; position: relative; flex: none; }
-.pc-forma::before { content: ""; position: absolute; inset: 0; margin: auto; box-sizing: border-box; border: 0.13em solid #0b1f55; border-radius: 0.14em; background: rgba(255, 255, 255, 0.85); }
-.pc-forma.cuadrado::before { width: 0.8em; height: 0.8em; }
-.pc-forma.alto::before { width: 0.52em; height: 1em; }
-.pc-forma.ancho::before { width: 1em; height: 0.52em; }
-.pc-forma.cualquiera::before { width: 0.8em; height: 0.8em; border-style: dashed; background: rgba(255, 255, 255, 0.5); }
+
 .pc.completo { box-shadow: 0 0 0 0.05em #5fd68e, 0 0.06em 0.18em rgba(4, 12, 40, 0.35); }
 
 /* --- Culebras: letras sobre las culebras de colores --- */
@@ -613,3 +606,10 @@ html, body {
 .banner.con-pintura { background: var(--fondo-img) center / cover no-repeat, var(--fondo); }
 /* El banner mide siempre lo mismo: el nombre ocupa un hueco fijo (si es largo, la letra encoge para caber) */
 .banner-nombre { flex: none; width: 5.6em; text-overflow: clip; text-align: left; }
+/* Tarjetas: fondo sólido (sin transparencia) con un ligero degradado, borde claro y sombra: se leen siempre bien */
+.tarjeta {
+  background: linear-gradient(180deg, #24499c, #1b3d86);
+  border-color: rgba(170, 200, 255, 0.42);
+  box-shadow: 0 0.35rem 1rem rgba(3, 10, 36, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+}
