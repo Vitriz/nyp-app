@@ -94,10 +94,21 @@ export function avatar(j, extra = "") {
 }
 
 /** Banner del jugador: su icono y su nombre con su color de fondo y de letras. */
+/** ¿Es un fondo pintado que se puede usar? (una imagen pequeña en data URL) */
+export const fondoValido = (f) => typeof f === "string" && /^data:image\/(webp|png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(f) && f.length < 120000;
+
 export function banner(j, extra = "") {
   return h(
-    `div.banner${extra}${j.contorno ? ".con-contorno" : ""}`,
-    { style: { "--fondo": j.color, "--texto": j.colorTexto ?? "#0a1b4a", ...(j.contorno ? { "--contorno": j.contorno } : {}) } },
+    `div.banner${extra}${j.contorno ? ".con-contorno" : ""}${fondoValido(j.fondo) ? ".con-pintura" : ""}`,
+    {
+      style: {
+        "--fondo": j.color,
+        "--texto": j.colorTexto ?? "#0a1b4a",
+        ...(j.contorno ? { "--contorno": j.contorno } : {}),
+        // Fondo pintado a mano (encima del color de fondo).
+        ...(fondoValido(j.fondo) ? { "--fondo-img": `url("${j.fondo}")` } : {}),
+      },
+    },
     avatar(j),
     h("span.banner-nombre", j.nombre || "Tu nombre")
   );
@@ -111,7 +122,7 @@ export function banner(j, extra = "") {
  */
 export function bannerFijo(j) {
   let ban = banner(j);
-  const claveDe = (x) => [x.nombre, x.color, x.colorTexto, x.contorno, x.foto, x.sombrero, x.animacion].join("|");
+  const claveDe = (x) => [x.nombre, x.color, x.colorTexto, x.contorno, x.foto, x.sombrero, x.animacion, x.fondo?.length ?? 0, x.fondo?.slice(-40)].join("|");
   let clave = claveDe(j);
   const capa = h("div.barra-sup.banner-fijo.sin-transicion.oculto-fijo", { "aria-hidden": "true" }, ban);
   document.body.append(capa);

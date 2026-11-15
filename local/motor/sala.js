@@ -21,6 +21,8 @@ export const EQUIPOS = [
 const CUENTA_ATRAS_MS = 4000; // 3, 2, 1 y ¡YA!: un segundo cada uno
 const HEX = /^#[0-9a-f]{6}$/i;
 const MAX_FOTO = 160 * 1024;
+// Fondo del banner pintado a mano: una imagen pequeña (data URL), o nada.
+const fondoOk = (f) => (typeof f === "string" && f.length < 120000 && /^data:image\/(webp|png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(f) ? f : null);
 const PREMIO = /^[a-z]{2,12}$/; // sombrero o animación del avatar (premios de las hazañas)
 // Modo automático: un solo tiempo para pasar de presentación a juego y de resultados a la siguiente.
 const FASES_AUTO = ["presentacion", "resultados", "clasificacion"];
@@ -175,6 +177,7 @@ export class Sala {
           equipo: this.#equipoMasPequeno(),
           colorTexto: HEX.test(msg.colorTexto ?? "") ? msg.colorTexto : null,
           contorno: HEX.test(msg.contorno ?? "") ? msg.contorno : null,
+          fondo: fondoOk(msg.fondo),
           foto: null,
           sombrero: PREMIO.test(msg.sombrero ?? "") ? msg.sombrero : null,
           animacion: PREMIO.test(msg.animacion ?? "") ? msg.animacion : null,
@@ -195,6 +198,7 @@ export class Sala {
         if (HEX.test(msg.colorTexto ?? "")) j.colorTexto = msg.colorTexto;
         if ("contorno" in msg) j.contorno = HEX.test(msg.contorno ?? "") ? msg.contorno : null;
         if ("foto" in msg) this.#ponerFoto(j, msg.foto);
+        if ("fondo" in msg) j.fondo = fondoOk(msg.fondo);
         if ("sombrero" in msg) j.sombrero = PREMIO.test(msg.sombrero ?? "") ? msg.sombrero : null;
         if ("animacion" in msg) j.animacion = PREMIO.test(msg.animacion ?? "") ? msg.animacion : null;
         this.difundir();
@@ -646,7 +650,7 @@ export class Sala {
       // Un punto por cada rival que queda por detrás (con 2 jugadores: 1 y 0). Los empatados suman lo mismo.
       const puntos = f.puesto == null ? 0 : filas.filter((o) => o.id !== f.id && (o.puesto == null || o.puesto > f.puesto)).length;
       j.puntos += puntos;
-      return { id: f.id, nombre: j.nombre, color: j.color, colorTexto: j.colorTexto, contorno: j.contorno, foto: j.foto, sombrero: j.sombrero ?? null, animacion: j.animacion ?? null, puesto: f.puesto, texto: f.texto, detalle: f.detalle ?? null, pendiente: f.pendiente ?? null, puntos };
+      return { id: f.id, nombre: j.nombre, color: j.color, colorTexto: j.colorTexto, contorno: j.contorno, fondo: j.fondo ?? null, foto: j.foto, sombrero: j.sombrero ?? null, animacion: j.animacion ?? null, puesto: f.puesto, texto: f.texto, detalle: f.detalle ?? null, pendiente: f.pendiente ?? null, puntos };
     });
     this.resumen = impl.resumen(this.ronda);
     this.ultimoJuego = this.juego.id;
@@ -719,6 +723,7 @@ export class Sala {
         equipo: j.equipo,
         colorTexto: j.colorTexto,
         contorno: j.contorno,
+        fondo: j.fondo ?? null,
         foto: j.foto,
         sombrero: j.sombrero ?? null,
         animacion: j.animacion ?? null,
@@ -733,7 +738,7 @@ export class Sala {
 
   /** Los tres primeros de la partida (o los equipos). En el torneo: el campeón y los últimos en caer. */
   #podio() {
-    const ficha = (j) => ({ id: j.id, nombre: j.nombre, color: j.color, colorTexto: j.colorTexto, contorno: j.contorno, foto: j.foto, sombrero: j.sombrero ?? null, animacion: j.animacion ?? null, puntos: j.puntos });
+    const ficha = (j) => ({ id: j.id, nombre: j.nombre, color: j.color, colorTexto: j.colorTexto, contorno: j.contorno, fondo: j.fondo ?? null, foto: j.foto, sombrero: j.sombrero ?? null, animacion: j.animacion ?? null, puntos: j.puntos });
     if (this.config.modo === "torneo") {
       const caidos = [...this.eliminados].reverse().map((id) => this.jugadores.get(id)).filter(Boolean);
       const campeon = this.jugadores.get(this.campeon);
@@ -776,7 +781,7 @@ export class Sala {
 
   #vistaJugador(j) {
     const v = this.#base();
-    v.yo = { eliminado: this.eliminados.has(j.id), id: j.id, nombre: j.nombre, color: j.color, colorTexto: j.colorTexto, contorno: j.contorno, foto: j.foto, sombrero: j.sombrero ?? null, animacion: j.animacion ?? null, puntos: j.puntos, equipo: j.equipo };
+    v.yo = { eliminado: this.eliminados.has(j.id), id: j.id, nombre: j.nombre, color: j.color, colorTexto: j.colorTexto, contorno: j.contorno, fondo: j.fondo ?? null, foto: j.foto, sombrero: j.sombrero ?? null, animacion: j.animacion ?? null, puntos: j.puntos, equipo: j.equipo };
     // Batalla: el anfitrión elige los juegos desde su móvil (necesita el catálogo) y ve el código de la sala.
     if (this.enNavegador) {
       v.batalla = { codigo: this.cifras };

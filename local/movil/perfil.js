@@ -4,6 +4,7 @@ import { almacen } from "../comun/conexion.js";
 import { campoTexto } from "../comun/teclado.js";
 import { selectorColor } from "../comun/color.js";
 import { editarFoto, cuadrado, entera } from "./recorte.js";
+import { editorPintura } from "./pintura.js";
 import { premiosGanados, hazanaDe } from "../solo/hazanas.js";
 import { idMovil } from "../comun/familia.js";
 import { subirFoto, leerFotos, borrarFoto, leerJugadores, leerFicha, subirFicha } from "../comun/nube.js";
@@ -105,7 +106,7 @@ export function recuperarPerfil() {
         almacen.guardar("nyp-records", JSON.stringify(mios));
         almacen.guardar("nyp-hazanas", JSON.stringify({ ...json(almacen.leer("nyp-hazanas")), ...json(f.hazanas) }));
         almacen.guardar("nyp-id", id);
-        const p = { nombre: f.nombre, color: f.color, colorTexto: f.colorTexto, contorno: f.contorno, foto: f.foto, sombrero: f.sombrero, animacion: f.animacion };
+        const p = { nombre: f.nombre, color: f.color, colorTexto: f.colorTexto, contorno: f.contorno, foto: f.foto, sombrero: f.sombrero, animacion: f.animacion, fondo: f.fondo ?? null };
         almacen.guardar("nyp-perfil", JSON.stringify(p));
         try {
           guardarHistorial((await leerFotos(id)).map(({ fid, foto }) => ({ fid, foto })));
@@ -216,19 +217,32 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
   const campo = campoTexto({ valor: p.nombre, max: 14, placeholder: "Toca las letras", alCambiar: (t) => ((p.nombre = t), pintarVista()) });
 
   // Colores: dos filas de colores y debajo la rueda, siempre a la vista; arriba eliges qué pintas (fondo, letras o contorno).
-  const PARTES = { color: "Fondo", colorTexto: "Texto", contorno: "Contorno" };
+  // «Pintar fondo»: el fondo pintado a mano, encima del color de fondo (el pincel usa los colores de abajo).
+  const PARTES = { color: "Fondo", pintar: "🖌️ Pintar fondo", colorTexto: "Texto", contorno: "Contorno" };
   let parte = "color";
+  let pintura = null;
+  let colorPincel = "#ffd34d";
   const cajaColores = h("div.colores-perfil");
   const interruptores = h("div.pestanas.partes-color");
   const pintarColores = () => {
     interruptores.querySelectorAll("button").forEach((b) => b.classList.toggle("activa", b.dataset.k === parte));
+    cajaColores.classList.toggle("pintando", parte === "pintar");
+    if (parte === "pintar") {
+      pintura ??= editorPintura({ base: p.color, fondo: p.fondo ?? null, alCambiar: (f) => ((p.fondo = f), pintarVista()) });
+      pintura.base(p.color);
+      cajaColores.replaceChildren(
+        pintura.el,
+        selectorColor({ valor: colorPincel, colores: COLORES, ruedaFija: true, alCambiar: (c) => ((colorPincel = c), pintura.color(c)) }).el
+      );
+      return;
+    }
     cajaColores.replaceChildren(
       selectorColor({
         valor: p[parte],
         colores: COLORES,
         ninguno: parte === "contorno" ? "Sin contorno" : null,
         ruedaFija: true,
-        alCambiar: (c) => ((p[parte] = c), pintarVista()),
+        alCambiar: (c) => ((p[parte] = c), parte === "color" && pintura?.base(c), pintarVista()),
       }).el
     );
   };
@@ -315,7 +329,7 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
       h("div.premios-fila", opcion("sombrero", null, "Ninguno", "🚫"), Object.entries(SOMBREROS).map(([id, e]) => opcion("sombrero", id, id[0].toUpperCase() + id.slice(1), e))),
       h("span.etiqueta", "Animación"),
       h("div.premios-fila", opcion("animacion", null, "Ninguna", "🚫"), Object.entries(ANIMACIONES).map(([id, t]) => opcion("animacion", id, t, { salto: "🦘", giro: "🌀", baile: "💃", brillo: "✨" }[id]))),
-      h("p.suave.premios-nota", "Se desbloquean con las 🎖️ Hazañas de «Jugar solo».")
+      h("p.suave.premios-nota", "Se desbloquean con las 🎖️ Hazañas.")
     );
   };
   pintarPremios();
@@ -384,11 +398,11 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
   const ICONOS_PESTAÑA = { nombre: "✍️", colores: "🎨", foto: "📸", premios: "🏅", cuenta: "🛡️" };
   // Cada pestaña con su título y una frase con personalidad (el viaje que empieza).
   const CABEZAS = {
-    nombre: ["Tu nombre en la lista de clase", "Así aparecerás en las clasificaciones y en la pantalla grande."],
-    colores: ["Los colores de tu facultad", "El fondo, las letras y el contorno de tu banner."],
-    foto: ["Tu foto de carné", "Una foto, un recorte de tu cabeza o tus iniciales."],
-    premios: ["Tu cuadro de honor", "Sombreros y animaciones que se ganan con las hazañas de «Jugar solo»."],
-    cuenta: ["Tu expediente", "Copia en la nube, otro móvil o empezar de cero."],
+    nombre: ["Nombre visible", "Cómo te verán los demás en las partidas y en las clasificaciones."],
+    colores: ["Colores del banner", "El fondo (de un color o pintado a mano), las letras y el contorno."],
+    foto: ["Imagen del avatar", "Una foto, un recorte de tu cabeza o tus iniciales."],
+    premios: ["Accesorios desbloqueables", "Sombreros y animaciones que se ganan con las hazañas."],
+    cuenta: ["Datos y copia de seguridad", "Copia en la nube, recuperar en otro móvil o empezar de cero."],
   };
   const paneles = {
     nombre: h("div.panel-perfil", campo.visor, campo.teclado),

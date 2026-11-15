@@ -79,7 +79,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
       case "necesitoNombre":
         // Entramos con el perfil del móvil: no hace falta escribir nada.
         almacen.guardar(tokenClave, null);
-        con.enviar({ t: "unirse", nombre: perfil.nombre, color: perfil.color, colorTexto: perfil.colorTexto, contorno: perfil.contorno ?? null, foto: perfil.foto, sombrero: perfil.sombrero ?? null, animacion: perfil.animacion ?? null });
+        con.enviar({ t: "unirse", nombre: perfil.nombre, color: perfil.color, colorTexto: perfil.colorTexto, contorno: perfil.contorno ?? null, foto: perfil.foto, sombrero: perfil.sombrero ?? null, animacion: perfil.animacion ?? null, fondo: perfil.fondo ?? null });
         break;
       case "bienvenida":
         almacen.guardar(tokenClave, m.token);

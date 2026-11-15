@@ -95,7 +95,7 @@ function apuntar(meta, r) {
 
 // ------------------------------------------------------------------ pantallas
 export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfil = null }) {
-  const datosYo = (p) => ({ nombre: p.nombre, color: p.color, colorTexto: p.colorTexto, contorno: p.contorno ?? null, foto: p.foto, sombrero: p.sombrero ?? null, animacion: p.animacion ?? null });
+  const datosYo = (p) => ({ nombre: p.nombre, color: p.color, colorTexto: p.colorTexto, contorno: p.contorno ?? null, foto: p.foto, sombrero: p.sombrero ?? null, animacion: p.animacion ?? null, fondo: p.fondo ?? null });
   const yo = { id: "yo", ...datosYo(perfil), puntos: 0 };
   let actual = null;
   // Un solo banner para todo el modo solo (el mismo del inicio): se abre en la lista y en el resultado y se cierra al jugar.

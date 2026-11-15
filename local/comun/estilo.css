@@ -609,3 +609,5 @@ html, body {
 .rango.num, .rango.sin { color: var(--texto-suave); }
 /* Parcelas: el rectángulo que se dibuja pisaría otra parcela (no se puede poner) */
 .pc-rect.previa.choca { background: repeating-linear-gradient(45deg, rgba(229, 72, 77, 0.28) 0 0.12em, rgba(229, 72, 77, 0.12) 0.12em 0.24em); box-shadow: inset 0 0 0 0.06em #e5484d; }
+/* Banner con el fondo pintado a mano (encima de su color) */
+.banner.con-pintura { background: var(--fondo-img) center / cover no-repeat, var(--fondo); }

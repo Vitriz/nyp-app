@@ -16,6 +16,7 @@ const suave = (p) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2); // e
 const REBOTE = 0.88; // en los choques se conserva casi toda la energía (como en el billar)
 // Muelle que lleva la letra agarrada hacia el dedo (rigidez y amortiguación: algo de retraso, poco vaivén).
 const MUELLE = 260;
+const ESCAPE = 3200; // px/s: con el dedo más rápido que esto, la letra se escapa (se suelta sin lanzarla)
 const FRENO = 2 * Math.sqrt(MUELLE) * 0.62;
 
 export function tituloVivo(titulo, { alExpulsar = null } = {}) {
@@ -168,6 +169,7 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
       if (volviendo && !s.vuelta && s.x === 0 && s.y === 0 && s.r === 0) {
         // Ya está en su sitio: no se vuelve a empezar otra vuelta (si no, el bucle no pararía nunca).
         el.style.translate = el.style.rotate = "";
+        el.classList.remove("suelta"); // en su sitio: vuelve a ondear
         quietas++;
         return;
       }
@@ -183,6 +185,7 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
         if (p >= 1) {
           Object.assign(s, { x: 0, y: 0, r: 0, vuelta: null });
           el.style.translate = el.style.rotate = "";
+        el.classList.remove("suelta"); // en su sitio: vuelve a ondear
           quietas++;
           return;
         }
@@ -192,10 +195,12 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
         // En su sitio y quieta: ya no hace falta seguir moviéndola.
         if (agarre?.k !== k && Math.abs(s.x) + Math.abs(s.y) + Math.abs(s.r) < 0.3 && Math.hypot(s.vx, s.vy) + Math.abs(s.vr) < 1) {
           el.style.translate = el.style.rotate = "";
+        el.classList.remove("suelta"); // en su sitio: vuelve a ondear
           quietas++;
           return;
         }
       }
+      el.classList.add("suelta"); // fuera de su sitio: deja de ondear (las demás siguen)
       el.style.translate = `${s.x.toFixed(1)}px ${s.y.toFixed(1)}px`;
       el.style.rotate = `${s.r.toFixed(1)}deg`;
     });
@@ -248,6 +253,7 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
     try {
       titulo.setPointerCapture(ev.pointerId);
     } catch {}
+    titulo.classList.add("agarrando"); // (puntero: mano cerrada)
     arrancar(); // (se ve «levantada» solo cuando empiezas a arrastrarla: un toque no la agranda)
   });
   titulo.addEventListener("pointermove", (ev) => {
@@ -259,6 +265,18 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
     agarre.fvy = (agarre.fvy ?? 0) * 0.5 + ((ev.clientY - agarre.py) / dt) * 0.5;
     agarre.movida += Math.hypot(ev.clientX - agarre.px, ev.clientY - agarre.py);
     Object.assign(agarre, { px: ev.clientX, py: ev.clientY, pt: ev.timeStamp });
+    // Si tiras demasiado deprisa, la letra se te escapa: se suelta donde está, sin salir lanzada.
+    if (Math.hypot(agarre.fvx, agarre.fvy) > ESCAPE * escala()) {
+      const s = est[agarre.k];
+      fichas[agarre.k].classList.remove("agarrada");
+      titulo.classList.remove("agarrando");
+      s.vx *= 0.15;
+      s.vy *= 0.15;
+      agarre = null;
+      sinClicHasta = performance.now() + 450;
+      navigator.vibrate?.(15);
+      return arrancar();
+    }
     if (agarre.movida > 6) fichas[agarre.k].classList.add("agarrada");
     arrancar();
   });
@@ -268,6 +286,7 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
     const agarreSoltado = agarre;
     const s = est[k];
     fichas[k].classList.remove("agarrada");
+    titulo.classList.remove("agarrando");
     agarre = null;
     sinClicHasta = performance.now() + 450; // el clic llega justo después de soltar
     if (movida < 6 && ev.timeStamp - t0 < 350) {

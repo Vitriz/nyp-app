@@ -63,6 +63,11 @@ export async function subirFicha(id, perfil) {
   };
   await pedir(`/jugadores/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ fields: aCampos(ficha) }) });
   almacen.guardar("nyp-nube-subida", ficha.actualizado);
+  // El fondo pintado del banner va aparte: si las reglas de la nube aún no lo permiten, no estropea lo demás.
+  pedir(`/jugadores/${encodeURIComponent(id)}?updateMask.fieldPaths=fondo`, {
+    method: "PATCH",
+    body: JSON.stringify({ fields: perfil.fondo ? { fondo: { stringValue: String(perfil.fondo) } } : {} }),
+  }).catch(() => {});
   return true;
 }
 
