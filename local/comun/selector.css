@@ -37,7 +37,7 @@
   display: flex; align-items: center; gap: 0.7rem; padding: 0 0.9rem 0 0.5rem; text-align: left;
   font: inherit; font-weight: 900; font-size: 1.1rem; color: var(--texto); cursor: pointer;
   background: linear-gradient(90deg, rgba(36, 72, 150, 0.95), rgba(23, 52, 111, 0.92));
-  border: 2px solid rgba(160, 190, 255, 0.25); border-left: 0.45rem solid var(--cat, var(--acento)); border-radius: 0.9rem;
+  border: 2px solid rgba(170, 200, 255, 0.42); border-left: 0.45rem solid var(--cat, var(--acento)); border-radius: 0.9rem;
   box-shadow: 0 0.2rem 0 rgba(4, 12, 40, 0.45);
   transition: transform 300ms var(--curva), opacity 300ms, background 200ms, color 200ms;
 }
@@ -95,7 +95,7 @@
 .sel-pil-icono { flex: none; width: 1.6rem; text-align: center; font-size: 1rem; opacity: 0.75; }
 .sel-pil-flecha {
   appearance: none; flex: none; width: 2.75rem; height: 2.75rem; border: none; border-radius: 50%; cursor: pointer;
-  font: inherit; font-size: 0.8rem; color: var(--texto); background: rgba(120, 160, 255, 0.14);
+  font: inherit; font-size: 0.8rem; color: var(--texto); background: rgba(44, 80, 166, 0.66);
   transition: background 150ms, transform 120ms;
 }
 .sel-pil-flecha:hover:not(:disabled) { background: rgba(120, 160, 255, 0.26); }
@@ -139,7 +139,7 @@
 .records-lista { overflow-y: auto; display: flex; flex-direction: column; gap: 0.45rem; padding-right: 0.2rem; }
 .record-fila {
   display: grid; grid-template-columns: 2.4rem 1fr auto; align-items: center; gap: 0.2rem 0.6rem; padding: 0.55rem 0.7rem;
-  border-radius: 0.9rem; background: rgba(120, 160, 255, 0.1); animation: sel-texto 340ms var(--curva) both;
+  border-radius: 0.9rem; background: rgba(36, 68, 150, 0.6); animation: sel-texto 340ms var(--curva) both;
 }
 .record-fila .ico { grid-row: span 2; font-size: 1.5rem; text-align: center; }
 .record-fila b { font-size: 1.02rem; }
@@ -167,7 +167,7 @@
 }
 .records-pestana[aria-selected="true"] { background: linear-gradient(180deg, #fff, var(--ficha-2)); color: var(--ficha-texto); }
 .familia-nota { margin: 0; font-size: 0.82rem; color: var(--texto-suave); font-weight: 700; }
-.familia-juego { display: flex; flex-direction: column; gap: 0.35rem; padding: 0.6rem 0.7rem; border-radius: 0.9rem; background: rgba(120, 160, 255, 0.1); animation: sel-texto 340ms var(--curva) both; }
+.familia-juego { display: flex; flex-direction: column; gap: 0.35rem; padding: 0.6rem 0.7rem; border-radius: 0.9rem; background: rgba(36, 68, 150, 0.6); animation: sel-texto 340ms var(--curva) both; }
 .familia-titulo { display: flex; align-items: center; gap: 0.5rem; font-size: 1.02rem; }
 .familia-titulo .ico { font-size: 1.3rem; }
 .familia-grupo small { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.04em; color: var(--texto-suave); }
@@ -188,7 +188,7 @@
 .sel-ayuda-btn {
   appearance: none; flex: none; align-self: flex-start; width: 2.6rem; height: 2.6rem; border-radius: 50%; cursor: pointer;
   font: inherit; font-family: var(--fuente-ficha); font-weight: 900; font-size: 1.35rem; color: var(--texto);
-  background: rgba(120, 160, 255, 0.16); border: 2px solid var(--borde-suave); transition: background 150ms, transform 120ms;
+  background: rgba(44, 80, 166, 0.66); border: 2px solid var(--borde-suave); transition: background 150ms, transform 120ms;
 }
 .sel-ayuda-btn:hover { background: rgba(120, 160, 255, 0.28); }
 .sel-ayuda-btn:active { transform: scale(0.92); }
@@ -271,7 +271,7 @@
 .sel-titulo-der { display: flex; align-items: center; gap: 0.6rem; }
 .sel-vista-btn {
   appearance: none; font: inherit; font-size: 1.25rem; font-weight: 900; line-height: 1; width: 2.4rem; height: 2.4rem; border-radius: 0.7rem; cursor: pointer;
-  display: grid; place-items: center; color: var(--texto); background: rgba(120, 160, 255, 0.14); border: 2px solid var(--borde-suave);
+  display: grid; place-items: center; color: var(--texto); background: rgba(44, 80, 166, 0.66); border: 2px solid var(--borde-suave);
 }
 .sel-vista-btn:active { transform: scale(0.92); }
 .sel-cuadricula {
@@ -497,7 +497,7 @@
     .sel-lado > .sel-ayuda {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 0.5rem; margin: 0; padding: 0.6rem;
       border-radius: 1rem; background: linear-gradient(180deg, rgba(36, 72, 150, 0.6), rgba(19, 44, 100, 0.6));
-      border: 1px solid rgba(170, 200, 255, 0.2); box-shadow: 0 0.5rem 1.4rem rgba(3, 10, 36, 0.35);
+      border: 1px solid rgba(170, 200, 255, 0.38); box-shadow: 0 0.5rem 1.4rem rgba(3, 10, 36, 0.35);
     }
   }
 }
@@ -545,7 +545,7 @@
 .est-barra i { display: block; height: 100%; background: linear-gradient(90deg, #5fd68e, #8ff0bd); border-radius: inherit; }
 .est-fila {
   display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) auto; grid-template-areas: "ico nombre record" "ico cifras record"; align-items: center; gap: 0.25rem 0.6rem;
-  padding: 0.55rem 0.7rem; border-radius: 0.9rem; background: rgba(120, 160, 255, 0.1); animation: sel-texto 340ms var(--curva) both;
+  padding: 0.55rem 0.7rem; border-radius: 0.9rem; background: rgba(36, 68, 150, 0.6); animation: sel-texto 340ms var(--curva) both;
 }
 .est-fila.sin { opacity: 0.5; }
 .est-fila .ico { grid-area: ico; font-size: 1.5rem; text-align: center; }

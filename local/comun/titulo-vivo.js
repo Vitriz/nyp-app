@@ -29,30 +29,35 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
   // que en el móvil (≈ 1 en un móvil normal).
   const escala = () => Math.max(0.85, Math.hypot(innerWidth, innerHeight) / 950);
 
-  /** Golpe en (x, y): las letras cercanas salen despedidas hacia fuera (igual hacia arriba que hacia abajo). */
+  // Alcance del golpe: unos 2 cm (1 cm ≈ 38 px de CSS). Si golpeas encima de la letra se mueve más; cerca
+  // de ella, menos cuanto más lejos. Siempre sale hacia el lado contrario a donde golpeaste (sin azar):
+  // golpe por debajo → hacia arriba; por la izquierda → hacia la derecha…
+  const ALCANCE = 76;
+
+  /** Golpe en (x, y): las letras cercanas salen despedidas en sentido contrario al golpe. */
   function golpe(x, y, fuerza = 1) {
     let tocadas = 0;
     const e = escala();
-    fichas.forEach((_, k) => {
-      const [cx, cy, lado] = centro(k);
-      let dx = cx - x, dy = cy - y;
-      let d = Math.hypot(dx, dy) || 1;
-      const alcance = lado * 1.6; // radio del golpe: sobre todo la letra tocada y las de al lado
-      const f = Math.exp(-(d * d) / (2 * alcance * alcance)) * fuerza;
-      if (f < 0.04) return;
+    fichas.forEach((el, k) => {
+      const r = el.getBoundingClientRect();
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      const dx = cx - x, dy = cy - y;
+      const d = Math.hypot(dx, dy);
+      // Distancia al borde de la letra (0 si el golpe cae encima).
+      const fuera = Math.hypot(Math.max(0, Math.abs(dx) - r.width / 2), Math.max(0, Math.abs(dy) - r.height / 2));
+      if (fuera > ALCANCE) return;
+      const encima = fuera === 0;
+      // Encima: fuerza entera (más si cae lejos del centro, hacia su borde); fuera: baja con la distancia.
+      const f = (encima ? 1 : 0.55 * (1 - fuera / ALCANCE) ** 1.4) * fuerza;
+      if (f < 0.02 || d < 0.5) return;
       tocadas++;
-      // La letra tocada de lleno sale en una dirección al azar: el dedo suele apoyarse por debajo del centro
-      // y, si no, casi siempre salían hacia arriba.
-      if (d < lado * 0.55) {
-        const ang = Math.random() * Math.PI * 2;
-        (dx = Math.cos(ang)), (dy = Math.sin(ang)), (d = 1);
-      }
       const s = est[k];
       s.vuelta = null; // si estaba volviendo, deja de volver
       const impulso = 260 * f * e; // poco a poco: hacen falta varios golpes para echarlas
-      s.vx += ((dx / d) * impulso + (Math.random() - 0.5) * 70 * f * e);
-      s.vy += ((dy / d) * impulso + (Math.random() - 0.5) * 70 * f * e);
-      s.vr += (Math.random() - 0.5) * 300 * f;
+      s.vx += (dx / d) * impulso;
+      s.vy += (dy / d) * impulso;
+      // Giro según dónde la golpeas: un golpe a un lado del centro la hace girar.
+      s.vr += (dx / Math.max(r.width, 1)) * 160 * f;
     });
     if (tocadas) navigator.vibrate?.(8);
   }
@@ -174,6 +179,17 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
     golpe(ev.clientX, ev.clientY);
     arrancar();
   });
+  // Golpes cerca de las letras (sin tocarlas): en el fondo, a menos de ~2 cm, también las mueven (algo menos).
+  // Sobre botones u otros controles no: así pulsarlos no mueve el título.
+  const cerca = (ev) => {
+    if (!titulo.isConnected) return document.removeEventListener("pointerdown", cerca);
+    if (ev.target.closest?.(".titulo-nyp .ficha, button, a, input, textarea, select, label, [role=button], .capa-movil")) return;
+    const r = titulo.getBoundingClientRect();
+    if (ev.clientX < r.left - ALCANCE || ev.clientX > r.right + ALCANCE || ev.clientY < r.top - ALCANCE || ev.clientY > r.bottom + ALCANCE) return;
+    golpe(ev.clientX, ev.clientY);
+    arrancar();
+  };
+  document.addEventListener("pointerdown", cerca);
   titulo.addEventListener("pointermove", (ev) => {
     if (!pulsado || ev.pointerId !== pulsado.id) return;
     ultimoToque = performance.now();

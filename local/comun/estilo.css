@@ -6,9 +6,9 @@
   --fondo-1: #0b1d4f;
   --fondo-2: #14306f;
   --fondo-3: #1d3f86;
-  --superficie: rgba(120, 160, 255, 0.10);
-  --superficie-2: rgba(120, 160, 255, 0.16);
-  --borde-suave: rgba(160, 190, 255, 0.28);
+  --superficie: rgba(34, 66, 146, 0.62); /* algo de transparencia, pero se lee bien */
+  --superficie-2: rgba(44, 80, 166, 0.7);
+  --borde-suave: rgba(170, 200, 255, 0.45);
   --texto: #e8eeff;
   --texto-suave: #a9bbe6;
   --ficha: #f3f6ff;
@@ -102,7 +102,7 @@ html, body {
   background: var(--superficie);
   border: 2px solid var(--borde-suave);
   border-radius: var(--radio);
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
 
 .boton {
@@ -173,7 +173,7 @@ html, body {
   font-variant-numeric: tabular-nums;
 }
 .reloj svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-.reloj .pista { stroke: rgba(160, 190, 255, 0.22); }
+.reloj .pista { stroke: rgba(170, 200, 255, 0.42); }
 .reloj .arco { stroke: var(--texto); transition: stroke 400ms; }
 .reloj.ultimos .arco { stroke: var(--oro); }
 .reloj .cifra { position: relative; font-size: 1.7em; }
@@ -304,7 +304,7 @@ html, body {
 .det-mal { background: rgba(232, 106, 98, 0.14); border-color: rgba(232, 106, 98, 0.5); color: #f6c9c5; }
 .det-pista { background: rgba(240, 212, 85, 0.12); border-color: rgba(240, 212, 85, 0.45); color: #f6e7a8; }
 .det-tuti, .det-mejor { background: linear-gradient(180deg, #ffe48a, #f0c64a); border-color: #f0c64a; color: #3a2a00; }
-.det-paso { background: rgba(120, 160, 255, 0.14); border-color: var(--borde-suave); color: var(--texto); font-variant-numeric: tabular-nums; }
+.det-paso { background: rgba(44, 80, 166, 0.66); border-color: var(--borde-suave); color: var(--texto); font-variant-numeric: tabular-nums; }
 .det-mas { background: transparent; border-style: dashed; border-color: var(--borde-suave); color: var(--texto-suave); }
 
 /* ---------- ¡YA! de la cuenta atrás: un rótulo inclinado que estalla ---------- */

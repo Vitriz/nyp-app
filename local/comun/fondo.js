@@ -1,5 +1,5 @@
 // Fondo de puntos: varias olas lo recorren en distintas direcciones (los puntos crecen al pasar la ola)
-// y, donde se toca, sale una onda.
+// y, donde se toca, sale una onda suave que tiñe los puntos de un color (cada toque, otro) y luego se va.
 // Durante una prueba se pone en "calma": más tenue y quieto, para no distraer al leer.
 
 let calma = false;
@@ -49,10 +49,13 @@ export function iniciarFondo({ espaciado = 34, color = "150, 185, 255" } = {}) {
     }
   }
 
+  // Cada golpe tiñe los puntos de un color (van rotando); al pasar la onda vuelven a su color.
+  const COLORES_ONDA = ["255, 211, 77", "244, 127, 176", "95, 214, 142", "120, 210, 255", "245, 166, 35", "180, 140, 255"];
+  let siguienteColor = 0;
   function onda(x, y, fuerza = 1) {
     if (calma) return;
-    ondas.push({ x, y, t0: performance.now() / 1000, fuerza });
-    if (ondas.length > 8) ondas.shift();
+    ondas.push({ x, y, t0: performance.now() / 1000, fuerza, color: COLORES_ONDA[siguienteColor++ % COLORES_ONDA.length] });
+    if (ondas.length > 5) ondas.shift();
   }
 
   function dibujar(ms) {
@@ -64,11 +67,13 @@ export function iniciarFondo({ espaciado = 34, color = "150, 185, 255" } = {}) {
     const t = ms / 1000;
     ctx.clearRect(0, 0, ancho, alto);
     const rMin = esp * 0.045, rMax = esp * 0.14;
-    const vel = esp * 14, grosor = esp * 2.2;
-    for (let k = ondas.length - 1; k >= 0; k--) if (t - ondas[k].t0 > 3.2) ondas.splice(k, 1);
+    // La onda: suave y lenta, crece poco y se apaga del todo (varias seguidas no se suman sin fin).
+    const vel = esp * 7, grosor = esp * 3.2, VIDA = 3.4;
+    for (let k = ondas.length - 1; k >= 0; k--) if (t - ondas[k].t0 > VIDA) ondas.splice(k, 1);
 
     const normal = new Path2D();
-    const brillo = new Path2D();
+    // Puntos teñidos: por onda y por intensidad (3 niveles), para pintarlos de pocas veces.
+    const tenidos = ondas.map(() => [new Path2D(), new Path2D(), new Path2D()]);
     // Tres olas que avanzan en direcciones distintas (y a distinto ritmo) y se cruzan.
     const OLAS = [
       [0.52, 0.16, 1.35, 0.5], // [kx, ky, velocidad, peso]
@@ -85,22 +90,38 @@ export function iniciarFondo({ espaciado = 34, color = "150, 185, 255" } = {}) {
         s = 0.5 + 0.5 * v;
       }
       let r = rMin + (rMax - rMin) * s * s;
-      let extra = 0;
-      for (const o of ondas) {
+      let extra = 0, mejor = -1, mejorV = 0;
+      for (let k = 0; k < ondas.length; k++) {
+        const o = ondas[k];
         const dt = t - o.t0;
         const d = Math.hypot(x - o.x, y - o.y);
         const z = (d - dt * vel) / grosor;
-        extra += o.fuerza * Math.exp(-z * z) * Math.exp(-dt * 1.1);
+        // Entra y sale con suavidad (sin golpe al principio) y se apaga al final de su vida.
+        const vida = Math.min(1, dt / 0.25) * Math.max(0, 1 - dt / VIDA) ** 1.5;
+        const v = o.fuerza * Math.exp(-z * z) * vida;
+        extra += v;
+        if (v > mejorV) (mejorV = v), (mejor = k);
       }
-      r += extra * rMax * 1.3;
-      const camino = extra > 0.25 ? brillo : normal;
-      camino.moveTo(x + r, y);
-      camino.arc(x, y, r, 0, Math.PI * 2);
+      extra = Math.min(1, extra);
+      r += extra * rMax * 0.55;
+      if (mejor >= 0 && mejorV > 0.12) {
+        const nivel = mejorV > 0.6 ? 2 : mejorV > 0.3 ? 1 : 0;
+        const camino = tenidos[mejor][nivel];
+        camino.moveTo(x + r, y);
+        camino.arc(x, y, r, 0, Math.PI * 2);
+      } else {
+        normal.moveTo(x + r, y);
+        normal.arc(x, y, r, 0, Math.PI * 2);
+      }
     }
     ctx.fillStyle = `rgba(${color}, 0.20)`;
     ctx.fill(normal);
-    ctx.fillStyle = `rgba(${color}, 0.42)`;
-    ctx.fill(brillo);
+    ondas.forEach((o, k) =>
+      [0.26, 0.36, 0.48].forEach((a, nivel) => {
+        ctx.fillStyle = `rgba(${o.color}, ${a})`;
+        ctx.fill(tenidos[k][nivel]);
+      })
+    );
     requestAnimationFrame(dibujar);
   }
 
