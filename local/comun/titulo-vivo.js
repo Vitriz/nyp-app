@@ -32,16 +32,16 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
       const [cx, cy, lado] = centro(k);
       const dx = cx - x, dy = cy - y;
       const d = Math.hypot(dx, dy) || 1;
-      const alcance = lado * 2.6;
+      const alcance = lado * 1.6; // radio del golpe: sobre todo la letra tocada y las de al lado
       const f = Math.exp(-(d * d) / (2 * alcance * alcance)) * fuerza;
       if (f < 0.04) return;
       tocadas++;
       const s = est[k];
       s.vuelta = null; // si estaba volviendo, deja de volver
-      const impulso = 520 * f;
-      s.vx += (dx / d) * impulso + (Math.random() - 0.5) * 120 * f;
-      s.vy += (dy / d) * impulso - 110 * f; // un poco hacia arriba: queda más vistoso
-      s.vr += (Math.random() - 0.5) * 420 * f;
+      const impulso = 260 * f; // poco a poco: hacen falta varios golpes para echarlas
+      s.vx += (dx / d) * impulso + (Math.random() - 0.5) * 70 * f;
+      s.vy += (dy / d) * impulso - 60 * f; // un poco hacia arriba: queda más vistoso
+      s.vr += (Math.random() - 0.5) * 300 * f;
     });
     if (tocadas) navigator.vibrate?.(8);
   }
@@ -55,8 +55,8 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
       if (f < 0.05) return;
       const s = est[k];
       s.vuelta = null;
-      s.vx += vx * f * 0.35;
-      s.vy += vy * f * 0.35;
+      s.vx += vx * f * 0.25;
+      s.vy += vy * f * 0.25;
       s.vr += (vx - vy) * f * 0.05;
     });
   }
@@ -100,7 +100,7 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
         }
       } else {
         // Líquido: frena poco a poco y se mece un poco (y puede salir de la pantalla).
-        const roce = Math.exp(-1.9 * dt);
+        const roce = Math.exp(-2.3 * dt);
         s.vx *= roce;
         s.vy *= roce;
         s.vr *= Math.exp(-1.4 * dt);

@@ -136,3 +136,49 @@ export async function actualizarIncluido() {
   } catch {}
   if (clave) await desbloquearDiccionario(clave, info).catch(() => false);
 }
+
+// ------------------------------------------------------------------ todas las acepciones (ventana de significados)
+// Van aparte del diccionario (unos 4 MB): se bajan la primera vez que tocas una palabra en los resultados
+// y se guardan en el móvil. En la app vienen cifradas con la misma contraseña; en PARTY (ordenador), sin cifrar.
+const AC_DATOS = new URL("../acepciones.bin", import.meta.url);
+let acepcionesEnCurso = null;
+
+/** Todas las acepciones: [[clave, [[categoría, uso, ámbito, texto], …]], …], o null si no se pueden conseguir. */
+export function leerAcepciones() {
+  acepcionesEnCurso ??= (async () => {
+    const version = (await diccionarioIncluido())?.version ?? (await versionGuardada());
+    try {
+      const g = await leer("acepciones");
+      if (g && g.version === version) return JSON.parse(g.texto);
+    } catch {}
+    let texto = null;
+    // 1) La app publicada: el archivo cifrado, con la contraseña que ya se usó para el diccionario.
+    try {
+      const info = await diccionarioIncluido();
+      const clave = localStorage.getItem(CLAVE_GUARDADA);
+      if (info && clave) {
+        const bin = new Uint8Array(await (await fetch(AC_DATOS)).arrayBuffer());
+        const sal = bin.subarray(0, 16), iv = bin.subarray(16, 28), datos = bin.subarray(28);
+        const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(clave), "PBKDF2", false, ["deriveKey"]);
+        const llave = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: sal, iterations: info.iteraciones, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+        const gz = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, llave, datos);
+        texto = await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+      }
+    } catch {}
+    // 2) Abierta desde el ordenador (PARTY / pruebas): sin cifrar.
+    if (!texto) {
+      try {
+        const r = await fetch(new URL("../paquete/acepciones", import.meta.url), { cache: "no-store" });
+        if (r.ok) texto = await r.text();
+      } catch {}
+    }
+    if (!texto) {
+      acepcionesEnCurso = null; // se vuelve a intentar la próxima vez
+      return null;
+    }
+    const lista = JSON.parse(texto);
+    escribir("acepciones", { version, texto }).catch(() => {});
+    return lista;
+  })();
+  return acepcionesEnCurso;
+}

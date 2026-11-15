@@ -362,6 +362,7 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
         const txt = textoCuenta(falta);
         if (txt !== ultimo) {
           ultimo = txt;
+          caja.classList.add("cuenta-centro"); // en el centro de la pantalla (no del hueco bajo la barra)
           caja.replaceChildren(piezaCuenta(txt));
           navigator.vibrate?.(30);
         }
@@ -508,7 +509,8 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
     const pantalla = h(
         "section.pantalla-final",
         // El juego y cómo se jugó (tiempo · nivel), a la derecha del perfil: fijo arriba aunque bajes.
-        barra(infoPartida(meta, meta.duracion, NOMBRES_NIVEL[meta.dificultad ?? "normal"])),
+        // (el banner, contraído: así cabe bien el nombre del juego)
+        h("div.barra-sup.barra-final", fijo.hueco("cerrado"), infoPartida(meta, meta.duracion, NOMBRES_NIVEL[meta.dificultad ?? "normal"])),
         h(
           "div.espera.final-solo.zona-final",
           h(

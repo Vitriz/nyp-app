@@ -186,7 +186,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
     // El hueco del banner fijo: abierto, o cerrado en círculo en la cuenta atrás (se va a jugar).
     const el = h(
       "div.barra-sup",
-      banFijo(e.yo).hueco(plegar ? "cerrado" : "abierto"),
+      banFijo(e.yo).hueco(plegar || cabTitulo ? "cerrado" : "abierto"), // en los resultados, contraído
       cabTitulo,
       cabTitulo ? null : chipSala,
       batalla || cabTitulo ? null : pts,
@@ -465,6 +465,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
         const t = textoCuenta(estado.fin - con.ahora());
         if (t !== ultimo) {
           ultimo = t;
+          caja.classList.add("cuenta-centro");
           caja.replaceChildren(piezaCuenta(t));
           navigator.vibrate?.(30);
         }

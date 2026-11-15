@@ -17,6 +17,14 @@ let crucigrama = {};
 let conexiones = { categorias: [], miembros: {} };
 let semantica = null;
 let indiceAcepciones = null; // clave -> [{ texto, tipo?, ambito? }]
+let completas = null; // todas las acepciones del diccionario (si se han cargado): Map clave -> [[cat, uso, ámbito, texto]]
+const TIPO = { noun: "Sustantivo", adjective: "Adjetivo", verb: "Verbo", adverb: "Adverbio", interjection: "Interjección", preposition: "Preposición", conjunction: "Conjunción", article: "Artículo" };
+const USO = { colloquial: "coloquial", obsolete: "desusado", rare: "poco usado" };
+
+/** Carga todas las acepciones (las de la ventana de significados): [[clave, [[cat, uso, ámbito, texto], …]], …]. */
+export function fijarAcepciones(lista) {
+  completas = new Map(lista);
+}
 // Semántica y Conexiones traen sus propios datos (motor/datos/…): no necesitan el diccionario.
 let propios = null;
 let datosPropios = null;
@@ -128,6 +136,17 @@ export function acepciones(texto) {
   }
   const forma = formas[c] ?? texto;
   const valida = esValida(c);
+  // Con todas las acepciones cargadas: todas, con su tipo, uso y ámbito.
+  if (completas) {
+    const lema = completas.has(c) ? null : candidatasLema(c).find((x) => completas.has(x));
+    const filas = completas.get(lema ?? c);
+    if (filas) {
+      return {
+        forma, valida, lema: lema ? formas[lema] ?? lema : null,
+        lista: filas.map(([cat, uso, ambito, t]) => ({ texto: t, tipo: TIPO[cat] ?? cat, uso: USO[uso] ?? uso, ambito: ambito || null })),
+      };
+    }
+  }
   if (indiceAcepciones.has(c)) return { forma, valida, lema: null, lista: indiceAcepciones.get(c) };
   const lema = candidatasLema(c).find((x) => indiceAcepciones.has(x));
   return { forma, valida, lema: lema ? formas[lema] ?? lema : null, lista: lema ? indiceAcepciones.get(lema) : [] };

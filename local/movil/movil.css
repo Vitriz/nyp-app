@@ -1673,3 +1673,20 @@ button.fila-j { appearance: none; cursor: pointer; }
 }
 .sm-tema { padding: 0.1rem 0.6rem; border-radius: 999px; background: rgba(233, 199, 90, 0.18); color: var(--oro); font-weight: 800; font-size: 0.85rem; } .sm-tema b { color: #fff; }
 .capa-dicc .dicc-lema, .capa-dicc .dicc-acepcion { text-align: left; }
+.dicc-cab { flex-wrap: wrap; }
+.dicc-etiqueta.ambito { background: rgba(95, 183, 208, 0.22); color: #9fe0f0; }
+.dicc-etiqueta.uso { background: rgba(255, 255, 255, 0.1); color: #cfe0ff; text-transform: none; letter-spacing: 0; font-weight: 700; }
+/* En horizontal, la ventana de significados es más ancha (crece un 20 % de la pantalla a cada lado) */
+@media (orientation: landscape) and (min-width: 600px) { .capa-dicc .dicc-caja { max-width: min(96vw, calc(26rem + 40vw)); } }
+/* Cuenta atrás (3, 2, 1, ¡YA!): siempre en el centro exacto de la pantalla */
+.cuenta-centro { position: fixed; inset: 0; z-index: 4; display: grid; place-items: center; margin: 0; padding: 0; pointer-events: none; }
+/* Resultados: banner contraído; el juego a su derecha y, a la derecha del todo, tiempo y nivel uno encima del otro */
+.barra-sup > .info-partida { flex-direction: row; align-items: center; gap: 0.6rem; }
+.barra-sup > .info-partida .info-partida-titulo { flex: 1; min-width: 0; }
+.barra-sup > .info-partida .info-partida-nombre { font-size: 1.3rem; }
+.barra-sup > .info-partida .info-partida-ajustes { flex-direction: column; align-items: stretch; gap: 0.25rem; flex: none; }
+.barra-sup > .info-partida .info-ajuste b { text-align: center; white-space: nowrap; }
+@media (min-width: 900px) {
+  .barra-sup > .info-partida .info-partida-nombre { font-size: 2rem; }
+  .barra-sup > .info-partida .info-partida-ajustes { flex-direction: row; gap: 0.5rem; }
+}

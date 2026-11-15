@@ -40,13 +40,13 @@ export function elegirAmbito(lista) {
     } catch {
       elegidos = new Set();
     }
-    // Lo que se eligió con la versión anterior (un solo tema).
+    // Lo que se eligió con la versión anterior (un solo tema), solo si nunca se ha guardado una selección.
     const viejo = almacen.leer("nyp-ambito");
-    if (!elegidos.size && lista.includes(viejo)) elegidos.add(viejo);
+    if (almacen.leer("nyp-ambitos") == null && lista.includes(viejo)) elegidos.add(viejo);
 
     const cerrar = (v) => {
       capa.remove();
-      if (v && v !== "azar") almacen.guardar("nyp-ambitos", JSON.stringify(v));
+
       ok(v);
     };
     const jugar = h("button.boton.acento.grande.ambito-jugar", { type: "button", onclick: () => cerrar(elegidos.size === lista.length ? "todos" : [...elegidos]) });
@@ -62,6 +62,8 @@ export function elegirAmbito(lista) {
     );
     function pintar() {
       fichas.forEach((b, k) => b.setAttribute("aria-pressed", String(elegidos.has(lista[k]))));
+      // La selección se guarda en cuanto cambia (también si luego cierras la ventana o eliges uno al azar).
+      almacen.guardar("nyp-ambitos", JSON.stringify(elegidos.size === lista.length ? "todos" : [...elegidos]));
       const n = elegidos.size;
       todos.textContent = n === lista.length ? "Quitar todos" : "🌍 Elegir todos";
       jugar.disabled = !n;

@@ -16,8 +16,21 @@ async function diccionario() {
       if (texto) lexico.preparar(JSON.parse(texto));
     } catch {}
   }
-  return lexico.listo?.() && lexico.acepciones ? lexico : null;
+  if (!lexico.listo?.() || !lexico.acepciones) return null;
+  // Todas las acepciones (la primera vez se bajan; luego ya están en el móvil).
+  if (!completas && lexico.fijarAcepciones) {
+    try {
+      const { leerAcepciones } = await import("../solo/paquete.js");
+      const l = await leerAcepciones();
+      if (l) {
+        lexico.fijarAcepciones(l);
+        completas = true;
+      }
+    } catch {}
+  }
+  return lexico;
 }
+let completas = false;
 
 /** Saca la palabra de un texto de resultado: «DESAFÍOS · 8», «✘ casa»… (o null si no es una palabra). */
 export function palabraDe(texto) {
@@ -30,7 +43,7 @@ export function palabraDe(texto) {
 
 /** Ventana con las acepciones de una palabra. */
 export async function verPalabra(palabra) {
-  const lista = h("div.dicc-lista", h("p.suave", "Buscando…"));
+  const lista = h("div.dicc-lista", h("p.suave", completas ? "Buscando…" : "Abriendo el diccionario…"));
   const cerrar = () => {
     capa.remove();
     document.removeEventListener("keydown", tecla);
@@ -61,7 +74,13 @@ export async function verPalabra(palabra) {
       r.lista.map((x, i) =>
         h(
           "div.dicc-acepcion",
-          h("div.dicc-cab", h("span.dicc-num", String(i + 1)), x.ambito || x.tipo ? h("span.dicc-etiqueta", x.ambito ?? TIPOS[x.tipo] ?? x.tipo) : null),
+          h(
+            "div.dicc-cab",
+            h("span.dicc-num", String(i + 1)),
+            x.tipo ? h("span.dicc-etiqueta", TIPOS[x.tipo] ?? x.tipo) : null,
+            x.ambito ? h("span.dicc-etiqueta.ambito", x.ambito) : null,
+            x.uso ? h("span.dicc-etiqueta.uso", x.uso) : null
+          ),
           h("p.dicc-texto", x.texto)
         )
       )
@@ -87,14 +106,6 @@ export function palabrasTocables(zona) {
       el.title = `Ver qué significa «${p.toLowerCase()}»`;
     });
   marcar();
-  // Una pista, una vez, encima de la primera lista de palabras.
-  const primera = zona.querySelector(".tocable");
-  if (primera && !zona.querySelector(".pista-tocar")) {
-    const pista = h("p.pista-tocar", "👆 Toca una palabra para ver qué significa");
-    const seccion = primera.closest(".solo-solucion, .final-palabras, .final-puzle");
-    if (seccion) seccion.append(pista);
-    else primera.parentElement.before(pista);
-  }
   // Lo que se añada después (p. ej. al desplegar más respuestas) también.
   new MutationObserver(marcar).observe(zona, { childList: true, subtree: true });
   const abrir = (ev) => {
