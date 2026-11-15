@@ -214,7 +214,7 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
     }
   };
 
-  const campo = campoTexto({ valor: p.nombre, max: 14, placeholder: "Toca las letras", alCambiar: (t) => ((p.nombre = t), pintarVista()) });
+  const campo = campoTexto({ valor: p.nombre, max: 14, placeholder: "Toca las letras", alCambiar: (t) => ((p.nombre = t), t && aviso.classList.contains("aviso-error") && quitarAviso(), pintarVista()) });
 
   // Colores: dos filas de colores y debajo la rueda, siempre a la vista; arriba eliges qué pintas (fondo, letras o contorno).
   // «Pintar fondo»: el fondo pintado a mano, encima del color de fondo (el pincel usa los colores de abajo).
@@ -255,6 +255,15 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
   const entradaCamara = h("input", { type: "file", accept: "image/*", capture: "user", class: "oculto" });
   const entradaGaleria = h("input", { type: "file", accept: "image/*", class: "oculto" });
   const aviso = h("div.pl-aviso");
+  // Aviso de lo que falta: en rojo, en su propia casilla con una ✕ (se quita al corregirlo).
+  const avisar = (texto) => {
+    aviso.className = "pl-aviso aviso-error";
+    aviso.replaceChildren(h("span.aviso-x", { "aria-hidden": "true" }, "✕"), h("span", texto));
+  };
+  const quitarAviso = () => {
+    aviso.className = "pl-aviso";
+    aviso.replaceChildren();
+  };
   for (const entrada of [entradaCamara, entradaGaleria]) {
     entrada.addEventListener("change", async () => {
       const archivo = entrada.files?.[0];
@@ -452,7 +461,7 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
     p.nombre = campo.valor();
     if (!p.nombre) {
       elegir("nombre");
-      aviso.textContent = "Escribe tu nombre";
+      avisar("Escribe tu nombre para empezar");
       return;
     }
     guardarPerfil(p);
@@ -465,7 +474,7 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
       p.nombre = campo.valor();
       if (!p.nombre) {
         elegir("nombre");
-        aviso.textContent = "Escribe tu nombre";
+        avisar("Escribe tu nombre para empezar");
         return;
       }
       guardarPerfil({ ...p });
@@ -483,7 +492,7 @@ export function pantallaPerfil({ perfil, alGuardar, alVolver, alCambiar = null, 
     botonesPestaña,
     cuerpo,
     aviso,
-    editando ? null : h("button.boton.acento.grande.boton-aventura", { type: "button", onclick: guardar }, "🚀 ¡Empezar la aventura!"),
+    editando ? null : h("button.boton.acento.grande.boton-aventura", { type: "button", onclick: guardar }, "🚀 ¡Empieza a jugar!"),
     // Perfil nuevo: recuperar uno de otro móvil, a la vista (luego también está en «Cuenta»).
     editando ? null : h("button.boton.suave.recuperar-btn", { type: "button", onclick: async () => { const r = await recuperarPerfil(); if (r) alGuardar(r); } }, "☁️ Recuperar mi perfil de otro móvil")
   );

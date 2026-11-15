@@ -2007,3 +2007,7 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
   .pantalla.perfil .colores-perfil.pintando .selector-color { display: flex; flex-direction: column; gap: 0.6rem; }
   .pantalla.perfil .colores-perfil.pintando .paleta { grid-template-columns: repeat(4, 1fr); }
 }
+/* Aviso de lo que falta (p. ej. el nombre): en rojo, en su propia casilla con una ✕ */
+.pl-aviso.aviso-error { display: flex; align-items: center; gap: 0.6rem; padding: 0.55rem 0.8rem; border-radius: 0.9rem; text-align: left;
+  background: linear-gradient(180deg, rgba(229, 83, 75, 0.32), rgba(229, 83, 75, 0.2)); border: 2px solid #ff8a80; color: #fff; font-weight: 900; animation: sacudir 380ms ease; }
+.aviso-x { flex: none; width: 1.8rem; height: 1.8rem; border-radius: 50%; display: grid; place-items: center; background: #e5534b; color: #fff; font-size: 0.95rem; font-weight: 900; box-shadow: 0 0.12rem 0 rgba(90, 10, 10, 0.5); }

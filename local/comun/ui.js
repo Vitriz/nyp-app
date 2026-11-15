@@ -455,7 +455,7 @@ export function palabraPendiente(p) {
 // ------------------------------------------------------------------ que nada se salga de su casilla
 // Las fichas crecen con su contenido; pero si una casilla tiene ancho fijo (rejillas, huecos…) y el
 // número no cabe, se encoge solo el texto (la casilla mantiene su tamaño). Vale para toda la app.
-const CASILLAS = ".ficha, .lr-hueco, .tecla-l, .encaja";
+const CASILLAS = ".ficha, .lr-hueco, .tecla-l, .encaja, .banner-nombre"; // (el nombre del banner encoge si no cabe)
 
 function encajar(el) {
   if (!el.isConnected || el.children.length > 1) return;
