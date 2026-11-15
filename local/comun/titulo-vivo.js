@@ -14,6 +14,9 @@ const VUELTA_MS = 4000;
 const VUELTA_DURA = 1600; // lo que tarda cada letra en volver (con suavidad)
 const suave = (p) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2); // entra y sale despacio
 const REBOTE = 0.88; // en los choques se conserva casi toda la energía (como en el billar)
+// Muelle que lleva la letra agarrada hacia el dedo (rigidez y amortiguación: algo de retraso, poco vaivén).
+const MUELLE = 260;
+const FRENO = 2 * Math.sqrt(MUELLE) * 0.62;
 
 export function tituloVivo(titulo, { alExpulsar = null } = {}) {
   if (!titulo || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -133,13 +136,17 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
       fichas.forEach((el, k) => {
         const s = est[k];
         if (agarre?.k === k) {
-          // La agarrada va pegada al dedo (por donde la cogiste).
-          s.x = agarre.px - agarre.ox - c[k].x;
-          s.y = agarre.py - agarre.oy - c[k].y;
-          s.vr *= Math.exp(-6 * dt);
-          // Si el dedo se para, su velocidad baja enseguida (sujeta quieta no empuja a nadie).
-          s.vx *= Math.exp(-12 * dt);
-          s.vy *= Math.exp(-12 * dt);
+          // La agarrada no va pegada al dedo: la lleva un muelle hacia él, así que se queda algo atrás
+          // cuanto más deprisa y más lejos mueves el dedo, y lo alcanza con un pequeño vaivén.
+          const tx = agarre.px - agarre.ox - c[k].x, ty = agarre.py - agarre.oy - c[k].y;
+          const ax = MUELLE * (tx - s.x) - FRENO * s.vx, ay = MUELLE * (ty - s.y) - FRENO * s.vy;
+          s.vx += ax * dt;
+          s.vy += ay * dt;
+          s.x += s.vx * dt;
+          s.y += s.vy * dt;
+          // Se inclina hacia donde tira el dedo (como si colgara de él).
+          const inclina = Math.max(-25, Math.min(25, ax * 0.004));
+          s.vr += ((inclina - s.r) * 40 - s.vr * 8) * dt;
           s.r += s.vr * dt;
           return;
         }
@@ -236,30 +243,29 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
     const s = est[k];
     s.vuelta = null;
     s.vx = s.vy = 0;
+    s.r = ((s.r % 360) + 540) % 360 - 180; // (si había dado vueltas, el giro más corto)
     agarre = { id: ev.pointerId, k, ox: ev.clientX - (r.left + r.width / 2), oy: ev.clientY - (r.top + r.height / 2), px: ev.clientX, py: ev.clientY, pt: ev.timeStamp, t0: ev.timeStamp, movida: 0 };
     try {
       titulo.setPointerCapture(ev.pointerId);
     } catch {}
-    el.classList.add("agarrada");
-    arrancar();
+    arrancar(); // (se ve «levantada» solo cuando empiezas a arrastrarla: un toque no la agranda)
   });
   titulo.addEventListener("pointermove", (ev) => {
     if (!agarre || ev.pointerId !== agarre.id) return;
     ultimoToque = performance.now();
     const dt = Math.max(8, ev.timeStamp - agarre.pt) / 1000;
-    const vx = (ev.clientX - agarre.px) / dt, vy = (ev.clientY - agarre.py) / dt;
-    // Velocidad del dedo (suavizada): es la que lleva la letra al chocar y al soltarla.
-    const s = est[agarre.k];
-    s.vx = s.vx * 0.5 + vx * 0.5;
-    s.vy = s.vy * 0.5 + vy * 0.5;
-    s.vr += (vx / 900) * 4; // al arrastrarla se ladea un poco
+    // Velocidad del dedo (suavizada): se suma al lanzarla.
+    agarre.fvx = (agarre.fvx ?? 0) * 0.5 + ((ev.clientX - agarre.px) / dt) * 0.5;
+    agarre.fvy = (agarre.fvy ?? 0) * 0.5 + ((ev.clientY - agarre.py) / dt) * 0.5;
     agarre.movida += Math.hypot(ev.clientX - agarre.px, ev.clientY - agarre.py);
     Object.assign(agarre, { px: ev.clientX, py: ev.clientY, pt: ev.timeStamp });
+    if (agarre.movida > 6) fichas[agarre.k].classList.add("agarrada");
     arrancar();
   });
   const soltar = (ev) => {
     if (!agarre || ev.pointerId !== agarre.id) return;
     const { k, movida, t0, pt } = agarre;
+    const agarreSoltado = agarre;
     const s = est[k];
     fichas[k].classList.remove("agarrada");
     agarre = null;
@@ -269,12 +275,14 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
       s.vx = s.vy = 0;
       golpe(ev.clientX, ev.clientY, { solo: k });
     } else {
-      // Lanzamiento: sale con la velocidad del dedo (si el dedo ya estaba quieto al soltar, se queda ahí).
+      // Lanzamiento: sale con su propia velocidad (la del muelle) más parte de la del dedo; si el dedo ya
+      // estaba quieto al soltar, solo le queda lo que llevaba (se para enseguida).
       const quieto = ev.timeStamp - pt > 90;
+      const { fvx = 0, fvy = 0 } = agarreSoltado;
+      if (!quieto) (s.vx = s.vx * 0.55 + fvx * 0.45), (s.vy = s.vy * 0.55 + fvy * 0.45);
       const tope = 4500 * escala();
       const v = Math.hypot(s.vx, s.vy);
-      if (quieto) s.vx = s.vy = 0;
-      else if (v > tope) (s.vx *= tope / v), (s.vy *= tope / v);
+      if (v > tope) (s.vx *= tope / v), (s.vy *= tope / v);
     }
     arrancar();
   };
