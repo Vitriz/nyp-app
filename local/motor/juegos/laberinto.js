@@ -2,8 +2,8 @@
 // Algunos números vienen puestos; los huecos se rellenan con los números del banco.
 // Gana quien complete más ecuaciones correctas. Una ecuación solo cuenta si sus números son los de la
 // solución (no basta con que la cuenta cuadre: 2 + 3 = 5 no vale si iba 1 + 4).
-// Ayudas según el nivel: en fácil se marca cada casilla mal puesta; en normal y difícil solo se avisa de
-// que una cuenta cuadra (los números se pueden seguir moviendo: quizá van en otro orden).
+// Ayudas según el nivel: en fácil se marca cada casilla mal puesta; en normal solo se avisa de que una
+// cuenta cuadra (los números se pueden seguir moviendo: quizá van en otro orden); en difícil, ninguna.
 import { nivelDificultad } from "../util.js";
 
 const TAM = 9; // rejilla máxima 9×9 para que se lea bien en el móvil
