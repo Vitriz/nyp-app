@@ -362,13 +362,14 @@ html, body {
 /* ---------- avatar con la cara recortada: asoma por encima del círculo ---------- */
 .avatar.con-recorte { position: relative; overflow: visible; z-index: 1; }
 .avatar.con-recorte img {
-  position: absolute; left: -0.12em; bottom: -0.12em; width: calc(100% + 0.24em); height: auto; aspect-ratio: 240 / 324;
+  /* Por la altura (el ancho, el de la imagen): los recortes anchos sobresalen del círculo por los lados */
+  position: absolute; left: 50%; translate: -50% 0; bottom: -0.12em; height: calc((100% + 0.24em) * 324 / 240); width: auto; max-width: none;
   border-radius: 0; object-fit: contain; object-position: bottom; transform-origin: 50% 100%; pointer-events: none;
   /* Arriba (hasta la mitad del círculo) se ve todo; abajo, solo lo que cae dentro del círculo. */
   -webkit-mask-image: linear-gradient(#000, #000), radial-gradient(circle closest-side, #000 99%, transparent 100%);
   mask-image: linear-gradient(#000, #000), radial-gradient(circle closest-side, #000 99%, transparent 100%);
   -webkit-mask-size: 100% 63%, 100% 74.1%; mask-size: 100% 63%, 100% 74.1%;
-  -webkit-mask-position: top, bottom; mask-position: top, bottom;
+  -webkit-mask-position: top, bottom center; mask-position: top, bottom center;
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
   filter: drop-shadow(0 0.08em 0.1em rgba(4, 12, 40, 0.45));
 }

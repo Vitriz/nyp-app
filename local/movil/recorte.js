@@ -59,14 +59,20 @@ function recuadro(mascara) {
   return maxX < 0 ? null : { minX, minY, bw: Math.max(1, maxX - minX), bh: Math.max(1, maxY - minY) };
 }
 
-/** La foto final: lo que deja ver la máscara, encuadrado (cabeza centrada y apoyada abajo), con fondo transparente. */
+/**
+ * La foto final: lo que deja ver la máscara, encuadrado (centrado y apoyado abajo), con fondo transparente.
+ * Se ajusta por la altura: un recorte ancho (dos caras, un perro tumbado…) no se encoge para caber a lo ancho,
+ * sino que la imagen se hace más ancha (hasta 1,7 veces) y sobresale del círculo por los lados.
+ */
 function fotoRecortada(src, mascara) {
   const r = recuadro(mascara);
   if (!r) return null;
-  const s = Math.min((ANCHO * 0.86) / r.bw, (ALTO * 0.97) / r.bh);
-  const c = lienzoNuevo(ANCHO, ALTO);
+  let s = Math.min((ANCHO * 0.86) / r.bw, (ALTO * 0.97) / r.bh);
+  const ancho = Math.round(Math.min(ANCHO * 1.7, Math.max(ANCHO, (r.bw * (ALTO * 0.97)) / r.bh / 0.9)));
+  s = Math.min((ancho * 0.9) / r.bw, (ALTO * 0.97) / r.bh);
+  const c = lienzoNuevo(ancho, ALTO);
   const ctx = c.getContext("2d");
-  ctx.translate((ANCHO - r.bw * s) / 2 - r.minX * s, ALTO - r.bh * s - r.minY * s);
+  ctx.translate((ancho - r.bw * s) / 2 - r.minX * s, ALTO - r.bh * s - r.minY * s);
   ctx.scale(s, s);
   ctx.drawImage(src, 0, 0);
   ctx.globalCompositeOperation = "destination-in";

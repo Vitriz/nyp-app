@@ -885,6 +885,9 @@ html, body { height: 100dvh; }
 
 /* ---------- banner: la cara recortada sin círculo detrás ---------- */
 .banner .avatar.con-recorte { background: transparent; border-color: transparent; box-shadow: none; }
+/* Recorte ancho: hueco a los lados para que no tape el nombre (--sobra lo mide ui.js) */
+.banner .avatar.con-recorte { margin-right: var(--sobra, 0px); margin-left: calc(var(--sobra, 0px) * 0.5 - 0.3em); }
+.banner-fijo.cerrado .banner .avatar.con-recorte { margin: 0; }
 
 /* La «y» del título también en su casilla, más pequeña y dorada */
 .titulo-nyp .ficha.titulo-y {

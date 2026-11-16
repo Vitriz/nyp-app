@@ -79,6 +79,22 @@ function vestir(el, j) {
 /** Batalla multijugador: fotos de los jugadores que llegaron aparte (id → data URL). */
 export const fotosMemoria = {};
 
+/**
+ * Un recorte ancho (más que el círculo) sobresale por los lados: en el banner se deja ese hueco a la derecha
+ * (y la mitad a la izquierda) para que no tape el nombre. Se recalcula si cambia de tamaño.
+ */
+function apartarRecorteAncho(el, img) {
+  const medir = () => {
+    const sobra = Math.max(0, (img.offsetWidth - el.offsetWidth) / 2);
+    el.style.setProperty("--sobra", `${sobra.toFixed(1)}px`);
+  };
+  img.addEventListener("load", () => {
+    if (img.naturalWidth / img.naturalHeight < 0.8) return; // del ancho del círculo: nada que apartar
+    medir();
+    if (typeof ResizeObserver === "function") new ResizeObserver(medir).observe(img);
+  }, { once: true });
+}
+
 export function avatar(j, extra = "") {
   const estilo = { "--c": j.color, ...(j.colorTexto ? { color: j.colorTexto } : {}), ...(j.contorno ? { "--contorno": j.contorno } : {}) };
   if (j.contorno) extra += ".con-contorno";
@@ -88,7 +104,10 @@ export function avatar(j, extra = "") {
     const src = j.foto.startsWith("data:") ? j.foto : new URL(j.foto, servidor.base).href;
     // Recorte (con fondo transparente): la cabeza sale por encima del círculo de color.
     const recorte = /^data:image\/(png|webp)/.test(j.foto) || /[?&]r=1\b/.test(j.foto);
-    return vestir(h(`span.avatar.con-foto${recorte ? ".con-recorte" : ""}${extra}`, { style: estilo }, h("img", { src, alt: "", draggable: false })), j);
+    const img = h("img", { src, alt: "", draggable: false });
+    const el = h(`span.avatar.con-foto${recorte ? ".con-recorte" : ""}${extra}`, { style: estilo }, img);
+    if (recorte) apartarRecorteAncho(el, img);
+    return vestir(el, j);
   }
   return vestir(h(`span.avatar${extra}`, { style: estilo }, h("span.avatar-letras", iniciales(j.nombre))), j);
 }

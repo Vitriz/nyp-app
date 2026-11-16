@@ -13,27 +13,69 @@ const RELLENO = "aaaaaeeeeeiiiooooouusssrrrnnnddlllcccttmmppbgvyhfzjñq";
 const DIR_NIVEL = [DIRECCIONES.slice(0, 3), DIRECCIONES, DIRECCIONES];
 const NORMALES = [1, 0.45, 0.25]; // cuántas van «al derecho» (→ ↓ ↘) en cada nivel
 
+// Cuántas palabras pueden ir en la misma dirección (mismo sentido y orientación), según el nivel:
+// fácil, algo más de la mitad; medio, la mitad como mucho; difícil, bien repartidas (nunca la mitad).
+const MAX_MISMA = [(n) => Math.ceil(n * 0.67), (n) => Math.floor(n / 2), (n) => Math.min(3, Math.ceil(n / 2) - 1)];
+
 function colocar(azar, tam, palabras, d = 0) {
+  // Primero con las dos reglas (tope por dirección y nada pegado en el mismo eje), probando el tablero
+  // entero varias veces; si no sale, solo con el tope por dirección; y, como último recurso, sin reglas.
+  for (const reglas of [2, 1]) {
+    for (let vez = 0; vez < 40; vez++) {
+      const t = colocarUna(azar, tam, palabras, d, reglas);
+      if (t) return t;
+    }
+  }
+  return colocarUna(azar, tam, palabras, d, 0);
+}
+
+function colocarUna(azar, tam, palabras, d, reglas) {
+  const estricto = reglas > 0;
   const tablero = Array.from({ length: tam }, () => Array(tam).fill(null));
   const puestas = [];
+  const porDir = new Map(); // "dr,dc" -> cuántas van así
+  const celdasEje = new Map(); // eje (horizontal, vertical o cada diagonal, en los dos sentidos) -> casillas
+  const eje = (dr, dc) => (dr < 0 || (dr === 0 && dc < 0) ? `${-dr},${-dc}` : `${dr},${dc}`);
+  const maximo = Math.max(1, MAX_MISMA[d + 1](palabras.length));
   for (const w of palabras) {
     const c = w.clave;
-    let hecha = false;
-    for (let intento = 0; intento < 300 && !hecha; intento++) {
-      const [dr, dc] = azar() < NORMALES[d + 1] ? DIRECCIONES[azar.entero(0, 2)] : azar.elegir(DIR_NIVEL[d + 1]);
-      const r0 = azar.entero(0, tam - 1), c0 = azar.entero(0, tam - 1);
-      const r1 = r0 + dr * (c.length - 1), c1 = c0 + dc * (c.length - 1);
-      if (r1 < 0 || r1 >= tam || c1 < 0 || c1 >= tam) continue;
-      let cabe = true;
-      for (let k = 0; k < c.length && cabe; k++) {
-        const x = tablero[r0 + dr * k][c0 + dc * k];
-        if (x !== null && x !== c[k]) cabe = false;
-      }
-      if (!cabe) continue;
-      for (let k = 0; k < c.length; k++) tablero[r0 + dr * k][c0 + dc * k] = c[k];
-      puestas.push({ clave: c, forma: w.forma, definicion: w.definicion, r0, c0, r1, c1 });
-      hecha = true;
+    // Todas las posiciones donde cabe (con las reglas, si toca) y se elige una al azar.
+    const sitios = [];
+    for (const [dr, dc] of DIR_NIVEL[d + 1]) {
+      if (estricto && (porDir.get(`${dr},${dc}`) ?? 0) >= maximo) continue;
+      const mismas = reglas > 1 ? celdasEje.get(eje(dr, dc)) : null;
+      for (let r0 = 0; r0 < tam; r0++)
+        for (let c0 = 0; c0 < tam; c0++) {
+          const r1 = r0 + dr * (c.length - 1), c1 = c0 + dc * (c.length - 1);
+          if (r1 < 0 || r1 >= tam || c1 < 0 || c1 >= tam) continue;
+          let vale = true;
+          for (let k = 0; k < c.length && vale; k++) {
+            const r = r0 + dr * k, cc = c0 + dc * k;
+            const x = tablero[r][cc];
+            if (x !== null && x !== c[k]) vale = false;
+            // Nada de palabras en el mismo eje pegadas una a la otra (en filas seguidas se ven enseguida).
+            if (mismas) for (let i = -1; i <= 1 && vale; i++) for (let j = -1; j <= 1 && vale; j++) if (mismas.has(`${r + i},${cc + j}`)) vale = false;
+          }
+          if (vale) sitios.push([dr, dc, r0, c0, r1, c1]);
+        }
     }
+    if (!sitios.length) {
+      if (estricto) return null; // no cabe con las reglas: se vuelve a empezar el tablero
+      continue;
+    }
+    // Al derecho (→ ↓ ↘) con la proporción de cada nivel; si no, cualquier dirección (repartidas por igual).
+    const normales = sitios.filter(([dr, dc]) => DIRECCIONES.findIndex((x) => x[0] === dr && x[1] === dc) < 3);
+    let grupo = normales.length && azar() < NORMALES[d + 1] ? normales : sitios;
+    const dirs = [...new Set(grupo.map(([dr, dc]) => `${dr},${dc}`))];
+    const dir = azar.elegir(dirs);
+    grupo = grupo.filter(([dr, dc]) => `${dr},${dc}` === dir);
+    const [dr, dc, r0, c0, r1, c1] = azar.elegir(grupo);
+    for (let k = 0; k < c.length; k++) tablero[r0 + dr * k][c0 + dc * k] = c[k];
+    porDir.set(`${dr},${dc}`, (porDir.get(`${dr},${dc}`) ?? 0) + 1);
+    const e = eje(dr, dc);
+    if (!celdasEje.has(e)) celdasEje.set(e, new Set());
+    for (let k = 0; k < c.length; k++) celdasEje.get(e).add(`${r0 + dr * k},${c0 + dc * k}`);
+    puestas.push({ clave: c, forma: w.forma, definicion: w.definicion, r0, c0, r1, c1 });
   }
   for (const fila of tablero) for (let k = 0; k < tam; k++) fila[k] ??= azar.elegir([...RELLENO]);
   return { tablero: tablero.map((f) => f.join("")), puestas };
