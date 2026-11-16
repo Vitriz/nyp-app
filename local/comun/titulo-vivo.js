@@ -19,6 +19,7 @@ export const VALORES = {
   vueltaVel: 1000, // px/s: velocidad al pasar por el radio de frenada (arranca proporcional a la distancia)
   vueltaRadio: 500, // px: a esta distancia de su sitio la letra empieza a frenar para llegar suave
   rebote: 0.34, // energía que se conserva en los choques (0 a 1)
+  roceChoque: 0.3, // roce entre dos letras al chocar (más: se agarran más de lado y giran más)
   muelle: 560, // fuerza con la que la letra agarrada sigue al dedo
   amortigua: 0.42, // amortiguación del muelle (más: menos vaivén)
   velAgarre: 10000, // px/s: velocidad máxima de la letra agarrada (10000 = sin tope)
@@ -72,6 +73,8 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
       x: t.left + titulo.clientLeft + el.offsetLeft + el.offsetWidth / 2,
       y: t.top + titulo.clientTop + el.offsetTop + el.offsetHeight / 2,
       radio: (Math.min(el.offsetWidth, el.offsetHeight) / 2) * 0.9,
+      w: (el.offsetWidth / 2) * 0.96, // medio ancho y medio alto (un pelín menos: las esquinas son redondeadas)
+      h: (el.offsetHeight / 2) * 0.96,
     }));
   }
 
@@ -106,44 +109,89 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
   }
 
   /** Choques entre letras: se separan y se reparten la velocidad (la agarrada empuja sin frenarse). */
+  // Choques realistas entre letras: cada una es un rectángulo girado (no un círculo). Se busca por dónde se
+  // tocan (eje de menor solape entre los dos rectángulos) y el punto de contacto (las esquinas de una que han
+  // entrado en la otra). El impulso se aplica en ese punto, así que una letra golpeada en una esquina gira
+  // hacia donde la empujan, y el roce entre ellas en el contacto también las hace girar.
+  const GRADO = Math.PI / 180;
+  // Esquinas y ejes de un rectángulo con centro (x, y), medio ancho/alto (w, h) y giro t (rad).
+  const caja = (x, y, w, h, t) => {
+    const cs = Math.cos(t), sn = Math.sin(t);
+    const ux = [cs, sn], uy = [-sn, cs];
+    const esq = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([i, j]) => [x + ux[0] * w * i + uy[0] * h * j, y + ux[1] * w * i + uy[1] * h * j]);
+    return { x, y, w, h, ux, uy, esq };
+  };
+  // ¿Está el punto p dentro de la caja? (con un pequeño margen)
+  const dentro = (k, p) => {
+    const dx = p[0] - k.x, dy = p[1] - k.y;
+    return Math.abs(dx * k.ux[0] + dy * k.ux[1]) <= k.w + 0.5 && Math.abs(dx * k.uy[0] + dy * k.uy[1]) <= k.h + 0.5;
+  };
+  // Teorema de los ejes separadores: devuelve la normal del choque (de a hacia b) y cuánto se meten, o null.
+  const solapan = (ka, kb) => {
+    let mejor = null;
+    for (const eje of [ka.ux, ka.uy, kb.ux, kb.uy]) {
+      const proy = (k) => k.w * Math.abs(k.ux[0] * eje[0] + k.ux[1] * eje[1]) + k.h * Math.abs(k.uy[0] * eje[0] + k.uy[1] * eje[1]);
+      const centro = (kb.x - ka.x) * eje[0] + (kb.y - ka.y) * eje[1];
+      const solape = proy(ka) + proy(kb) - Math.abs(centro);
+      if (solape <= 0) return null; // hay un hueco: no se tocan
+      if (!mejor || solape < mejor.solape) {
+        const sg = centro < 0 ? -1 : 1;
+        mejor = { nx: eje[0] * sg, ny: eje[1] * sg, solape };
+      }
+    }
+    return mejor;
+  };
+  const cruz = (rx, ry, ex, ey) => rx * ey - ry * ex;
+
   function choques(c) {
-    const quieta = (k) => (!agarre || agarre.k !== k) && Math.hypot(est[k].vx, est[k].vy) < 15;
+    const quieta = (k) => (!agarre || agarre.k !== k) && Math.hypot(est[k].vx, est[k].vy) < 15 && Math.abs(est[k].vr) < 20;
     for (let i = 0; i < fichas.length; i++) {
       for (let j = i + 1; j < fichas.length; j++) {
         if (quieta(i) && quieta(j)) continue; // dos letras paradas no chocan (en su sitio ni se tocan)
         const a = est[i], b = est[j];
         const ax = c[i].x + a.x, ay = c[i].y + a.y, bx = c[j].x + b.x, by = c[j].y + b.y;
-        const dx = bx - ax, dy = by - ay;
-        const d = Math.hypot(dx, dy);
-        const minimo = c[i].radio + c[j].radio;
-        if (d >= minimo || d < 0.01) continue;
-        const nx = dx / d, ny = dy / d;
+        // Prueba rápida con los círculos que las rodean.
+        if (Math.hypot(bx - ax, by - ay) > Math.hypot(c[i].w, c[i].h) + Math.hypot(c[j].w, c[j].h)) continue;
+        const ka = caja(ax, ay, c[i].w, c[i].h, a.r * GRADO), kb = caja(bx, by, c[j].w, c[j].h, b.r * GRADO);
+        const m = solapan(ka, kb);
+        if (!m) continue;
+        const { nx, ny, solape } = m;
+        // Punto de contacto: la media de las esquinas de cada una que han entrado en la otra.
+        const pts = [...kb.esq.filter((p) => dentro(ka, p)), ...ka.esq.filter((p) => dentro(kb, p))];
+        let px = (ax + bx) / 2, py = (ay + by) / 2;
+        if (pts.length) (px = pts.reduce((t, p) => t + p[0], 0) / pts.length), (py = pts.reduce((t, p) => t + p[1], 0) / pts.length);
         const iAgarrada = agarre?.k === i, jAgarrada = agarre?.k === j;
-        // Se separan (la agarrada no se mueve: va con el dedo).
-        const solape = minimo - d;
-        if (iAgarrada) (b.x += nx * solape), (b.y += ny * solape);
-        else if (jAgarrada) (a.x -= nx * solape), (a.y -= ny * solape);
-        else (a.x -= (nx * solape) / 2), (a.y -= (ny * solape) / 2), (b.x += (nx * solape) / 2), (b.y += (ny * solape) / 2);
-        // Velocidad relativa en la dirección del choque: si se acercan, rebotan.
-        const vrel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
-        if (vrel >= 0) continue;
-        const tx = -ny, ty = nx; // lo que se rozan de lado: las hace girar
-        const roce = (b.vx - a.vx) * tx + (b.vy - a.vy) * ty;
-        if (iAgarrada) {
-          b.vx -= (1 + A.rebote) * vrel * nx;
-          b.vy -= (1 + A.rebote) * vrel * ny;
-          b.vr += roce * 0.25;
-        } else if (jAgarrada) {
-          a.vx += (1 + A.rebote) * vrel * nx;
-          a.vy += (1 + A.rebote) * vrel * ny;
-          a.vr -= roce * 0.25;
-        } else {
-          const J = ((1 + A.rebote) * vrel) / 2; // misma masa
-          a.vx += J * nx, a.vy += J * ny;
-          b.vx -= J * nx, b.vy -= J * ny;
-          a.vr -= roce * 0.12;
-          b.vr += roce * 0.12;
+        // La agarrada es como si pesara infinito (va con el dedo): los choques no la mueven ni la giran.
+        const ma = iAgarrada ? 0 : 1, mb = jAgarrada ? 0 : 1; // 1 / masa
+        const Ia = iAgarrada ? 0 : 3 / (c[i].w ** 2 + c[i].h ** 2), Ib = jAgarrada ? 0 : 3 / (c[j].w ** 2 + c[j].h ** 2); // 1 / inercia
+        // Se separan lo que se han metido una en la otra.
+        if (ma + mb) {
+          const fa = ma / (ma + mb), fb = mb / (ma + mb);
+          (a.x -= nx * solape * fa), (a.y -= ny * solape * fa);
+          (b.x += nx * solape * fb), (b.y += ny * solape * fb);
         }
+        // Velocidad de cada una justo en el punto de contacto (la de su centro más la de su giro).
+        const rax = px - ax, ray = py - ay, rbx = px - bx, rby = py - by;
+        const wa = a.vr * GRADO, wb = b.vr * GRADO;
+        const rvx = b.vx - wb * rby - (a.vx - wa * ray), rvy = b.vy + wb * rbx - (a.vy + wa * rax);
+        const vrel = rvx * nx + rvy * ny;
+        if (vrel >= 0) continue; // ya se están separando
+        const aplica = (jx, jy) => {
+          (a.vx -= jx * ma), (a.vy -= jy * ma);
+          (b.vx += jx * mb), (b.vy += jy * mb);
+          a.vr -= (cruz(rax, ray, jx, jy) * Ia) / GRADO;
+          b.vr += (cruz(rbx, rby, jx, jy) * Ib) / GRADO;
+        };
+        // Impulso del choque en la dirección de la normal, con el rebote elegido.
+        const ran = cruz(rax, ray, nx, ny), rbn = cruz(rbx, rby, nx, ny);
+        const jn = (-(1 + A.rebote) * vrel) / (ma + mb + ran * ran * Ia + rbn * rbn * Ib);
+        aplica(jn * nx, jn * ny);
+        // Roce en el contacto (de lado): frena el deslizamiento entre ellas y las hace girar.
+        const tx = -ny, ty = nx;
+        const vt = rvx * tx + rvy * ty;
+        const rat = cruz(rax, ray, tx, ty), rbt = cruz(rbx, rby, tx, ty);
+        const jt = Math.max(-A.roceChoque * jn, Math.min(A.roceChoque * jn, -vt / (ma + mb + rat * rat * Ia + rbt * rbt * Ib)));
+        aplica(jt * tx, jt * ty);
         // Las que chocan dejan de volver y su reloj empieza de nuevo (solo ellas).
         const ahora = performance.now();
         if (!iAgarrada) (a.vuelta = null), (a.toque = ahora);

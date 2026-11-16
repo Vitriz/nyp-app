@@ -23,6 +23,7 @@ const CONTROLES = [
     ["giroGolpe", "Giro con un toque", 0, 500, 10],
     ["alcance", "Alcance de un toque (px)", 0, 200, 2],
     ["rebote", "Rebote en los choques", 0, 1, 0.02],
+    ["roceChoque", "Roce entre letras al chocar", 0, 1.5, 0.05],
   ]],
   ["Volver a su sitio", [
     ["vueltaMs", "Espera antes de volver (ms, por letra)", 500, 8000, 100],
