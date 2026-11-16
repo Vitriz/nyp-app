@@ -23,6 +23,15 @@ export function montar(cuerpo, e, ctx) {
   const cuentaCas = h("b", "");
   const deshacer = h("button.boton.suave", { type: "button", onclick: () => cambiar(camino.slice(0, Math.max(1, camino.length - 1)), true) }, "↶ Deshacer");
   const borrar = botonMantener("Empezar de nuevo", () => cambiar([inicio], true), { clase: ".suave", ms: 600 });
+  // Pistas (solo): ponen una pieza de la solución. quedanPistas: null si no hay (Batalla).
+  let quedanPistas = d.quedanPistas ?? null;
+  let pistasVistas = (d.pistas ?? []).length;
+  const pista = h("button.boton.suave", { type: "button", onclick: () => !acabado && quedanPistas && ctx.enviar({ a: "pista" }) });
+  const pintarPista = () => {
+    pista.textContent = `💡 Pista · ${quedanPistas}`;
+    pista.disabled = acabado || !quedanPistas;
+  };
+
   cuerpo.append(
     lados(
       h(
@@ -30,7 +39,7 @@ export function montar(cuerpo, e, ctx) {
         h("div.puzle-datos", h("span", "Siguiente ", cuentaNum), h("span", "Casillas ", cuentaCas)),
         h("div.puzle-zona", tablero.el),
         aviso,
-        h("div.puzle-botones", deshacer, borrar)
+        h("div.puzle-botones", deshacer, borrar, quedanPistas != null ? pista : null)
       )
     )
   );
@@ -44,6 +53,7 @@ export function montar(cuerpo, e, ctx) {
     cuentaCas.textContent = `${camino.length}/${total}`;
     tablero.pintar(camino, { completo: acabado });
     deshacer.disabled = acabado || camino.length < 2;
+    if (quedanPistas != null) pintarPista();
   }
 
   function enviar() {
@@ -115,6 +125,15 @@ export function montar(cuerpo, e, ctx) {
   pintar();
   return {
     actualizar(e) {
+      if (e.datos?.quedanPistas != null) quedanPistas = e.datos.quedanPistas;
+      // Una pista nueva: el servidor llevó el hilo bien hasta el siguiente número; se toma ese hilo.
+      if ((e.datos?.pistas ?? []).length > pistasVistas) {
+        pistasVistas = e.datos.pistas.length;
+        enviado = JSON.stringify(e.datos.camino);
+        cambiar([...e.datos.camino]);
+        decir("💡 El hilo, bien hasta el siguiente número", "bien", 1600);
+      }
+      pintar();
       if (e.datos?.resuelto && !acabado) {
         acabado = true;
         pintar();

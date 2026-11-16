@@ -416,6 +416,7 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
       const vidas = m.vidas == null ? null : m.vidas;
       const max = m.vidasMax ?? vidas;
       marcadorEl.replaceChildren(
+        ...[
         h("b.marcador-texto", m.texto),
         vidas == null
           ? null
@@ -424,7 +425,8 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
               { title: `Te ${vidas === 1 ? "queda 1 fallo" : `quedan ${vidas} fallos`}`, "aria-label": `Fallos que quedan: ${vidas}` },
               // Pocas: un corazón por fallo; muchas: corazón y número.
               max <= 5 ? `${"❤️".repeat(vidas)}${"🤍".repeat(Math.max(0, max - vidas))}` : `❤️ ${vidas}`
-            )
+            ),
+        ].filter(Boolean) // (sin huecos «null»: se escribirían)
       );
     };
     const refrescar = () => {
@@ -503,12 +505,11 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
           // El mismo banner, ya cerrado en círculo: así no hay salto al empezar.
           h("span.icono-yo", fijo.hueco("cerrado")),
           // Sin límite de tiempo: en vez del reloj, un botón para acabar cuando quieras (y ver el resultado).
-          h("div.barra-centro", meta.duracion ? reloj.el : null, marcadorEl),
+          h("div.barra-centro", ...[meta.duracion ? reloj.el : null, marcadorEl].filter(Boolean)),
           h(
             "div.barra-der",
             // Sin reloj: se acaba sola (al completarla o con los fallos), o cuando quieras (manteniendo 🏁).
-            meta.duracion ? null : terminarBtn,
-            h("button.icono-btn.cerrar", { type: "button", onclick: abandonar, "aria-label": "Dejar la partida" }, "✕")
+            ...[meta.duracion ? null : terminarBtn, h("button.icono-btn.cerrar", { type: "button", onclick: abandonar, "aria-label": "Dejar la partida" }, "✕")].filter(Boolean)
           )),
         cuerpo
       ),

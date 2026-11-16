@@ -2,7 +2,7 @@
 // La cuadrícula está partida en "jaulas" con un número y una operación (+ − × ÷): los números de la
 // jaula, con esa operación, tienen que dar ese resultado. Vale cualquier solución que cumpla las reglas.
 // Todos reciben el mismo puzle; gana quien lo resuelva antes (si nadie, quien tenga más jaulas bien).
-import { nivelDificultad } from "../util.js";
+import { nivelDificultad, reglasSolo, quedan, restan } from "../util.js";
 
 const NIVELES = [
   { n: 4, maxJaula: 3 },
@@ -152,7 +152,7 @@ export default {
         break;
       }
     }
-    return { n, solucion: mejor.sol, jaulas: mejor.js, de: mejor.de, inicio, jugadores: {} };
+    return { n, solucion: mejor.sol, jaulas: mejor.js, de: mejor.de, inicio, reglas: reglasSolo("kenken", config), jugadores: {} };
   },
 
   estadoJugador(ronda, id) {
@@ -161,7 +161,8 @@ export default {
 
   vistaJugador(ronda, id) {
     const j = this.estadoJugador(ronda, id);
-    return { n: ronda.n, jaulas: ronda.jaulas, de: ronda.de, valores: j.valores, resuelto: j.ms != null };
+    // pistas: casillas desveladas ({ k, v }); quedanPistas: null si no hay pistas (Batalla).
+    return { n: ronda.n, jaulas: ronda.jaulas, de: ronda.de, valores: j.valores, resuelto: j.ms != null, pistas: j.pistas ?? [], quedanPistas: restan(ronda.reglas?.pistas, (j.pistas ?? []).length) };
   },
 
   vistaTV(ronda) {
@@ -176,6 +177,20 @@ export default {
   },
 
   accion(ronda, id, msg) {
+    if (msg.a === "pista") {
+      // Desvela una casilla: la elegida si está vacía o mal; si no, otra al azar que lo esté.
+      const j = this.estadoJugador(ronda, id);
+      if (j.ms != null) return false;
+      if (ronda.reglas?.pistas == null || !quedan(ronda.reglas.pistas, (j.pistas ?? []).length)) return false;
+      j.pistas ??= [];
+      const malas = j.valores.map((v, k) => k).filter((k) => j.valores[k] !== ronda.solucion[k]);
+      if (!malas.length) return false;
+      const k = malas.includes(msg.k) ? msg.k : malas[Math.floor(Math.random() * malas.length)];
+      j.pistas.push({ k, v: ronda.solucion[k] });
+      j.valores[k] = ronda.solucion[k];
+      if (resuelto(ronda.n, ronda.jaulas, j.valores)) j.ms = Math.max(0, Date.now() - ronda.inicio);
+      return true;
+    }
     if (msg.a !== "valores" || !Array.isArray(msg.v) || msg.v.length !== ronda.n * ronda.n) return false;
     const j = this.estadoJugador(ronda, id);
     if (j.ms != null) return false;

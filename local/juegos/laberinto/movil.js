@@ -11,15 +11,23 @@ export function montar(cuerpo, e, ctx) {
   const puestos = new Map();
   let elegido = null;
 
-  // Si volvemos a entrar, recolocamos lo que el servidor recuerda.
-  const usados = new Set();
-  for (const [k, v] of Object.entries(d.puestos ?? {})) {
-    const i = d.banco.findIndex((x, idx) => x === v && !usados.has(idx));
-    if (i >= 0) {
-      usados.add(i);
-      puestos.set(k, i);
+  // Si volvemos a entrar (o llega una pista), recolocamos lo que el servidor recuerda.
+  function recolocar(valores) {
+    puestos.clear();
+    const usados = new Set();
+    for (const [k, v] of Object.entries(valores ?? {})) {
+      const i = d.banco.findIndex((x, idx) => x === Number(v) && !usados.has(idx));
+      if (i >= 0) {
+        usados.add(i);
+        puestos.set(k, i);
+      }
     }
   }
+  recolocar(d.puestos);
+  // Pistas (solo): ponen el número bueno en un hueco. quedanPistas: null si no hay (Batalla).
+  let quedanPistas = d.quedanPistas ?? null;
+  let pistasVistas = (d.pistas ?? []).length;
+  const pista = h("button.boton.suave.lab-pista", { type: "button", onclick: () => quedanPistas && ctx.enviar({ a: "pista" }) });
 
   // Ayudas según el nivel: en fácil se marca cada casilla mal puesta; en normal y difícil solo si la cuenta
   // cuadra (y los números se pueden seguir moviendo: quizá van en otro orden).
@@ -44,7 +52,7 @@ export function montar(cuerpo, e, ctx) {
         h("div.lab-caja", rejilla.el),
         aviso,
         banco,
-        vaciar
+        quedanPistas != null ? h("div.lab-botones", vaciar, pista) : vaciar
       ),
       ".mf-cont",
       aviso
@@ -57,6 +65,10 @@ export function montar(cuerpo, e, ctx) {
   }
 
   function pintar() {
+    if (quedanPistas != null) {
+      pista.textContent = `💡 Pista · ${quedanPistas}`;
+      pista.disabled = !quedanPistas;
+    }
     for (const k of huecos) rejilla.poner(k, puestos.has(k) ? d.banco[puestos.get(k)] : null);
     const enUso = new Set(puestos.values());
     banco.replaceChildren(
@@ -172,7 +184,22 @@ export function montar(cuerpo, e, ctx) {
 
   pintar();
   return {
-    actualizar() {},
+    actualizar(e) {
+      if (e.datos?.quedanPistas != null) quedanPistas = e.datos.quedanPistas;
+      // Una pista nueva: el servidor ya puso el número; se toma cómo quedaron los huecos.
+      if ((e.datos?.pistas ?? []).length > pistasVistas) {
+        pistasVistas = e.datos.pistas.length;
+        recolocar(e.datos.puestos);
+        elegido = null;
+        const k = e.datos.pistas.at(-1).k;
+        aviso.textContent = "💡 Ahí va un número";
+        setTimeout(() => {
+          const el = rejilla.el.querySelector(`[data-k="${k}"]`);
+          el?.classList.add("revelado");
+        }, 0);
+      }
+      pintar();
+    },
     desmontar() {
       window.removeEventListener("pointermove", mover);
       window.removeEventListener("pointerup", soltar);

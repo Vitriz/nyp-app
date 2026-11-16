@@ -22,10 +22,16 @@ export const REGLAS_SOLO = {
   revuelto: { fallos: [5, 4, 3], pases: [3, 2, 1], pistas: [3, 2, 1] },
   sopa: { fallos: [null, 10, 6], pistas: [3, 2, 1] },
   crucigrama: { fallos: [null, 10, 6], pistas: [5, 3, 1] },
-  culebras: { fallos: [null, 10, 6] },
   conexiones: { fallos: [null, 8, 4] },
   memoria: { fallos: [5, 3, 2] },
   "mates-fugaces": { fallos: [5, 3, 2], pases: [3, 2, 1] },
+  // Puzles: pistas que colocan una pieza de la solución (no se pierde por fallos).
+  kenken: { pistas: [3, 2, 1] },
+  coronas: { pistas: [3, 2, 1] },
+  parcelas: { pistas: [3, 2, 1] },
+  hilo: { pistas: [3, 2, 1] },
+  laberinto: { pistas: [3, 2, 1] },
+  culebras: { fallos: [null, 10, 6], pistas: [3, 2, 1] },
 };
 
 /** Las reglas de un juego en esta partida: { fallos, pases, pistas } (null = sin límite). Fuera del modo solo, {}. */

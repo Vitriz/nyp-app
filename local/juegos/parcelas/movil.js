@@ -20,6 +20,15 @@ export function montar(cuerpo, e, ctx) {
   const cuenta = h("b", "");
   const deshacer = h("button.boton.suave", { type: "button", onclick: () => historia.length && cambiar(historia.pop(), false) }, "↶ Deshacer");
   const borrar = botonMantener("Borrar todo", () => cambiar([]), { clase: ".suave", ms: 600 });
+  // Pistas (solo): ponen una pieza de la solución. quedanPistas: null si no hay (Batalla).
+  let quedanPistas = d.quedanPistas ?? null;
+  let pistasVistas = (d.ayudas ?? []).length;
+  const pista = h("button.boton.suave", { type: "button", onclick: () => !acabado && quedanPistas && ctx.enviar({ a: "pista" }) });
+  const pintarPista = () => {
+    pista.textContent = `💡 Pista · ${quedanPistas}`;
+    pista.disabled = acabado || !quedanPistas;
+  };
+
   const leyenda = h(
     "div.pc-leyenda",
     [["cuadrado", "Cuadrado"], ["alto", "Alto"], ["ancho", "Ancho"], ["cualquiera", "Cualquiera"]].map(([f, t]) => h("span", insignia(f, null, "#8fb4ff"), t)),
@@ -32,7 +41,7 @@ export function montar(cuerpo, e, ctx) {
         h("div.puzle-datos", h("span", "Rectángulos bien ", cuenta)),
         h("div.puzle-zona", tablero.el),
         aviso,
-        h("div.puzle-botones", deshacer, borrar),
+        h("div.puzle-botones", deshacer, borrar, quedanPistas != null ? pista : null),
         leyenda
       )
     )
@@ -44,6 +53,7 @@ export function montar(cuerpo, e, ctx) {
     cuenta.textContent = `${bien}/${d.pistas.length}`;
     deshacer.disabled = acabado || !historia.length;
     tablero.el.classList.toggle("completo", acabado);
+    if (quedanPistas != null) pintarPista();
     return bien;
   }
 
@@ -150,6 +160,14 @@ export function montar(cuerpo, e, ctx) {
   pintar();
   return {
     actualizar(e) {
+      if (e.datos?.quedanPistas != null) quedanPistas = e.datos.quedanPistas;
+      // Una pista nueva: el servidor ya dibujó el rectángulo bueno; se toman sus rectángulos.
+      if ((e.datos?.ayudas ?? []).length > pistasVistas) {
+        pistasVistas = e.datos.ayudas.length;
+        cambiar(e.datos.rects.map((x) => [...x]));
+        decir("💡 Ahí va un rectángulo", "bien", 1400);
+      }
+      pintar();
       if (e.datos?.resuelto && !acabado) {
         acabado = true;
         pintar();

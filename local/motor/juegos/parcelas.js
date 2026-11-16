@@ -1,7 +1,7 @@
 // PARCELAS · hay que partir la cuadrícula en rectángulos. Cada rectángulo tiene dentro una sola pista,
 // que dice su forma (cuadrado, rectángulo alto, rectángulo ancho o cualquiera) y, a veces, su tamaño
 // (cuántas casillas ocupa). Cada tablero tiene una sola solución. Gana quien lo complete antes.
-import { nivelDificultad } from "../util.js";
+import { nivelDificultad, reglasSolo, quedan, restan } from "../util.js";
 
 const NIVELES = [
   { n: 5, maxArea: 6, conTipo: 0.85, conNumero: 0.55 },
@@ -165,6 +165,7 @@ export default {
       pistas: mejor.map(({ k, forma, numero }) => ({ k, forma, numero })),
       solucion: mejor.map(({ sol }) => [sol.r, sol.c, sol.alto, sol.ancho]),
       inicio,
+      reglas: reglasSolo("parcelas", config),
       jugadores: {},
     };
   },
@@ -175,7 +176,7 @@ export default {
 
   vistaJugador(ronda, id) {
     const j = this.estadoJugador(ronda, id);
-    return { n: ronda.n, pistas: ronda.pistas, rects: j.rects, resuelto: j.ms != null };
+    return { n: ronda.n, pistas: ronda.pistas, rects: j.rects, resuelto: j.ms != null, ayudas: j.ayudas ?? [], quedanPistas: restan(ronda.reglas?.pistas, (j.ayudas ?? []).length) };
   },
 
   vistaTV(ronda) {
@@ -190,6 +191,22 @@ export default {
 
   accion(ronda, id, msg) {
     const n = ronda.n;
+    if (msg.a === "pista") {
+      // Dibuja un rectángulo de la solución (uno que aún no tengas bien puesto).
+      const j = this.estadoJugador(ronda, id);
+      if (j.ms != null || ronda.reglas?.pistas == null || !quedan(ronda.reglas.pistas, (j.ayudas ?? []).length)) return false;
+      j.ayudas ??= [];
+      const igual = (a, b) => a.every((x, i) => x === b[i]);
+      const faltan = ronda.solucion.filter((s) => !j.rects.some((x) => igual(x, s)));
+      if (!faltan.length) return false;
+      const s = faltan[Math.floor(Math.random() * faltan.length)];
+      j.ayudas.push(s);
+      // Fuera los que lo pisan; dentro el bueno.
+      const pisa = (a, b) => a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3];
+      j.rects = [...j.rects.filter((x) => !pisa(x, s)), s.slice()];
+      if (revisarParcelas(n, ronda.pistas, j.rects).resuelto) j.ms = Math.max(0, Date.now() - ronda.inicio);
+      return true;
+    }
     if (msg.a !== "parcelas" || !Array.isArray(msg.p) || msg.p.length > n * n) return false;
     const ok = msg.p.every((x) => Array.isArray(x) && x.length === 4 && x.every(Number.isInteger) && x[0] >= 0 && x[1] >= 0 && x[2] >= 1 && x[3] >= 1 && x[0] + x[2] <= n && x[1] + x[3] <= n);
     if (!ok) return false;

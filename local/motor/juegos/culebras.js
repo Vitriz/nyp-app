@@ -104,6 +104,9 @@ export default {
       ultimo: j.ultimo,
       resuelto: j.ms != null,
       quedanFallos: restan(ronda.reglas?.fallos, j.fallos ?? 0),
+      // Pistas: las dos primeras casillas de una palabra que te falta ({ i, celdas }).
+      pistas: j.pistas ?? [],
+      quedanPistas: restan(ronda.reglas?.pistas, (j.pistas ?? []).length),
     };
   },
 
@@ -117,6 +120,16 @@ export default {
   },
 
   accion(ronda, id, msg) {
+    if (msg.a === "pista") {
+      const j = this.estadoJugador(ronda, id);
+      if (j.ms != null || ronda.reglas?.pistas == null || !quedan(ronda.reglas.pistas, (j.pistas ?? []).length)) return false;
+      j.pistas ??= [];
+      const faltan = ronda.palabras.map((p, i) => i).filter((i) => !j.encontradas.includes(i) && !j.pistas.some((x) => x.i === i));
+      if (!faltan.length) return false;
+      const i = faltan[Math.floor(Math.random() * faltan.length)];
+      j.pistas.push({ i, celdas: ronda.palabras[i].celdas.slice(0, 2) });
+      return true;
+    }
     if (msg.a !== "palabra" || !Array.isArray(msg.c) || msg.c.length < 2 || msg.c.length > 20) return false;
     if (!msg.c.every((k) => Number.isInteger(k) && k >= 0 && k < ronda.n * ronda.n)) return false;
     const j = this.estadoJugador(ronda, id);

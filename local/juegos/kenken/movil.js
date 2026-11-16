@@ -34,7 +34,20 @@ export function montar(cuerpo, e, ctx) {
     { style: { "--cols": Math.min(teclas.length, 7) } },
     teclas.map((t) => h(`button.boton${t === "⌫" ? ".suave" : ""}.kk-tecla`, { type: "button", "data-t": t }, t))
   );
-  cuerpo.append(dosLados(h("div.kk-pantalla", h("div.kk-zona", rejilla.el), aviso, teclado), [aviso]));
+  // Pistas (solo): desvelan la casilla elegida (o otra que esté vacía o mal); esa casilla ya no se puede cambiar.
+  let quedanPistas = d.quedanPistas ?? null;
+  const fijas = new Set();
+  let pistasVistas = 0;
+  const pista = h("button.boton.suave.kk-pista", { type: "button", onclick: () => !acabado && quedanPistas && ctx.enviar({ a: "pista", k: sel }) });
+  cuerpo.append(dosLados(h("div.kk-pantalla", h("div.kk-zona", rejilla.el), aviso, teclado, quedanPistas != null ? pista : null), [aviso]));
+  function aplicarPistas(lista = []) {
+    for (; pistasVistas < lista.length; pistasVistas++) {
+      const { k, v } = lista[pistasVistas];
+      valores[k] = v;
+      fijas.add(k);
+    }
+  }
+  aplicarPistas(d.pistas);
 
   rejilla.el.addEventListener("pointerdown", (ev) => {
     const b = ev.target.closest(".kk-celda");
@@ -65,7 +78,7 @@ export function montar(cuerpo, e, ctx) {
   });
 
   function pulsar(t) {
-    if (acabado) return;
+    if (acabado || fijas.has(sel)) return;
     valores[sel] = t === "⌫" ? 0 : Number(t);
     navigator.vibrate?.(6);
     // Tras escribir, a la siguiente casilla vacía de la misma fila (si la hay).
@@ -92,7 +105,12 @@ export function montar(cuerpo, e, ctx) {
       const ok = jaulaBien(j, valores);
       j.celdas.forEach((k) => estado.set(k, ok));
     });
+    if (quedanPistas != null) {
+      pista.textContent = `💡 Pista · ${quedanPistas}`;
+      pista.disabled = acabado || !quedanPistas;
+    }
     rejilla.celdas.forEach((c, k) => {
+      c.classList.toggle("revelada", fijas.has(k));
       c.classList.toggle("sel", k === sel && !acabado);
       c.classList.toggle("choca", choca.has(k));
       c.classList.toggle("jaula-bien", estado.get(k) === true);
@@ -114,7 +132,12 @@ export function montar(cuerpo, e, ctx) {
   pintar();
   return {
     actualizar(e) {
+      if (e.datos?.quedanPistas != null) quedanPistas = e.datos.quedanPistas;
+      const antes = pistasVistas;
+      aplicarPistas(e.datos?.pistas);
+      if (pistasVistas > antes) navigator.vibrate?.(20);
       if (e.datos?.resuelto) acabado = true;
+      pintar();
     },
   };
 }

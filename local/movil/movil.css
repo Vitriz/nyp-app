@@ -2067,3 +2067,15 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
 .final-cg .cg-rejilla { width: min(100%, 32rem, calc(62dvh * var(--cols) / var(--filas))); font-size: calc(min(100cqw, 32rem) / var(--cols) * 0.55); }
 .cg-celda.sol-bien { background: linear-gradient(180deg, #d6f5e4, #9be0bd); color: #08321f; }
 .cg-celda.sol-falta { background: linear-gradient(180deg, #ffe1de, #f3aaa4); color: #6b1610; }
+
+/* ---------- Pistas de los puzles ---------- */
+.puzle-botones:has(> :nth-child(3)) { grid-template-columns: 1fr 1fr 1fr; }
+.lab-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.kk-pista, .cul-pista-btn { align-self: center; min-height: 2.6rem; padding-inline: 1.2rem; }
+/* Lo que puso una pista: con un aro dorado */
+.kk-celda.revelada { box-shadow: inset 0 0 0 0.12em var(--oro); }
+.kk-celda.revelada .kk-valor, .kk-celda.revelada { color: #6b4a00; }
+.lab-hueco.revelado { outline: 0.12em solid var(--oro); outline-offset: 0.04em; }
+/* Culebras: las letras de la pista brillan con el color de su palabra */
+.cul-celda.pista { background: color-mix(in srgb, var(--c) 45%, #ffffff); box-shadow: 0 0 0 0.08em var(--c), 0 0 0.6em color-mix(in srgb, var(--c) 60%, transparent); animation: latido 1.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .cul-celda.pista { animation: none; } }

@@ -19,6 +19,15 @@ export function montar(cuerpo, e, ctx) {
   const cuenta = h("b", "");
   const deshacer = h("button.boton.suave", { type: "button", onclick: () => historia.length && cambiar(historia.pop(), true, false) }, "↶ Deshacer");
   const borrar = botonMantener("Borrar todo", () => cambiar(new Array(n * n).fill(0), true), { clase: ".suave", ms: 600 });
+  // Pistas (solo): ponen una pieza de la solución. quedanPistas: null si no hay (Batalla).
+  let quedanPistas = d.quedanPistas ?? null;
+  let pistasVistas = (d.pistas ?? []).length;
+  const pista = h("button.boton.suave", { type: "button", onclick: () => !acabado && quedanPistas && ctx.enviar({ a: "pista" }) });
+  const pintarPista = () => {
+    pista.textContent = `💡 Pista · ${quedanPistas}`;
+    pista.disabled = acabado || !quedanPistas;
+  };
+
   cuerpo.append(
     lados(
       h(
@@ -26,7 +35,7 @@ export function montar(cuerpo, e, ctx) {
         h("div.puzle-datos", h("span", "Coronas ", cuenta)),
         h("div.puzle-zona", tablero.el),
         aviso,
-        h("div.puzle-botones", deshacer, borrar)
+        h("div.puzle-botones", deshacer, borrar, quedanPistas != null ? pista : null)
       )
     )
   );
@@ -38,6 +47,7 @@ export function montar(cuerpo, e, ctx) {
     cuenta.textContent = `${coronas.length}/${n}`;
     deshacer.disabled = acabado || !historia.length;
     tablero.el.classList.toggle("completo", acabado);
+    if (quedanPistas != null) pintarPista();
     return { coronas, malas };
   }
 
@@ -119,6 +129,15 @@ export function montar(cuerpo, e, ctx) {
   pintar();
   return {
     actualizar(e) {
+      if (e.datos?.quedanPistas != null) quedanPistas = e.datos.quedanPistas;
+      // Una pista nueva: el servidor ya puso la corona; se toma su tablero (y se puede deshacer).
+      if ((e.datos?.pistas ?? []).length > pistasVistas) {
+        pistasVistas = e.datos.pistas.length;
+        enviado = JSON.stringify(e.datos.marcas);
+        cambiar([...e.datos.marcas], false);
+        decir("💡 Ahí va una corona", "bien", 1400);
+      }
+      pintar();
       if (e.datos?.resuelto && !acabado) {
         acabado = true;
         pintar();

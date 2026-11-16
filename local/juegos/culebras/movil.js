@@ -15,7 +15,10 @@ export function montar(cuerpo, e, ctx) {
   const elegida = h("div.cul-elegida");
   const largos = [...new Set(d.largos)];
   const info = h("p.cul-info", `Encuentra las ${d.largos.length} palabras escondidas. Tienen ${listaY(largos)} letras.`);
-  cuerpo.append(dosLados(h("div.cul-pantalla", h("div.puzle-zona", tablero.el), elegida, aviso, lista, info), [lista, info]));
+  // Pistas (solo): enseñan las dos primeras letras de una palabra que te falta (en el tablero y en la lista).
+  let quedanPistas = d.quedanPistas ?? null;
+  const pista = h("button.boton.suave.cul-pista-btn", { type: "button", onclick: () => !d.resuelto && quedanPistas && ctx.enviar({ a: "pista" }) });
+  cuerpo.append(dosLados(h("div.cul-pantalla", h("div.puzle-zona", tablero.el), elegida, aviso, quedanPistas != null ? pista : null, lista, info), [lista, info]));
 
   let trazo = [];
   let vistoUltimo = d.ultimo?.n ?? 0;
@@ -24,6 +27,18 @@ export function montar(cuerpo, e, ctx) {
 
   function pintar() {
     tablero.pintar(hechas(), trazo);
+    // Pistas: sus casillas, con el color de su palabra (mientras no la encuentres).
+    const pistas = new Map();
+    for (const x of d.pistas ?? []) if (!d.encontradas.some((y) => y.i === x.i)) x.celdas.forEach((k, j) => pistas.set(k, { color: COLORES[x.i % COLORES.length], j }));
+    tablero.el.querySelectorAll(".cul-celda").forEach((f) => {
+      const p = pistas.get(Number(f.dataset.k));
+      f.classList.toggle("pista", Boolean(p));
+      if (p) f.style.setProperty("--c", p.color);
+    });
+    if (quedanPistas != null) {
+      pista.textContent = `💡 Pista · ${quedanPistas}`;
+      pista.disabled = d.resuelto || !quedanPistas;
+    }
     elegida.textContent = trazo.map((k) => d.letras[k]).join("").toUpperCase();
     elegida.classList.toggle("vacia", !trazo.length);
     // La lista: casillas en blanco por palabra; las encontradas, con sus letras y su color.
@@ -34,7 +49,10 @@ export function montar(cuerpo, e, ctx) {
         return h(
           `div.cul-palabra${x ? ".hallada" : ""}`,
           { style: { "--c": COLORES[i % COLORES.length] } },
-          Array.from({ length: l }, (_, j) => h("span", x ? x.clave[j].toUpperCase() : "")),
+          Array.from({ length: l }, (_, j) => {
+            const conPista = !x && (d.pistas ?? []).find((y) => y.i === i);
+            return h("span", x ? x.clave[j].toUpperCase() : conPista && conPista.celdas[j] != null ? d.letras[conPista.celdas[j]].toUpperCase() : "");
+          }),
           x ? h("i", "✓") : null
         );
       })
@@ -79,7 +97,9 @@ export function montar(cuerpo, e, ctx) {
   });
 
   function actualizar(e) {
+    if ((e.datos?.pistas ?? []).length > (d.pistas ?? []).length) decir("💡 Mira las letras que brillan", "bien", 1600);
     d = e.datos;
+    if (d.quedanPistas != null) quedanPistas = d.quedanPistas;
     const u = d.ultimo;
     if (u && u.n !== vistoUltimo) {
       vistoUltimo = u.n;

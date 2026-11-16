@@ -1,7 +1,7 @@
 // HILO · un solo trazo que pasa por todas las casillas y por los números en orden (1, 2, 3…).
 // Puede haber paredes entre casillas, que el hilo no puede cruzar. Cada tablero tiene un único camino.
 // Gana quien lo complete antes; si nadie, quien llegue más lejos en los números.
-import { nivelDificultad } from "../util.js";
+import { nivelDificultad, reglasSolo, quedan, restan } from "../util.js";
 import { vecinasDe, caminoCompleto, claveMuro } from "./caminos.js";
 
 const NIVELES = [
@@ -179,6 +179,7 @@ export default {
       muros: [...mejor.muros],
       ultimo: mejor.numeros.size,
       inicio,
+      reglas: reglasSolo("hilo", config),
       jugadores: {},
     };
   },
@@ -189,7 +190,7 @@ export default {
 
   vistaJugador(ronda, id) {
     const j = this.estadoJugador(ronda, id);
-    return { n: ronda.n, numeros: ronda.numeros, muros: ronda.muros, camino: j.camino, resuelto: j.ms != null };
+    return { n: ronda.n, numeros: ronda.numeros, muros: ronda.muros, camino: j.camino, resuelto: j.ms != null, pistas: j.pistas ?? [], quedanPistas: restan(ronda.reglas?.pistas, (j.pistas ?? []).length) };
   },
 
   vistaTV(ronda) {
@@ -202,6 +203,27 @@ export default {
   },
 
   accion(ronda, id, msg) {
+    if (msg.a === "pista") {
+      // Lleva el hilo bien (como en la solución) hasta el siguiente número que aún no tenías bien.
+      const j = this.estadoJugador(ronda, id);
+      if (j.ms != null) return false;
+      if (ronda.reglas?.pistas == null || !quedan(ronda.reglas.pistas, (j.pistas ?? []).length)) return false;
+      j.pistas ??= [];
+      const sol = ronda.solucion;
+      let bien = 0;
+      while (bien < j.camino.length && j.camino[bien] === sol[bien]) bien++;
+      const numeros = new Map(ronda.numeros);
+      // Como mínimo un paso más que lo que tenías bien, y hasta llegar a una casilla con número.
+      let hasta = Math.max(1, bien) + 1;
+      while (hasta < sol.length && !numeros.has(sol[hasta - 1])) hasta++;
+      hasta = Math.min(hasta, sol.length);
+      if (hasta <= bien || bien >= sol.length) return false;
+      j.pistas.push({ hasta });
+      j.camino = sol.slice(0, hasta);
+      j.llegado = Math.max(j.llegado, revisarTrazo(ronda.n, numeros, new Set(ronda.muros), j.camino));
+      if (j.camino.length === ronda.n * ronda.n && j.llegado === ronda.ultimo) j.ms = Math.max(0, Date.now() - ronda.inicio);
+      return true;
+    }
     if (msg.a !== "camino" || !Array.isArray(msg.c) || msg.c.length > ronda.n * ronda.n) return false;
     const j = this.estadoJugador(ronda, id);
     if (j.ms != null) return false;

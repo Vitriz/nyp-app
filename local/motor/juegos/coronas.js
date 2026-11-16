@@ -1,7 +1,7 @@
 // CORONAS · cuadrícula N×N partida en N zonas de colores. Hay que poner N coronas: una en cada fila,
 // una en cada columna y una en cada zona, y dos coronas nunca pueden tocarse (ni en diagonal).
 // Cada tablero tiene una sola solución. Gana quien lo resuelva antes; si nadie, quien tenga más coronas bien.
-import { nivelDificultad } from "../util.js";
+import { nivelDificultad, reglasSolo, quedan, restan } from "../util.js";
 
 const TAMANOS = [6, 7, 8];
 
@@ -154,7 +154,7 @@ export default {
       mejor = { col, zona };
       if (unico) break;
     }
-    return { n, zona: mejor.zona, solucion: mejor.col.map((c, r) => r * n + c), inicio, jugadores: {} };
+    return { n, zona: mejor.zona, solucion: mejor.col.map((c, r) => r * n + c), inicio, reglas: reglasSolo("coronas", config), jugadores: {} };
   },
 
   estadoJugador(ronda, id) {
@@ -163,7 +163,7 @@ export default {
 
   vistaJugador(ronda, id) {
     const j = this.estadoJugador(ronda, id);
-    return { n: ronda.n, zona: ronda.zona, marcas: j.marcas, resuelto: j.ms != null };
+    return { n: ronda.n, zona: ronda.zona, marcas: j.marcas, resuelto: j.ms != null, pistas: j.pistas ?? [], quedanPistas: restan(ronda.reglas?.pistas, (j.pistas ?? []).length) };
   },
 
   vistaTV(ronda) {
@@ -176,6 +176,19 @@ export default {
 
   accion(ronda, id, msg) {
     const n = ronda.n;
+    if (msg.a === "pista") {
+      // Pone una corona de la solución (de las que aún no tienes).
+      const j = this.estadoJugador(ronda, id);
+      if (j.ms != null) return false;
+      if (ronda.reglas?.pistas == null || !quedan(ronda.reglas.pistas, (j.pistas ?? []).length)) return false;
+      j.pistas ??= [];
+      const faltan = ronda.solucion.filter((k) => j.marcas[k] !== 2);
+      if (!faltan.length) return false;
+      const k = faltan[Math.floor(Math.random() * faltan.length)];
+      j.pistas.push({ k });
+      j.marcas[k] = 2;
+      return true;
+    }
     if (msg.a !== "marcas" || !Array.isArray(msg.m) || msg.m.length !== n * n) return false;
     const j = this.estadoJugador(ronda, id);
     if (j.ms != null) return false;

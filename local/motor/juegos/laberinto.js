@@ -4,7 +4,7 @@
 // solución (no basta con que la cuenta cuadre: 2 + 3 = 5 no vale si iba 1 + 4).
 // Ayudas según el nivel: en fácil se marca cada casilla mal puesta; en normal solo se avisa de que una
 // cuenta cuadra (los números se pueden seguir moviendo: quizá van en otro orden); en difícil, ninguna.
-import { nivelDificultad } from "../util.js";
+import { nivelDificultad, reglasSolo, quedan, restan } from "../util.js";
 
 const TAM = 9; // rejilla máxima 9×9 para que se lea bien en el móvil
 const MAXV = 99;
@@ -184,6 +184,7 @@ export default {
       huecos: [...g.huecos],
       inicio,
       nivel,
+      reglas: reglasSolo("laberinto", config),
       jugadores: {},
     };
   },
@@ -200,6 +201,9 @@ export default {
       nivel,
       // En fácil, la solución de los huecos (para marcar al momento cada casilla mal puesta).
       solucion: nivel < 0 ? Object.fromEntries(ronda.huecos.map((k) => [k, ronda.valores[k]])) : null,
+      // Pistas: huecos con su número puesto por la pista ({ k, v }) y cuántas quedan (null: sin pistas).
+      pistas: j.pistas ?? [],
+      quedanPistas: restan(ronda.reglas?.pistas, (j.pistas ?? []).length),
     };
   },
 
@@ -218,6 +222,26 @@ export default {
   },
 
   accion(ronda, id, msg) {
+    if (msg.a === "pista") {
+      // Pone el número bueno en un hueco vacío o mal puesto (si ese número estaba en otro hueco mal, se quita de allí).
+      const j = this.estadoJugador(ronda, id);
+      if (j.ms != null || ronda.reglas?.pistas == null || !quedan(ronda.reglas.pistas, (j.pistas ?? []).length)) return false;
+      const malos = ronda.huecos.filter((k) => Number(j.puestos[k]) !== Number(ronda.valores[k]));
+      if (!malos.length) return false;
+      const k = malos.includes(msg.k) ? msg.k : malos[Math.floor(Math.random() * malos.length)];
+      const v = ronda.valores[k];
+      const puestos = { ...j.puestos, [k]: v };
+      // ¿Hay más «v» puestos que en el banco? Se quita de un hueco donde no va.
+      const enBanco = ronda.banco.filter((x) => x === v).length;
+      const usados = Object.keys(puestos).filter((h) => Number(puestos[h]) === v);
+      if (usados.length > enBanco) {
+        const quitar = usados.find((h) => h !== k && Number(ronda.valores[h]) !== v) ?? usados.find((h) => h !== k);
+        delete puestos[quitar];
+      }
+      if (!this.accion(ronda, id, { a: "colocar", puestos })) return false;
+      (j.pistas ??= []).push({ k, v });
+      return true;
+    }
     if (msg.a !== "colocar" || typeof msg.puestos !== "object" || !msg.puestos) return false;
     const huecos = new Set(ronda.huecos);
     const puestos = {};
