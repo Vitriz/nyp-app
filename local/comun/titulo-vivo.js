@@ -21,6 +21,7 @@ export const VALORES = {
   rebote: 0.34, // energía que se conserva en los choques (0 a 1)
   muelle: 560, // fuerza con la que la letra agarrada sigue al dedo
   amortigua: 0.42, // amortiguación del muelle (más: menos vaivén)
+  velAgarre: 10000, // px/s: velocidad máxima de la letra agarrada (10000 = sin tope)
   alcance: 140, // px: hasta dónde llega un toque cerca de las letras (≈ 2 cm)
   golpe: 350, // fuerza de un toque
   giroGolpe: 150, // cuánto giran con un toque
@@ -181,6 +182,11 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
         const ax = A.muelle * (tx - s.x) - freno * s.vx, ay = A.muelle * (ty - s.y) - freno * s.vy;
         s.vx += ax * dt;
         s.vy += ay * dt;
+        // Tope de velocidad mientras está agarrada (al máximo del deslizador, sin tope).
+        if (A.velAgarre < 10000) {
+          const tope = A.velAgarre * escala(), v = Math.hypot(s.vx, s.vy);
+          if (v > tope) (s.vx *= tope / v), (s.vy *= tope / v);
+        }
         s.x += s.vx * dt;
         s.y += s.vy * dt;
         // Se inclina hacia donde tira el dedo (como si colgara de él).
