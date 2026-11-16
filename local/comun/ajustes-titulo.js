@@ -10,7 +10,7 @@ const CONTROLES = [
   ["Agarrar", [
     ["muelle", "Fuerza del muelle", 50, 1500, 10],
     ["amortigua", "Amortiguación", 0.2, 1.5, 0.02],
-    ["soltar", "Distancia para soltarse", 1, 6, 0.1],
+    ["soltar", "Distancia para soltarse (al final: nunca)", 1, 20, 0.25],
   ]],
   ["Lanzar", [
     ["tironEscape", "Tirón al escaparse", 0, 1.5, 0.05],
@@ -27,7 +27,8 @@ const CONTROLES = [
   ]],
   ["Volver a su sitio", [
     ["vueltaMs", "Espera antes de volver (ms, por letra)", 500, 8000, 100],
-    ["vueltaDura", "Vuelta: ms por cada 300 px", 300, 4000, 100],
+    ["vueltaVel", "Velocidad de vuelta (px/s)", 100, 3000, 20],
+    ["vueltaRadio", "Radio de frenada (px)", 20, 1500, 10],
   ]],
 ];
 
@@ -42,11 +43,24 @@ export function panelAjustes() {
     } catch {}
   };
   const filas = [];
+  const texto = (k, v) => (k === "soltar" && v >= 20 ? "nunca" : String(v));
   const fila = ([k, nombre, min, max, paso]) => {
-    const valor = h("b.aj-valor", String(VALORES[k]));
+    const valor = h("b.aj-valor", texto(k, VALORES[k]));
     const rango = h("input.aj-rango", { type: "range", min, max, step: paso, value: VALORES[k], "aria-label": nombre });
+    // ↺ de cada deslizador: vuelve a su valor de serie (solo ese).
+    const reset = h("button.aj-reset", {
+      type: "button",
+      title: `Volver a ${texto(k, DEFECTO[k])}`,
+      "aria-label": `Restablecer ${nombre}`,
+      onclick: (ev) => {
+        ev.preventDefault();
+        VALORES[k] = DEFECTO[k];
+        pintar();
+        guardar();
+      },
+    }, "↺");
     const pintar = () => {
-      valor.textContent = String(VALORES[k]);
+      valor.textContent = texto(k, VALORES[k]);
       rango.value = VALORES[k];
       el.classList.toggle("cambiado", VALORES[k] !== DEFECTO[k]);
     };
@@ -55,7 +69,7 @@ export function panelAjustes() {
       pintar();
       guardar();
     });
-    const el = h("label.aj-fila", h("span.aj-nombre", nombre, valor), rango);
+    const el = h("div.aj-fila", h("span.aj-nombre", h("span", nombre), h("span.aj-der", valor, reset)), rango);
     filas.push(pintar);
     pintar();
     return el;

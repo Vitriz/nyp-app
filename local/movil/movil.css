@@ -1987,3 +1987,6 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
 .aj-botones { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 .aj-boton { appearance: none; flex: 1; font: inherit; font-weight: 900; padding: 0.45rem 0.5rem; border-radius: 0.6rem; border: 1px solid rgba(170, 200, 255, 0.45); background: #2d58b0; color: #fff; cursor: var(--cursor-mano, pointer); }
 .aj-aviso { color: var(--texto-suave); font-weight: 700; overflow-wrap: anywhere; }
+.aj-der { display: inline-flex; align-items: center; gap: 0.35rem; flex: none; }
+.aj-reset { appearance: none; width: 1.5rem; height: 1.5rem; padding: 0; border-radius: 50%; border: 1px solid rgba(170, 200, 255, 0.4); background: rgba(255, 255, 255, 0.08); color: #cfe0ff; font: inherit; font-weight: 900; line-height: 1; cursor: var(--cursor-mano, pointer); visibility: hidden; }
+.aj-fila.cambiado .aj-reset { visibility: visible; }

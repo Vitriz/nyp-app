@@ -16,11 +16,12 @@
 // para todos, copia los valores («📋 Copiar») y ponlos aquí.
 export const VALORES = {
   vueltaMs: 1800, // ms sin tocar una letra hasta que vuelve a su sitio (cada una con su propio reloj)
-  vueltaDura: 1600, // ms que tarda en volver una letra que está a 300 px de su sitio (más lejos, más tiempo)
+  vueltaVel: 900, // px/s: velocidad de vuelta al pasar por el radio de frenada (más lejos, más rápido)
+  vueltaRadio: 500, // px: a esta distancia de su sitio la letra empieza a frenar para llegar suave
   rebote: 0.34, // energía que se conserva en los choques (0 a 1)
   muelle: 230, // fuerza con la que la letra agarrada sigue al dedo
   amortigua: 0.42, // amortiguación del muelle (más: menos vaivén)
-  soltar: 4, // distancia (en tamaños de letra) a la que la letra se escapa del dedo
+  soltar: 4, // distancia (en tamaños de letra) a la que se escapa del dedo (20 = no se suelta nunca)
   alcance: 46, // px: hasta dónde llega un toque cerca de las letras (≈ 2 cm)
   golpe: 250, // fuerza de un toque
   giroGolpe: 110, // cuánto giran con un toque
@@ -187,7 +188,7 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
         s.vr += ((inclina - s.r) * 40 - s.vr * 8) * dt;
         s.r += s.vr * dt;
         // Demasiado lejos del dedo: se suelta y sigue con la velocidad y la dirección que llevaba.
-        if (Math.hypot(tx - s.x, ty - s.y) > A.soltar * c[k].radio * 2) {
+        if (A.soltar < 20 && Math.hypot(tx - s.x, ty - s.y) > A.soltar * c[k].radio * 2) {
           s.vx += (agarre.fvx ?? 0) * A.tironEscape;
           s.vy += (agarre.fvy ?? 0) * A.tironEscape;
           const tope = A.velMax * escala(), v = Math.hypot(s.vx, s.vy);
@@ -202,18 +203,24 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
       }
       const fueraDeCasa = s.vuelta || Math.abs(s.x) + Math.abs(s.y) + Math.abs(s.r) > 0.3;
       if (fueraDeCasa && ahora - s.toque > A.vueltaMs) {
-        // Vuelta suave a su sitio (solo esta letra), tanto más larga cuanto más lejos está.
-        if (!s.vuelta) {
-          const dist = Math.hypot(s.x, s.y);
-          s.vuelta = { x: s.x, y: s.y, r: ((s.r % 360) + 540) % 360 - 180, t0: ahora, dura: Math.max(250, (A.vueltaDura * dist) / 300) };
+        // Vuelta a su sitio (solo esta letra). La velocidad depende de lo lejos que está: fuera del radio de
+        // frenada, cuanto más lejos, más rápido (así todas llegan más o menos a la vez); dentro, va frenando
+        // hasta llegar suave. Arranca poco a poco (sin tirón) y el giro se deshace a la par que la distancia.
+        const d = Math.hypot(s.x, s.y);
+        if (!s.vuelta) s.vuelta = { t0: ahora, d0: Math.max(d, 0.001), r0: ((s.r % 360) + 540) % 360 - 180 };
+        const R = Math.max(1, A.vueltaRadio), k = A.vueltaVel / R;
+        const vel = d >= R ? k * d : A.vueltaVel * Math.sqrt(d / R);
+        const a = Math.min(1, (ahora - s.vuelta.t0) / 300);
+        const rampa = (1 - Math.cos(Math.PI * a)) / 2; // de 0 a 1 en 0,3 s, con suavidad
+        const avance = d < 0.5 ? d : Math.min(d, vel * rampa * dt);
+        if (d > 0.001) {
+          s.x -= (s.x / d) * avance;
+          s.y -= (s.y / d) * avance;
         }
-        const p = Math.min(1, (ahora - s.vuelta.t0) / s.vuelta.dura);
-        const q = 1 - suave(p);
-        s.x = s.vuelta.x * q;
-        s.y = s.vuelta.y * q;
-        s.r = s.vuelta.r * q;
+        const resto = Math.hypot(s.x, s.y);
+        s.r = s.vuelta.r0 * Math.min(1, resto / s.vuelta.d0);
         s.vx = s.vy = s.vr = 0;
-        if (p >= 1) Object.assign(s, { x: 0, y: 0, r: 0, vuelta: null });
+        if (resto < 0.5) Object.assign(s, { x: 0, y: 0, r: 0, vuelta: null });
         return;
       }
       s.vuelta = null;
