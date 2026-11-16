@@ -1,6 +1,7 @@
 // Cálculo mental · móvil: la operación entera (con sus paréntesis) y el teclado para responder.
 import { h } from "../../comun/ui.js";
 import { tecladoNumerico, momentoCadena, reiniciarAnim, expresionColor } from "../comun/util.js";
+import { dosLados, lados } from "../comun/lados.js";
 
 export function montar(cuerpo, e, ctx) {
   let d = e.datos;
@@ -15,7 +16,7 @@ export function montar(cuerpo, e, ctx) {
   const teclado = tecladoNumerico(pulsar);
   const zonaResp = h("div.cm-responder.oculto", resp, teclado);
 
-  cuerpo.append(h("div.cm", etiqueta, puntos, h("div.cm-centro", grande), zonaResp));
+  cuerpo.append(dosLados(h("div.cm", etiqueta, puntos, h("div.cm-centro", grande), zonaResp), [etiqueta, puntos]));
 
   function pulsar(t) {
     const m = momentoCadena(d.cadenas, ctx.ahora());

@@ -5,6 +5,7 @@
 import { h, botonMantener, confeti } from "../../comun/ui.js";
 import { seguirDedo, avisoBreve } from "../comun/trazo.js";
 import { crearTablero, insignia } from "./rejilla.js";
+import { dosLados, lados } from "../comun/lados.js";
 
 export function montar(cuerpo, e, ctx) {
   const d = e.datos;
@@ -25,13 +26,15 @@ export function montar(cuerpo, e, ctx) {
     h("small", "Con número: ese es su tamaño en casillas.")
   );
   cuerpo.append(
-    h(
-      "div.pc-pantalla",
-      h("div.puzle-datos", h("span", "Rectángulos bien ", cuenta)),
-      h("div.puzle-zona", tablero.el),
-      aviso,
-      h("div.puzle-botones", deshacer, borrar),
-      leyenda
+    lados(
+      h(
+        "div.pc-pantalla",
+        h("div.puzle-datos", h("span", "Rectángulos bien ", cuenta)),
+        h("div.puzle-zona", tablero.el),
+        aviso,
+        h("div.puzle-botones", deshacer, borrar),
+        leyenda
+      )
     )
   );
 

@@ -4,6 +4,7 @@
 import { h, botonMantener } from "../../comun/ui.js";
 import { huella, reiniciarAnim, clave } from "../comun/util.js";
 import { teclasFisicas, sinTilde, ES_LETRA } from "../../comun/teclas.js";
+import { dosLados, lados } from "../comun/lados.js";
 
 const COLORES = ["#5fb7d0", "#e7a05c"];
 
@@ -33,11 +34,14 @@ export function montar(cuerpo, e, ctx) {
   const comprobarBtn = h("button.boton.acento.pl-comprobar", { type: "button", onclick: () => comprobar() }, "✓ Comprobar");
 
   cuerpo.append(
-    h(
-      "div.rv2.rv3",
-      h("div.rv-arriba", h("div.rv-cabecera", marcas, h("div.rv-cabecera-botones", largo, pasar)), tarjetas),
-      h("div.rv-medio", linea, aviso),
-      h("div.rv-abajo", tablero, h("div.fila-acciones", deshacer, borrar, ordenar, comprobarBtn))
+    lados(
+      h(
+        "div.rv2.rv3",
+        h("div.rv-arriba", h("div.rv-cabecera", marcas, h("div.rv-cabecera-botones", largo, pasar)), tarjetas),
+        h("div.rv-medio", linea, aviso),
+        h("div.rv-abajo", tablero, h("div.fila-acciones", deshacer, borrar, ordenar, comprobarBtn))
+      ),
+      ".rv-arriba"
     )
   );
 

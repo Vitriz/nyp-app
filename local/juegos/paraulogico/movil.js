@@ -3,6 +3,7 @@ import { h } from "../../comun/ui.js";
 import { reiniciarAnim, clave } from "../comun/util.js";
 import { teclasFisicas, sinTilde, ES_LETRA } from "../../comun/teclas.js";
 import { crearPanal } from "./panal.js";
+import { lados } from "../comun/lados.js";
 
 // Rangos según la parte de los puntos posibles (con las palabras comunes) que llevas.
 export const RANGOS = [
@@ -49,17 +50,20 @@ export function montar(cuerpo, e, ctx) {
 
   // Móvil: todo en columna. Ordenador: panal y botones a la izquierda, tus palabras a la derecha.
   cuerpo.append(
-    h(
-      "div.pg",
+    // En horizontal: a la izquierda los puntos, el rango y tus palabras; a la derecha, lo que escribes y el panal.
+    lados(
       h(
-        "div.pg-izq",
+        "div.pg",
         h("div.mf-cont", "Puntos", puntos, cuantas),
         rango,
         h("div.pl-caja.tarjeta", escrito, aviso),
         h("div.pg-panal", panal.el),
-        h("div.pg-botones", borrar, mezclar, comprobar)
+        h("div.pg-botones", borrar, mezclar, comprobar),
+        h("div.pg-der", h("div.pg-lista-titulo", "Tus palabras"), lista)
       ),
-      h("div.pg-der", h("div.pg-lista-titulo", "Tus palabras"), lista)
+      ".mf-cont",
+      rango,
+      ".pg-der"
     )
   );
 

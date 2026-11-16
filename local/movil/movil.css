@@ -442,7 +442,6 @@ html, body { height: 100dvh; }
 /* ---------- tutifruti (antes paraulógico) ---------- */
 .cuerpo-juego:has(.pg) { container-type: inline-size; }
 .pg { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.6rem; }
-.pg-izq { display: flex; flex-direction: column; gap: 0.6rem; min-height: 0; }
 .pg-der { flex: 1; min-height: 3rem; display: flex; flex-direction: column; gap: 0.4rem; }
 .pg-lista-titulo { display: none; font-size: 0.8rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: var(--texto-suave); }
 .pg-der .pg-lista { flex: 1; max-height: none; min-height: 2.2rem; }
@@ -458,18 +457,12 @@ html, body { height: 100dvh; }
 .pg-botones .boton.pg-mezclar { border-color: rgba(233, 199, 90, 0.5); color: #f3dc94; background: rgba(233, 199, 90, 0.1); }
 
 /* Ordenador: la columna de la app se ensancha y el panal queda a la izquierda, tus palabras a la derecha. */
-@media (min-width: 900px) and (min-aspect-ratio: 1/1) {
-  .pantalla:has(.pg) { --ancho: min(100vw, 62rem); }
-}
-@container (min-width: 40rem) {
-  .pg { flex-direction: row; gap: 1.6rem; }
-  .pg-izq { flex: 1.2 1 0; }
-  .pg-der { flex: 1 1 0; background: #17346f; border: 2px solid rgba(170, 200, 255, 0.42); border-radius: var(--radio); padding: 0.8rem; }
-  .pg-lista-titulo { display: block; }
-  .pg-der .pg-lista { flex-direction: column; flex-wrap: nowrap; gap: 0.35rem; overflow-y: auto; }
-  .pg-der .pg-chip { justify-content: space-between; font-size: 1.05rem; padding: 0.35rem 0.7rem; }
-  .pg-izq .pg-panal { width: min(100%, 26rem, 50dvh); }
-}
+/* En horizontal (dos lados): tus palabras en columna, a la izquierda */
+.dos-lados .pg-der { flex: 1; min-height: 6rem; }
+.dos-lados .pg-lista-titulo { display: block; }
+.dos-lados .pg-der .pg-lista { flex-direction: column; flex-wrap: nowrap; gap: 0.35rem; overflow-y: auto; }
+.dos-lados .pg-der .pg-chip { justify-content: space-between; font-size: 1.05rem; padding: 0.35rem 0.7rem; }
+.dos-lados .pg-panal { width: min(100%, 26rem, calc(100cqh - 12rem)); align-self: center; }
 .pg-botones .boton { white-space: nowrap; font-size: 0.95rem; padding: 0.3rem 0.2rem; }
 .pg-botones .pl-comprobar { font-size: 1.05rem; }
 @container (min-width: 40rem) { .pg-botones .boton { font-size: 1.05rem; } .pg-botones .pl-comprobar { font-size: 1.2rem; } }
@@ -1181,30 +1174,6 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   font-size: max(0.55em, 0.8rem); line-height: 1.15; text-align: center; text-decoration: line-through; text-decoration-thickness: 0.12em;
 }
 
-/* ---------- pantalla ancha (ordenador): dos columnas también en Palabra más larga, Definición y Cálculo mental ---------- */
-@media (min-width: 900px) and (min-aspect-ratio: 1/1) and (min-height: 560px) {
-  .pantalla:has(.pl), .pantalla:has(.df), .pantalla:has(.cm) { --ancho: min(100vw, 66rem); }
-  /* Palabra más larga: a la izquierda tu palabra y la mejor; a la derecha las letras y los botones */
-  .pl { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "pie zona" "caja zona" "caja acciones"; column-gap: 2.2rem; row-gap: 1rem; align-content: center; }
-  .pl > .pl-pie { grid-area: pie; }
-  .pl > .pl-caja { grid-area: caja; align-self: start; }
-  .pl > .pl-zona { grid-area: zona; }
-  .pl > .fila-acciones { grid-area: acciones; }
-  /* Definición: a la izquierda la definición y la palabra; a la derecha el teclado */
-  .df { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "tarjeta teclado" "casillas teclado" "aviso botones"; column-gap: 2.2rem; row-gap: 1rem; align-content: center; }
-  .df > .df-tarjeta { grid-area: tarjeta; }
-  .df > .df-casillas { grid-area: casillas; }
-  .df > .df-aviso { grid-area: aviso; }
-  .df > .pl-botones { grid-area: botones; }
-  .df > :last-child { grid-area: teclado; align-self: center; }
-  .df .df-texto { font-size: 1.35rem; }
-  /* Cálculo mental: la operación a la izquierda, el teclado a la derecha */
-  .cm { display: grid; grid-template-columns: 1.2fr 1fr; grid-template-areas: "etq resp" "puntos resp" "centro resp"; column-gap: 2.2rem; row-gap: 0.8rem; align-content: center; }
-  .cm > :nth-child(1) { grid-area: etq; }
-  .cm > :nth-child(2) { grid-area: puntos; }
-  .cm > .cm-centro { grid-area: centro; }
-  .cm > .cm-responder { grid-area: resp; align-self: center; }
-}
 /* Pulsador en Batalla: escribir la respuesta */
 .pul-responder { display: flex; flex-direction: column; gap: 0.5rem; }
 .pul-responder-cabeza { display: flex; justify-content: space-between; align-items: center; }
@@ -1613,13 +1582,6 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
   .pantalla:has(> .barra-juego) { width: 100vw; padding-inline: 1.4rem; }
   .pantalla:has(> .barra-juego) > .cuerpo-juego { width: var(--ancho); align-self: center; }
   .pantalla:has(> .barra-juego) > .barra-juego { width: 100%; }
-  /* Conexiones: a la izquierda los grupos encontrados; a la derecha las palabras y los botones */
-  .pantalla:has(.cx) > .cuerpo-juego { width: min(100%, 72rem); }
-  .cx { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); grid-template-rows: auto minmax(0, 1fr) auto auto auto; column-gap: 2rem; row-gap: 0.6rem; align-content: start; }
-  .cx > .cx-cabeza { grid-column: 1 / -1; }
-  .cx > .cx-hallados { grid-column: 1; grid-row: 2 / span 4; align-self: start; }
-  .cx > .cx-rejilla { grid-column: 2; grid-row: 2; margin-top: 0; align-self: start; }
-  .cx > :not(.cx-cabeza):not(.cx-hallados):not(.cx-rejilla) { grid-column: 2; }
   .cx .cx-palabra { aspect-ratio: 1.7; }
 }
 @media (orientation: landscape) and (min-width: 900px) {
@@ -2029,3 +1991,39 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
     width: var(--lab-ancho); font-size: calc(var(--lab-ancho) / var(--cols) * 0.36);
   }
 }
+
+
+/* =====================================================================
+   Ventana de juego común en horizontal (ordenador, tableta, móvil girado): a la izquierda, como un menú,
+   la información de la partida; a la derecha, lo que se usa para jugar. (juegos/comun/lados.js)
+   ===================================================================== */
+.dos-lados {
+  display: grid !important; grid-template-columns: minmax(12rem, min(23rem, 34%)) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: none !important; column-gap: clamp(1rem, 2.6vw, 2.4rem); row-gap: 0; align-items: stretch; align-content: stretch;
+  flex: 1 1 auto; min-height: 0; width: 100%;
+}
+.dos-lados > .lado-info {
+  display: flex; flex-direction: column; gap: 0.75rem; min-height: 0; min-width: 0; max-height: 100%; align-self: start;
+  overflow-y: auto; scrollbar-width: none; padding: 1rem; border-radius: 1.2rem;
+  background: rgba(10, 26, 74, 0.55); border: 1px solid rgba(170, 200, 255, 0.18);
+}
+.dos-lados > .lado-info::-webkit-scrollbar { display: none; }
+.dos-lados > .lado-info > * { flex: none; max-width: 100%; }
+.dos-lados > .lado-juego { display: flex; flex-direction: column; gap: 0.6rem; min-height: 0; min-width: 0; justify-content: safe center; }
+/* Los contadores, a la izquierda y alineados como en un panel */
+.dos-lados > .lado-info > .mf-cont { justify-content: flex-start; }
+@media (orientation: landscape) and (min-width: 700px) and (min-aspect-ratio: 5/4) {
+  .pantalla:has(> .barra-juego) > .cuerpo-juego:has(> .dos-lados) { width: min(100%, 84rem); overflow: hidden; display: flex; flex-direction: column; }
+}
+/* La derecha mide lo que hay (ancho y alto) para que los tableros se hagan tan grandes como quepan */
+.dos-lados > .lado-juego { container-type: size; }
+/* Las listas de la izquierda usan todo el alto (y se desplazan dentro si no caben) */
+.dos-lados > .lado-info:has(> .sopa-lista, > .pg-der, > .sm-lista, > .cx-hallados) { height: 100%; }
+.dos-lados > .lado-info > :is(.sopa-lista, .pg-der, .sm-lista, .cx-hallados) { flex: 0 1 auto; min-height: 0; max-height: none; overflow-y: auto; }
+/* Sopa de letras */
+.dos-lados .sopa-caja { width: min(100cqw, 100cqh); margin: auto; align-self: center; }
+.dos-lados .sopa-lista:not(.con-defs) { justify-content: flex-start; }
+/* Datos de la izquierda alineados como en un panel (no centrados en medio de la pantalla) */
+.dos-lados > .lado-info .puzle-datos, .dos-lados > .lado-info .pc-leyenda { justify-content: flex-start; }
+/* Llegar al resultado: el objetivo y tu mejor número, uno debajo del otro si no caben */
+.dos-lados .lr-arriba { flex-wrap: wrap; justify-content: flex-start; align-items: center; }

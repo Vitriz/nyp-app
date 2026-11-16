@@ -3,6 +3,7 @@
 import { h, botonMantener, confeti } from "../../comun/ui.js";
 import { seguirDedo, avisoBreve } from "../comun/trazo.js";
 import { crearTablero } from "./rejilla.js";
+import { dosLados, lados } from "../comun/lados.js";
 
 export function montar(cuerpo, e, ctx) {
   const d = e.datos;
@@ -23,12 +24,14 @@ export function montar(cuerpo, e, ctx) {
   const deshacer = h("button.boton.suave", { type: "button", onclick: () => cambiar(camino.slice(0, Math.max(1, camino.length - 1)), true) }, "↶ Deshacer");
   const borrar = botonMantener("Empezar de nuevo", () => cambiar([inicio], true), { clase: ".suave", ms: 600 });
   cuerpo.append(
-    h(
-      "div.hilo-pantalla",
-      h("div.puzle-datos", h("span", "Siguiente ", cuentaNum), h("span", "Casillas ", cuentaCas)),
-      h("div.puzle-zona", tablero.el),
-      aviso,
-      h("div.puzle-botones", deshacer, borrar)
+    lados(
+      h(
+        "div.hilo-pantalla",
+        h("div.puzle-datos", h("span", "Siguiente ", cuentaNum), h("span", "Casillas ", cuentaCas)),
+        h("div.puzle-zona", tablero.el),
+        aviso,
+        h("div.puzle-botones", deshacer, borrar)
+      )
     )
   );
 

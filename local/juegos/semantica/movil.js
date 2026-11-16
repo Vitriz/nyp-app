@@ -2,6 +2,7 @@
 // La lista va de la más cercana a la más lejana, con un termómetro de color. Puedes pedir pistas.
 import { h, confeti } from "../../comun/ui.js";
 import { tecladoLetras, reiniciarAnim } from "../comun/util.js";
+import { dosLados, lados } from "../comun/lados.js";
 
 /** Temperatura según el puesto. */
 function temperatura(p, total) {
@@ -42,7 +43,7 @@ export function montar(cuerpo, e, ctx) {
     if (!cuerpo.isConnected) return window.removeEventListener("keydown", alEnter);
     if (ev.key === "Enter") enviar();
   }
-  cuerpo.append(h("div.sm", cabeza, h("div.sm-escribir", visor, probar), resultado, lista, h("div.sm-pie", pista), teclado));
+  cuerpo.append(dosLados(h("div.sm", cabeza, h("div.sm-escribir", visor, probar), resultado, lista, h("div.sm-pie", pista), teclado), [cabeza, resultado, lista]));
 
   function enviar() {
     if (!texto || d.encontrada) return;

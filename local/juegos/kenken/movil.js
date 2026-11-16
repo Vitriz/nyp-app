@@ -3,6 +3,7 @@
 import { h, confeti } from "../../comun/ui.js";
 import { teclasFisicas, marcarTecla } from "../../comun/teclas.js";
 import { crearRejilla } from "./rejilla.js";
+import { dosLados, lados } from "../comun/lados.js";
 
 // Las mismas reglas que el servidor (para avisar al momento).
 function jaulaBien(j, v) {
@@ -33,7 +34,7 @@ export function montar(cuerpo, e, ctx) {
     { style: { "--cols": Math.min(teclas.length, 7) } },
     teclas.map((t) => h(`button.boton${t === "⌫" ? ".suave" : ""}.kk-tecla`, { type: "button", "data-t": t }, t))
   );
-  cuerpo.append(h("div.kk-pantalla", h("div.kk-zona", rejilla.el), aviso, teclado));
+  cuerpo.append(dosLados(h("div.kk-pantalla", h("div.kk-zona", rejilla.el), aviso, teclado), [aviso]));
 
   rejilla.el.addEventListener("pointerdown", (ev) => {
     const b = ev.target.closest(".kk-celda");

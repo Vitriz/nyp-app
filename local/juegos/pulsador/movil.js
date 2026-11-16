@@ -3,6 +3,7 @@ import { h } from "../../comun/ui.js";
 import { pintarPregunta } from "./tv.js";
 import { teclasFisicas } from "../../comun/teclas.js";
 import { tecladoLetras, tecladoNumerico } from "../comun/util.js";
+import { dosLados, lados } from "../comun/lados.js";
 
 export function montar(cuerpo, e, ctx) {
   const pregunta = h("div.pul-m-pregunta");
@@ -33,7 +34,7 @@ export function montar(cuerpo, e, ctx) {
     texto = "";
     zonaResp.classList.add("oculto");
   }
-  cuerpo.append(h("div.pul-m", h("div.mf-cont", "Aciertos", aciertos), pregunta, h("div.pul-m-centro", boton), zonaResp, estadoTxt));
+  cuerpo.append(lados(h("div.pul-m", h("div.mf-cont", "Aciertos", aciertos), pregunta, h("div.pul-m-centro", boton), zonaResp, estadoTxt), ".mf-cont", pregunta, estadoTxt));
   let falloVisto = e.datos?.ultimoFallo?.n ?? 0;
 
   let d = e.datos;

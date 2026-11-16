@@ -1,6 +1,7 @@
 // Laberinto de cálculos · móvil: toca un número del banco y luego el hueco donde va.
 import { h, botonMantener } from "../../comun/ui.js";
 import { crearRejilla } from "./rejilla.js";
+import { dosLados, lados } from "../comun/lados.js";
 
 export function montar(cuerpo, e, ctx) {
   const d = e.datos;
@@ -36,13 +37,17 @@ export function montar(cuerpo, e, ctx) {
   }, { clase: ".suave", ms: 700 });
 
   cuerpo.append(
-    h(
-      "div.lab-movil",
-      h("div.mf-cont", sinAyudas ? "Puestos" : solucion ? "Correctas" : "Cuadran", contador, h("span.suave", `de ${sinAyudas ? huecos.size : total}`)),
-      h("div.lab-caja", rejilla.el),
-      aviso,
-      banco,
-      vaciar
+    lados(
+      h(
+        "div.lab-movil",
+        h("div.mf-cont", sinAyudas ? "Puestos" : solucion ? "Correctas" : "Cuadran", contador, h("span.suave", `de ${sinAyudas ? huecos.size : total}`)),
+        h("div.lab-caja", rejilla.el),
+        aviso,
+        banco,
+        vaciar
+      ),
+      ".mf-cont",
+      aviso
     )
   );
 

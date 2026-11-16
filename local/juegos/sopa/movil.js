@@ -2,6 +2,7 @@
 import { h } from "../../comun/ui.js";
 import { crearTablero, COLORES_SOPA } from "./tablero.js";
 import { reiniciarAnim } from "../comun/util.js";
+import { dosLados, lados } from "../comun/lados.js";
 
 export function montar(cuerpo, e, ctx) {
   const d = e.datos;
@@ -13,11 +14,15 @@ export function montar(cuerpo, e, ctx) {
   const contador = h("span.ficha", "0");
 
   cuerpo.append(
-    h(
-      "div.sopa-movil",
-      h("div.mf-cont", "Encontradas", contador, h("span.suave", `de ${d.palabras.length}`)),
-      h(`div.sopa-lista${conDefs ? ".con-defs" : ""}`, chips),
-      h("div.sopa-caja.sin-onda", tablero.el)
+    lados(
+      h(
+        "div.sopa-movil",
+        h("div.mf-cont", "Encontradas", contador, h("span.suave", `de ${d.palabras.length}`)),
+        h(`div.sopa-lista${conDefs ? ".con-defs" : ""}`, chips),
+        h("div.sopa-caja.sin-onda", tablero.el)
+      ),
+      ".mf-cont",
+      ".sopa-lista"
     )
   );
 

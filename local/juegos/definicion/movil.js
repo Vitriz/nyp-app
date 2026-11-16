@@ -1,6 +1,7 @@
 // Definición · móvil: definición, casillas de la palabra, pistas y teclado de letras.
 import { h } from "../../comun/ui.js";
 import { huella, tecladoLetras, reiniciarAnim } from "../comun/util.js";
+import { dosLados, lados } from "../comun/lados.js";
 
 export function montar(cuerpo, e, ctx) {
   let d = e.datos;
@@ -19,13 +20,16 @@ export function montar(cuerpo, e, ctx) {
   const teclado = tecladoLetras(teclear);
 
   cuerpo.append(
-    h(
-      "div.df",
-      h("div.df-tarjeta.tarjeta", categoria, texto),
-      casillas,
-      aviso,
-      h("div.pl-botones", pista, pasar),
-      teclado
+    lados(
+      h(
+        "div.df",
+        h("div.df-tarjeta.tarjeta", categoria, texto),
+        casillas,
+        aviso,
+        h("div.pl-botones", pista, pasar),
+        teclado
+      ),
+      ".df-tarjeta"
     )
   );
 

@@ -1,6 +1,7 @@
 // Mates fugaces · móvil: operación grande, teclado numérico y botón de pasar.
 import { h } from "../../comun/ui.js";
 import { tecladoNumerico } from "../comun/util.js";
+import { dosLados, lados } from "../comun/lados.js";
 
 export function montar(cuerpo, e, ctx) {
   const ops = e.datos.ops;
@@ -23,7 +24,7 @@ export function montar(cuerpo, e, ctx) {
     rachaEl.textContent = `🔥 ${racha} seguidas`;
   };
   const raiz = h("div.mf", h("div.mf-cont", "Aciertos", contador, rachaEl), h("div.mf-op", texto), resp, pasar, teclado);
-  cuerpo.append(raiz);
+  cuerpo.append(dosLados(raiz, [raiz.querySelector(".mf-cont")]));
 
   function mostrarOp(animar = true) {
     if (i >= ops.length) {

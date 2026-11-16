@@ -8,6 +8,7 @@
 import { h, botonMantener } from "../../comun/ui.js";
 import { reiniciarAnim } from "../comun/util.js";
 import { teclasFisicas } from "../../comun/teclas.js";
+import { lados } from "../comun/lados.js";
 
 const SIMBOLO = { "+": "+", "-": "−", "*": "×", "/": "÷" };
 
@@ -60,6 +61,7 @@ export function montar(cuerpo, e, ctx) {
       h("div.lr-abajo", fichas, botonesOp, h("div.pl-botones", deshacer, borrar)),
     ]
   );
+  lados(lr, ".lr-arriba", mejorPasos);
 
   /** Repite las operaciones: qué números quedan, cuáles son resultados y los pasos hechos. */
   function estado() {

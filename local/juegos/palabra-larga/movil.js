@@ -2,6 +2,7 @@
 import { h, botonMantener } from "../../comun/ui.js";
 import { teclasFisicas, sinTilde, ES_LETRA } from "../../comun/teclas.js";
 import { clave, reiniciarAnim } from "../comun/util.js";
+import { dosLados, lados } from "../comun/lados.js";
 
 export function montar(cuerpo, e, ctx) {
   const letras = e.datos.letras;
@@ -38,7 +39,7 @@ export function montar(cuerpo, e, ctx) {
     h("div.pl-zona", tablero),
     h("div.fila-acciones", deshacer, borrar, comprobar)
   );
-  cuerpo.append(raiz);
+  cuerpo.append(dosLados(raiz, [raiz.querySelector(".pl-pie")]));
 
   tablero.addEventListener("pointerdown", (ev) => {
     const b = ev.target.closest(".pl-ficha");

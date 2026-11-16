@@ -2,6 +2,7 @@
 // luego se tapan (dan la vuelta) y llega la pregunta. Tras responder se ven las soluciones y sigue.
 import { h } from "../../comun/ui.js";
 import { reiniciarAnim } from "../comun/util.js";
+import { dosLados, lados } from "../comun/lados.js";
 
 // Las mismas reglas que el servidor.
 function ordenBueno(p) {
@@ -35,7 +36,7 @@ export function montar(cuerpo, e, ctx) {
   const pregunta = h("div.mem-pregunta");
   const marcador = h("span.ficha", String(aciertos));
   // La pregunta va arriba, justo debajo del título (no al fondo de la pantalla).
-  cuerpo.append(h("div.mem", h("div.mf-cont", "Aciertos", marcador), titulo, barra, pregunta, tablero));
+  cuerpo.append(lados(h("div.mem", h("div.mf-cont", "Aciertos", marcador), titulo, barra, pregunta, tablero), ".mf-cont", titulo, barra));
 
   let tarjetas = []; // por cada tarjeta: elemento
   let huecosVacios = []; // en «¿dónde había un hueco?», los sitios vacíos tapados

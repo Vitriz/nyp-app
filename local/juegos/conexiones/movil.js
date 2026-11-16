@@ -3,6 +3,7 @@
 import { h } from "../../comun/ui.js";
 import { reiniciarAnim } from "../comun/util.js";
 import { textoCasilla, franjaGrupo } from "./piezas.js";
+import { dosLados, lados } from "../comun/lados.js";
 
 export function montar(cuerpo, e, ctx) {
   let d = e.datos;
@@ -22,7 +23,7 @@ export function montar(cuerpo, e, ctx) {
   const comprobar = h("button.boton.acento.pl-comprobar", { type: "button", onclick: enviar }, "✓ Comprobar");
   const siguiente = h("button.boton.acento.grande.oculto", { type: "button", onclick: () => ctx.enviar({ a: "siguiente", t: d.t }) }, "Siguiente tablero ▶");
   const botones = h("div.cx-botones", mezclar, quitar, comprobar);
-  cuerpo.append(h("div.cx", cabeza, hallados, rejilla, aviso, botones, siguiente));
+  cuerpo.append(dosLados(h("div.cx", cabeza, hallados, rejilla, aviso, botones, siguiente), [cabeza, hallados]));
 
   function barajar(l) {
     const a = [...l];

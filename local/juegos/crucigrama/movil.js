@@ -3,6 +3,7 @@
 // misma casilla cambia entre horizontal y vertical) y escribes. Al llenarla se comprueba sola.
 import { h } from "../../comun/ui.js";
 import { huella, reiniciarAnim, tecladoLetras } from "../comun/util.js";
+import { dosLados, lados } from "../comun/lados.js";
 
 export function montar(cuerpo, e, ctx) {
   const d = e.datos;
@@ -48,12 +49,16 @@ export function montar(cuerpo, e, ctx) {
   }
   const teclado = tecladoLetras(escribir);
   cuerpo.append(
-    h(
-      "div.cg",
-      h("div.cg-cabeza", h("span.cg-ambito", d.ambito === "todos" ? "🌍 Todos los temas" : `📚 ${d.ambito}`), h("span.cg-cabeza-der", botonPista, cuenta)),
-      h("div.cg-pista", anterior, pista, siguiente),
-      h("div.cg-zona", rejilla),
-      teclado
+    lados(
+      h(
+        "div.cg",
+        h("div.cg-cabeza", h("span.cg-ambito", d.ambito === "todos" ? "🌍 Todos los temas" : `📚 ${d.ambito}`), h("span.cg-cabeza-der", botonPista, cuenta)),
+        h("div.cg-pista", anterior, pista, siguiente),
+        h("div.cg-zona", rejilla),
+        teclado
+      ),
+      ".cg-cabeza",
+      ".cg-pista"
     )
   );
 

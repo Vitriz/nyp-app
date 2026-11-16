@@ -3,6 +3,7 @@
 import { h, confeti } from "../../comun/ui.js";
 import { seguirDedo, avisoBreve } from "../comun/trazo.js";
 import { crearTablero, COLORES } from "./rejilla.js";
+import { dosLados, lados } from "../comun/lados.js";
 
 export function montar(cuerpo, e, ctx) {
   let d = e.datos;
@@ -14,7 +15,7 @@ export function montar(cuerpo, e, ctx) {
   const elegida = h("div.cul-elegida");
   const largos = [...new Set(d.largos)];
   const info = h("p.cul-info", `Encuentra las ${d.largos.length} palabras escondidas. Tienen ${listaY(largos)} letras.`);
-  cuerpo.append(h("div.cul-pantalla", h("div.puzle-zona", tablero.el), elegida, aviso, lista, info));
+  cuerpo.append(dosLados(h("div.cul-pantalla", h("div.puzle-zona", tablero.el), elegida, aviso, lista, info), [lista, info]));
 
   let trazo = [];
   let vistoUltimo = d.ultimo?.n ?? 0;
