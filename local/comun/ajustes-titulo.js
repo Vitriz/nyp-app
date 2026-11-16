@@ -26,8 +26,8 @@ const CONTROLES = [
     ["rebote", "Rebote en los choques", 0, 1, 0.02],
   ]],
   ["Volver a su sitio", [
-    ["vueltaMs", "Espera antes de volver (ms)", 500, 8000, 100],
-    ["vueltaDura", "Duración de la vuelta (ms)", 300, 4000, 100],
+    ["vueltaMs", "Espera antes de volver (ms, por letra)", 500, 8000, 100],
+    ["vueltaDura", "Vuelta: ms por cada 300 px", 300, 4000, 100],
   ]],
 ];
 
