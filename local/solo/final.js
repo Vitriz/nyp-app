@@ -246,7 +246,7 @@ function finalLaberinto(ronda, j) {
     const sol = ronda.valores[x.k];
     const tuyo = j.puestos?.[x.k];
     n.textContent = String(sol);
-    n.classList.add("lleno", tuyo == null ? "sol-vacia" : Number(tuyo) === Number(sol) ? "sol-bien" : "sol-mal");
+    n.classList.add("lleno", "era-hueco", tuyo == null ? "sol-vacia" : Number(tuyo) === Number(sol) ? "sol-bien" : "sol-mal");
     if (tuyo != null && Number(tuyo) !== Number(sol)) n.append(h("span.lab-tuyo", String(tuyo)));
   }
   return h(

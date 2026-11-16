@@ -511,26 +511,41 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
         // El juego y cómo se jugó (tiempo · nivel), a la derecha del perfil: fijo arriba aunque bajes.
         // (el banner, contraído: así cabe bien el nombre del juego)
         h("div.barra-sup.barra-final", fijo.hueco("cerrado"), infoPartida(meta, meta.duracion, NOMBRES_NIVEL[meta.dificultad ?? "normal"])),
+        // En horizontal (ordenador), dos columnas: a la izquierda, como un menú, cómo fue la partida (cabecera,
+        // casillas de datos, hazañas y botones); a la derecha, los resultados (solución, respuestas…).
         h(
           "div.espera.final-solo.zona-final",
           h(
-            "div.final-cabeza",
-            h(`div.puesto-grande.final-icono.aparece${record ? ".copa-record" : ""}`, record ? "🏆" : r.valor != null ? "👏" : "🙂"),
+            "div.final-izq",
             h(
-              "div.final-textos",
-              h(`h1${record ? ".titulo-record" : ""}`, record ? (anterior ? "¡Nuevo récord!" : "¡Primer récord!") : r.valor != null ? "¡Bien jugado!" : "Esta vez no ha salido"),
-              textoR,
-              anterior && !record ? h("small", `🏆 Récord: ${textoRecord(anterior)}`) : null,
-              anterior && record ? h("small", `Antes: ${textoRecord(anterior)}`) : null
+              "div.final-cabeza",
+              h(`div.puesto-grande.final-icono.aparece${record ? ".copa-record" : ""}`, record ? "🏆" : r.valor != null ? "👏" : "🙂"),
+              h(
+                "div.final-textos",
+                h(`h1${record ? ".titulo-record" : ""}`, record ? (anterior ? "¡Nuevo récord!" : "¡Primer récord!") : r.valor != null ? "¡Bien jugado!" : "Esta vez no ha salido"),
+                textoR,
+                anterior && !record ? h("small", `🏆 Récord: ${textoRecord(anterior)}`) : null,
+                anterior && record ? h("small", `Antes: ${textoRecord(anterior)}`) : null
+              )
+            ),
+            // Los datos de la partida, en casillas propias de cada juego.
+            datos?.[0] ?? null,
+            tarjetaHazanas(hazanas),
+            // (en horizontal los botones van aquí, debajo de los datos; en vertical, abajo del todo)
+            h(
+              "div.pl-botones.bloqueo-final.final-botones-izq",
+              h("button.boton.suave", { type: "button", disabled: true, onclick: lista }, "Otro juego"),
+              h("button.boton.acento", { type: "button", disabled: true, onclick: () => preparar(meta) }, "Otra vez")
             )
           ),
-          // Los datos de la partida, en casillas propias de cada juego.
-          datos,
-          // La palabra que faltó sale aparte (en su tarjeta), no repetida entre las respuestas.
-          tarjetaHazanas(hazanas),
-          meta.id === "llegar-resultado" ? null : detalleJugador(r.pendiente ? r.detalle?.slice(0, -1) : r.detalle, { clase: ".mis-respuestas" }),
-          palabraPendiente(r.pendiente),
-          solucion(meta, resumen, r)
+          h(
+            "div.final-der",
+            datos?.[1] ?? null,
+            // La palabra que faltó sale aparte (en su tarjeta), no repetida entre las respuestas.
+            meta.id === "llegar-resultado" ? null : detalleJugador(r.pendiente ? r.detalle?.slice(0, -1) : r.detalle, { clase: ".mis-respuestas" }),
+            palabraPendiente(r.pendiente),
+            solucion(meta, resumen, r)
+          )
         ),
         // Bloqueados un momento: si estabas tocando cuando se acabó el tiempo, no empiezas otra sin querer.
         h(
@@ -539,6 +554,9 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
           h("button.boton.acento", { type: "button", disabled: true, onclick: () => preparar(meta) }, "Otra vez")
         )
       );
+    // Sin nada a la derecha: una sola columna, como en el móvil.
+    const der = pantalla.querySelector(".final-der");
+    if (!der.children.length) pantalla.classList.add("sin-der");
     // Juegos de palabras: toca una palabra para ver qué significa.
     if (meta.categoria === "palabras") palabrasTocables(pantalla.querySelector(".zona-final"));
     mostrar({ el: pantalla });

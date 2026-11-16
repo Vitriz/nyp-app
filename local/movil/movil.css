@@ -1171,7 +1171,12 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .lab .sol-bien { background: linear-gradient(180deg, #d6f5e4, #9be0bd); }
 .lab .sol-mal { background: linear-gradient(180deg, #ffe1de, #f3aaa4); position: relative; }
 .lab .sol-vacia { opacity: 0.8; }
-.lab-tuyo { position: absolute; right: 0.15em; bottom: 0.05em; font-size: 0.45em; color: #a3241c; text-decoration: line-through; }
+/* Tu número equivocado: una etiqueta roja bien visible en la esquina, tachada */
+.lab-tuyo {
+  position: absolute; top: -0.35em; right: -0.35em; z-index: 2; min-width: 1.5em; padding: 0.1em 0.35em; border-radius: 999px;
+  background: #c0392b; color: #fff; border: 0.1em solid #fff; box-shadow: 0 0.12em 0.3em rgba(4, 12, 40, 0.5);
+  font-size: max(0.55em, 0.8rem); line-height: 1.15; text-align: center; text-decoration: line-through; text-decoration-thickness: 0.12em;
+}
 
 /* ---------- pantalla ancha (ordenador): dos columnas también en Palabra más larga, Definición y Cálculo mental ---------- */
 @media (min-width: 900px) and (min-aspect-ratio: 1/1) and (min-height: 560px) {
@@ -1991,3 +1996,33 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
 .aj-der { display: inline-flex; align-items: center; gap: 0.35rem; flex: none; }
 .aj-reset { appearance: none; width: 1.5rem; height: 1.5rem; padding: 0; border-radius: 50%; border: 1px solid rgba(170, 200, 255, 0.4); background: rgba(255, 255, 255, 0.08); color: #cfe0ff; font: inherit; font-weight: 900; line-height: 1; cursor: var(--cursor-mano, pointer); visibility: hidden; }
 .aj-fila.cambiado .aj-reset { visibility: visible; }
+
+/* ---------- Pantalla de resultado en dos partes: a la izquierda cómo fue la partida, a la derecha los resultados ---------- */
+.final-izq, .final-der { display: flex; flex-direction: column; align-items: stretch; gap: 0.9rem; min-width: 0; }
+.final-izq > *, .final-der > * { width: 100%; }
+.final-der:empty { display: none; }
+.final-botones-izq { display: none; }
+@media (orientation: landscape) and (min-width: 900px) {
+  .pantalla.pantalla-final:not(.res-party):not(.sin-der) > .zona-final {
+    width: min(100%, 86rem); display: grid; grid-template-columns: minmax(19rem, 25rem) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr); align-items: start; gap: 2.2rem; overflow: hidden; min-height: 0; padding-block: 0.4rem 0.6rem;
+  }
+  /* La izquierda, como un menú: fija, con los botones al final */
+  .pantalla-final:not(.res-party):not(.sin-der) .final-izq {
+    max-height: 100%; overflow-y: auto; scrollbar-width: none; padding: 1rem; border-radius: 1.2rem;
+    background: rgba(10, 26, 74, 0.55); border: 1px solid rgba(170, 200, 255, 0.18);
+  }
+  .pantalla-final:not(.res-party):not(.sin-der) .final-izq .final-datos { grid-template-columns: 1fr 1fr; }
+  .pantalla-final:not(.res-party):not(.sin-der) .final-izq .final-dato:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .pantalla-final:not(.res-party):not(.sin-der) .final-izq .final-cabeza { padding: 0; }
+  .pantalla-final:not(.res-party):not(.sin-der) .final-botones-izq { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.3rem; }
+  .pantalla-final:not(.res-party):not(.sin-der) > .bloqueo-final { display: none; }
+  /* La derecha: los resultados, con su propio desplazamiento si no caben */
+  .pantalla-final:not(.res-party):not(.sin-der) .final-der { align-self: stretch; max-height: 100%; overflow-y: auto; scrollbar-width: none; padding-bottom: 0.6rem; container-type: inline-size; }
+  .pantalla-final:not(.res-party):not(.sin-der) .final-der::-webkit-scrollbar, .pantalla-final .final-izq::-webkit-scrollbar { display: none; }
+  /* Laberinto: la solución tan grande como quepa (en ancho y en alto) */
+  .pantalla-final .final-der .final-lab .lab {
+    --lab-ancho: min(100cqw, 46rem, calc((100dvh - 13rem) * var(--cols) / var(--filas)));
+    width: var(--lab-ancho); font-size: calc(var(--lab-ancho) / var(--cols) * 0.36);
+  }
+}

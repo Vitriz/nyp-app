@@ -1,6 +1,9 @@
 // LABERINTO DE CÁLCULOS · ecuaciones cruzadas (A op B = C) en horizontal y vertical.
 // Algunos números vienen puestos; los huecos se rellenan con los números del banco.
-// Gana quien complete más ecuaciones correctas.
+// Gana quien complete más ecuaciones correctas. Una ecuación solo cuenta si sus números son los de la
+// solución (no basta con que la cuenta cuadre: 2 + 3 = 5 no vale si iba 1 + 4).
+// Ayudas según el nivel: en fácil se marca cada casilla mal puesta; en normal y difícil solo se avisa de
+// que una cuenta cuadra (los números se pueden seguir moviendo: quizá van en otro orden).
 import { nivelDificultad } from "../util.js";
 
 const TAM = 9; // rejilla máxima 9×9 para que se lea bien en el móvil
@@ -157,7 +160,8 @@ export default {
   descripcion: "Completa las operaciones cruzadas con los números del banco. Cada operación se lee de izquierda a derecha o de arriba abajo.",
 
   crear({ azar, config, inicio = Date.now() }) {
-    const g = generar(azar, nivelDificultad(config));
+    const nivel = nivelDificultad(config);
+    const g = generar(azar, nivel);
     const lista = [...g.celdas.values()];
     const r0 = Math.min(...lista.map((x) => x.r)), c0 = Math.min(...lista.map((x) => x.c));
     const filas = Math.max(...lista.map((x) => x.r)) - r0 + 1;
@@ -179,6 +183,7 @@ export default {
       valores: Object.fromEntries(g.valores),
       huecos: [...g.huecos],
       inicio,
+      nivel,
       jugadores: {},
     };
   },
@@ -189,7 +194,13 @@ export default {
 
   vistaJugador(ronda, id) {
     const j = this.estadoJugador(ronda, id);
-    return { filas: ronda.filas, cols: ronda.cols, rejilla: ronda.rejilla, banco: ronda.banco, ecs: ronda.ecs.map((e) => e.celdas), puestos: j.puestos };
+    const nivel = ronda.nivel ?? 0;
+    return {
+      filas: ronda.filas, cols: ronda.cols, rejilla: ronda.rejilla, banco: ronda.banco, ecs: ronda.ecs.map((e) => e.celdas), puestos: j.puestos,
+      nivel,
+      // En fácil, la solución de los huecos (para marcar al momento cada casilla mal puesta).
+      solucion: nivel < 0 ? Object.fromEntries(ronda.huecos.map((k) => [k, ronda.valores[k]])) : null,
+    };
   },
 
   vistaTV(ronda) {
@@ -222,10 +233,10 @@ export default {
     j.puestos = puestos;
     const total = this.contables(ronda).length;
     const val = (k) => (huecos.has(k) ? puestos[k] : ronda.valores[k]);
-    j.correctas = this.contables(ronda).filter((e) => {
-      const [a, b, c] = [val(e.celdas[0]), val(e.celdas[2]), val(e.celdas[4])];
-      return a != null && b != null && c != null && operar(a, e.op, b) === c;
-    }).length;
+    // Correcta = todos sus números son los de la solución (que la cuenta cuadre no basta).
+    j.correctas = this.contables(ronda).filter((e) =>
+      [e.celdas[0], e.celdas[2], e.celdas[4]].every((k) => val(k) != null && Number(val(k)) === Number(ronda.valores[k]))
+    ).length;
     // El récord del laberinto es el menor tiempo: se apunta cuándo lo completaste.
     if (j.correctas === total && j.ms == null) j.ms = Math.max(0, Date.now() - (ronda.inicio ?? Date.now()));
     return true;

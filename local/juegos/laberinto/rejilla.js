@@ -40,15 +40,20 @@ export function crearRejilla({ filas, cols, rejilla, ecs = [] }, { conHuecos = t
       n.textContent = v ?? "";
       n.classList.toggle("lleno", v != null);
     },
-    /** Colorea las operaciones completas: bien o mal. */
+    /**
+     * Normal y difícil: colorea las operaciones completas según si la cuenta cuadra (bien o mal), sin decir
+     * qué casilla falla. Devuelve cuántas cuadran.
+     */
     marcar(ecs, valorDe) {
       for (const n of nodos.values()) n.classList.remove("bien", "mal");
       bandas.forEach((b) => b?.classList.remove("hecha"));
       const bien = new Set();
+      let cuadran = 0;
       ecs.forEach((celdas, i) => {
         const [a, b, c] = [valorDe(celdas[0]), valorDe(celdas[2]), valorDe(celdas[4])];
         if (a == null || b == null || c == null) return;
         const ok = OPS[info.get(celdas[1]).texto]?.(a, b) === c;
+        if (ok) cuadran++;
         // Cuenta correcta: su camino se pone verde (y sus casillas, aunque compartan con otra que esté mal).
         bandas[i]?.classList.toggle("hecha", ok);
         for (const k of celdas) {
@@ -57,6 +62,29 @@ export function crearRejilla({ filas, cols, rejilla, ecs = [] }, { conHuecos = t
           nodos.get(k).classList.add(ok || bien.has(k) ? "bien" : "mal");
         }
       });
+      return cuadran;
+    },
+    /**
+     * Fácil: cada casilla puesta, verde si es su número y roja si no; una operación con todos sus números
+     * bien, en verde. Devuelve cuántas operaciones están bien del todo.
+     */
+    marcarExacto(ecs, valorDe, solucion) {
+      for (const n of nodos.values()) n.classList.remove("bien", "mal");
+      bandas.forEach((b) => b?.classList.remove("hecha"));
+      for (const [k, v] of Object.entries(solucion)) {
+        const puesto = valorDe(k);
+        if (puesto != null) nodos.get(k)?.classList.add(Number(puesto) === Number(v) ? "bien" : "mal");
+      }
+      let hechas = 0;
+      ecs.forEach((celdas, i) => {
+        const nums = [celdas[0], celdas[2], celdas[4]];
+        const ok = nums.every((k) => (k in solucion ? valorDe(k) != null && Number(valorDe(k)) === Number(solucion[k]) : true));
+        if (!ok) return;
+        hechas++;
+        bandas[i]?.classList.add("hecha");
+        for (const k of [celdas[1], celdas[3]]) nodos.get(k)?.classList.add("bien");
+      });
+      return hechas;
     },
     valorDado(k) {
       const t = info.get(k)?.texto;

@@ -20,6 +20,9 @@ export function montar(cuerpo, e, ctx) {
     }
   }
 
+  // Ayudas según el nivel: en fácil se marca cada casilla mal puesta; en normal y difícil solo si la cuenta
+  // cuadra (y los números se pueden seguir moviendo: quizá van en otro orden).
+  const solucion = d.solucion ?? null;
   const aviso = h("div.pl-aviso.suave", "Arrastra cada número a su hueco");
   const banco = h("div.lab-banco");
   const contador = h("span.ficha", "0");
@@ -33,7 +36,7 @@ export function montar(cuerpo, e, ctx) {
   cuerpo.append(
     h(
       "div.lab-movil",
-      h("div.mf-cont", "Correctas", contador, h("span.suave", `de ${total}`)),
+      h("div.mf-cont", solucion ? "Correctas" : "Cuadran", contador, h("span.suave", `de ${total}`)),
       h("div.lab-caja", rejilla.el),
       aviso,
       banco,
@@ -54,9 +57,12 @@ export function montar(cuerpo, e, ctx) {
         h(`button.ficha.lab-ficha${enUso.has(i) ? ".usada" : ""}${i === elegido ? ".elegida" : ""}`, { type: "button", "data-i": i }, String(v))
       )
     );
-    rejilla.marcar(d.ecs, valorDe);
-    const ok = rejilla.el.querySelectorAll(".lab-op.bien").length; // cada operación correcta tiene 2 símbolos (op e =)
-    contador.textContent = Math.round(ok / 2);
+    const ok = solucion ? rejilla.marcarExacto(d.ecs, valorDe, solucion) : rejilla.marcar(d.ecs, valorDe);
+    contador.textContent = ok;
+    // Todo cuadra pero no es la solución (p. ej. 2 + 3 = 5 donde iba 1 + 4): aún no está resuelto.
+    const lleno = [...huecos].every((k) => puestos.has(k));
+    if (!solucion && lleno && ok === total) aviso.textContent = "Todas las cuentas cuadran, pero algún número va en otro sitio";
+    else if (aviso.textContent.startsWith("Todas las cuentas")) aviso.textContent = "";
   }
 
   function cambio() {
