@@ -15,18 +15,16 @@
 // dirección (…/nyp-app/#ajustes). Lo que cambies en el panel se guarda solo en ese dispositivo; para dejarlo
 // para todos, copia los valores («📋 Copiar») y ponlos aquí.
 export const VALORES = {
-  vueltaMs: 1800, // ms sin tocar una letra hasta que vuelve a su sitio (cada una con su propio reloj)
-  vueltaVel: 900, // px/s: velocidad de vuelta al pasar por el radio de frenada (más lejos, más rápido)
+  vueltaMs: 2000, // ms sin tocar una letra hasta que vuelve a su sitio (cada una con su propio reloj)
+  vueltaVel: 1000, // px/s: velocidad al pasar por el radio de frenada (arranca proporcional a la distancia)
   vueltaRadio: 500, // px: a esta distancia de su sitio la letra empieza a frenar para llegar suave
   rebote: 0.34, // energía que se conserva en los choques (0 a 1)
-  muelle: 230, // fuerza con la que la letra agarrada sigue al dedo
+  muelle: 560, // fuerza con la que la letra agarrada sigue al dedo
   amortigua: 0.42, // amortiguación del muelle (más: menos vaivén)
-  soltar: 4, // distancia (en tamaños de letra) a la que se escapa del dedo (20 = no se suelta nunca)
-  alcance: 46, // px: hasta dónde llega un toque cerca de las letras (≈ 2 cm)
-  golpe: 250, // fuerza de un toque
-  giroGolpe: 110, // cuánto giran con un toque
-  tironEscape: 0.2, // parte de la velocidad del dedo que se lleva al escaparse
-  tironSoltar: 0.15, // parte de la velocidad del dedo que se lleva al soltarla
+  alcance: 140, // px: hasta dónde llega un toque cerca de las letras (≈ 2 cm)
+  golpe: 350, // fuerza de un toque
+  giroGolpe: 150, // cuánto giran con un toque
+  tironSoltar: 1, // parte de la velocidad del dedo que se lleva al soltarla
   velMax: 1000, // px/s: velocidad máxima de una letra lanzada
   roce: 1.5, // rozamiento del «líquido» (más: frenan antes)
   roceGiro: 1, // lo que tarda en frenar el giro
@@ -39,7 +37,9 @@ const conPanel = /ajustes/.test(location.hash) || sessionStorage.getItem("nyp-pa
 if (conPanel) sessionStorage.setItem("nyp-panel-ajustes", "1");
 // Lo que se cambió en el panel de ajustes (en este dispositivo).
 try {
-  Object.assign(VALORES, JSON.parse(localStorage.getItem("nyp-ajustes-titulo") ?? "{}"));
+  // (solo los valores que siguen existiendo: los que se quitaron se ignoran)
+  const guardados = JSON.parse(localStorage.getItem("nyp-ajustes-titulo") ?? "{}");
+  for (const k in guardados) if (k in DEFECTO && typeof guardados[k] === "number") VALORES[k] = guardados[k];
 } catch {}
 
 export function tituloVivo(titulo, { alExpulsar = null } = {}) {
@@ -187,32 +187,19 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
         const inclina = Math.max(-25, Math.min(25, ax * 0.004));
         s.vr += ((inclina - s.r) * 40 - s.vr * 8) * dt;
         s.r += s.vr * dt;
-        // Demasiado lejos del dedo: se suelta y sigue con la velocidad y la dirección que llevaba.
-        if (A.soltar < 20 && Math.hypot(tx - s.x, ty - s.y) > A.soltar * c[k].radio * 2) {
-          s.vx += (agarre.fvx ?? 0) * A.tironEscape;
-          s.vy += (agarre.fvy ?? 0) * A.tironEscape;
-          const tope = A.velMax * escala(), v = Math.hypot(s.vx, s.vy);
-          if (v > tope) (s.vx *= tope / v), (s.vy *= tope / v);
-          fichas[k].classList.remove("agarrada");
-          titulo.classList.remove("agarrando");
-          agarre = null;
-          sinClicHasta = ahora + 450;
-          navigator.vibrate?.(12);
-        }
-        return;
+        return; // (no se suelta nunca del dedo: solo al levantarlo)
       }
       const fueraDeCasa = s.vuelta || Math.abs(s.x) + Math.abs(s.y) + Math.abs(s.r) > 0.3;
       if (fueraDeCasa && ahora - s.toque > A.vueltaMs) {
-        // Vuelta a su sitio (solo esta letra). La velocidad depende de lo lejos que está: fuera del radio de
-        // frenada, cuanto más lejos, más rápido (así todas llegan más o menos a la vez); dentro, va frenando
-        // hasta llegar suave. Arranca poco a poco (sin tirón) y el giro se deshace a la par que la distancia.
+        // Vuelta a su sitio (solo esta letra). Arranca ya con una velocidad proporcional a la distancia (a 2000 px,
+        // más rápido que a 1500) y desde ahí siempre va frenando: fuera del radio de frenada la velocidad baja
+        // con la distancia; dentro del radio frena más suave hasta llegar a velocidad cero. El giro se deshace
+        // a la par que la distancia.
         const d = Math.hypot(s.x, s.y);
-        if (!s.vuelta) s.vuelta = { t0: ahora, d0: Math.max(d, 0.001), r0: ((s.r % 360) + 540) % 360 - 180 };
-        const R = Math.max(1, A.vueltaRadio), k = A.vueltaVel / R;
-        const vel = d >= R ? k * d : A.vueltaVel * Math.sqrt(d / R);
-        const a = Math.min(1, (ahora - s.vuelta.t0) / 300);
-        const rampa = (1 - Math.cos(Math.PI * a)) / 2; // de 0 a 1 en 0,3 s, con suavidad
-        const avance = d < 0.5 ? d : Math.min(d, vel * rampa * dt);
+        if (!s.vuelta) s.vuelta = { d0: Math.max(d, 0.001), r0: ((s.r % 360) + 540) % 360 - 180 };
+        const R = Math.max(1, A.vueltaRadio);
+        const vel = d >= R ? (A.vueltaVel * d) / R : A.vueltaVel * Math.sqrt(d / R);
+        const avance = d < 0.5 ? d : Math.min(d, vel * dt);
         if (d > 0.001) {
           s.x -= (s.x / d) * avance;
           s.y -= (s.y / d) * avance;

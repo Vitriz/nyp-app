@@ -10,10 +10,8 @@ const CONTROLES = [
   ["Agarrar", [
     ["muelle", "Fuerza del muelle", 50, 1500, 10],
     ["amortigua", "Amortiguación", 0.2, 1.5, 0.02],
-    ["soltar", "Distancia para soltarse (al final: nunca)", 1, 20, 0.25],
   ]],
   ["Lanzar", [
-    ["tironEscape", "Tirón al escaparse", 0, 1.5, 0.05],
     ["tironSoltar", "Tirón al soltar", 0, 1.5, 0.05],
     ["velMax", "Velocidad máxima (px/s)", 1000, 10000, 100],
     ["roce", "Rozamiento", 0.3, 8, 0.1],
@@ -43,7 +41,7 @@ export function panelAjustes() {
     } catch {}
   };
   const filas = [];
-  const texto = (k, v) => (k === "soltar" && v >= 20 ? "nunca" : String(v));
+  const texto = (k, v) => String(v);
   const fila = ([k, nombre, min, max, paso]) => {
     const valor = h("b.aj-valor", texto(k, VALORES[k]));
     const rango = h("input.aj-rango", { type: "range", min, max, step: paso, value: VALORES[k], "aria-label": nombre });
