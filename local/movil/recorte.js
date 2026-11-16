@@ -214,6 +214,139 @@ async function mascaraAutomatica(src, zona = null) {
   return m;
 }
 
+// ------------------------------------------------------------------ ajustar bordes (sin detector)
+
+/**
+ * Afina una selección hecha a mano, sin cambiarla mucho: solo mira una franja estrecha alrededor del borde.
+ * 1) En esa franja, cada píxel se queda dentro si su color se parece más al de lo que hay justo dentro de la
+ *    selección que al de lo que hay justo fuera (así se van los trocitos de fondo y se cogen los que faltaban).
+ * 2) Fuera los trozos sueltos pequeños y rellenos los agujeros pequeños.
+ * 3) El contorno se suaviza (sin picos ni escalones) y se deja nítido.
+ * Funciona con cualquier cosa (personas, animales, objetos) y sin internet.
+ */
+function afinarBordes(src, mascara) {
+  const W = src.width, H = src.height;
+  const S = Math.min(1, 640 / Math.max(W, H));
+  const w = Math.max(8, Math.round(W * S)), h2 = Math.max(8, Math.round(H * S));
+  const leer = (fuente) => {
+    const c = lienzoNuevo(w, h2);
+    const g = c.getContext("2d", { willReadFrequently: true });
+    g.imageSmoothingQuality = "high";
+    g.drawImage(fuente, 0, 0, w, h2);
+    return g.getImageData(0, 0, w, h2).data;
+  };
+  const px = leer(src), ma = leer(mascara);
+  const N = w * h2;
+  const dentro = new Uint8Array(N);
+  for (let i = 0; i < N; i++) dentro[i] = ma[i * 4 + 3] >= 128 ? 1 : 0;
+
+  // Sumas por zonas (imagen integral) para medias en ventanas en un solo paso.
+  const integral = (valor) => {
+    const t = new Float64Array((w + 1) * (h2 + 1));
+    for (let y = 0; y < h2; y++) {
+      let fila = 0;
+      for (let x = 0; x < w; x++) {
+        fila += valor(y * w + x);
+        t[(y + 1) * (w + 1) + x + 1] = t[y * (w + 1) + x + 1] + fila;
+      }
+    }
+    return t;
+  };
+  const suma = (t, x0, y0, x1, y1) => {
+    x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(w - 1, x1); y1 = Math.min(h2 - 1, y1);
+    if (x1 < x0 || y1 < y0) return 0;
+    return t[(y1 + 1) * (w + 1) + x1 + 1] - t[y0 * (w + 1) + x1 + 1] - t[(y1 + 1) * (w + 1) + x0] + t[y0 * (w + 1) + x0];
+  };
+  const R = Math.max(3, Math.round(Math.max(w, h2) * 0.04)); // ancho de la franja que se revisa
+  const Q = R * 3; // de dónde se sacan los colores de dentro y de fuera
+  const iDentro = integral((i) => dentro[i]);
+  // Muy dentro (toda la ventana dentro) y muy fuera (nada dentro): de ahí salen los colores de referencia.
+  const lejosDentro = new Uint8Array(N), lejosFuera = new Uint8Array(N);
+  for (let y = 0; y < h2; y++)
+    for (let x = 0; x < w; x++) {
+      const s = suma(iDentro, x - R, y - R, x + R, y + R);
+      const cuenta = (Math.min(w - 1, x + R) - Math.max(0, x - R) + 1) * (Math.min(h2 - 1, y + R) - Math.max(0, y - R) + 1);
+      if (s >= cuenta) lejosDentro[y * w + x] = 1;
+      else if (s === 0) lejosFuera[y * w + x] = 1;
+    }
+  const canal = (k, cual) => integral((i) => (cual[i] ? px[i * 4 + k] : 0));
+  const dR = canal(0, lejosDentro), dG = canal(1, lejosDentro), dB = canal(2, lejosDentro), dN = integral((i) => lejosDentro[i]);
+  const fR = canal(0, lejosFuera), fG = canal(1, lejosFuera), fB = canal(2, lejosFuera), fN = integral((i) => lejosFuera[i]);
+
+  const nueva = new Uint8Array(dentro);
+  for (let y = 0; y < h2; y++)
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (lejosDentro[i] || lejosFuera[i]) continue; // fuera de la franja: no se toca
+      const nd = suma(dN, x - Q, y - Q, x + Q, y + Q), nf = suma(fN, x - Q, y - Q, x + Q, y + Q);
+      if (!nd || !nf) continue;
+      const r = px[i * 4], g = px[i * 4 + 1], b = px[i * 4 + 2];
+      const dist = (sr, sg, sb, n) => {
+        const er = r - suma(sr, x - Q, y - Q, x + Q, y + Q) / n, eg = g - suma(sg, x - Q, y - Q, x + Q, y + Q) / n, eb = b - suma(sb, x - Q, y - Q, x + Q, y + Q) / n;
+        return er * er * 0.3 + eg * eg * 0.59 + eb * eb * 0.11;
+      };
+      const aDentro = dist(dR, dG, dB, nd), aFuera = dist(fR, fG, fB, nf);
+      // Un poco a favor de lo que ya decidiste (solo cambia si el color lo tiene claro).
+      nueva[i] = dentro[i] ? (aFuera * 1.25 < aDentro ? 0 : 1) : aDentro * 1.25 < aFuera ? 1 : 0;
+    }
+
+  // Trozos sueltos: se queda con las manchas grandes; los agujeros pequeños se rellenan.
+  const manchas = (valor) => {
+    const etiqueta = new Int32Array(N).fill(-1);
+    const tamaños = [], tocaBorde = [];
+    for (let s = 0; s < N; s++) {
+      if (nueva[s] !== valor || etiqueta[s] >= 0) continue;
+      const id = tamaños.length;
+      let n = 0, borde = false;
+      const pila = [s];
+      etiqueta[s] = id;
+      while (pila.length) {
+        const i = pila.pop();
+        n++;
+        const x = i % w, y = (i - x) / w;
+        if (x === 0 || y === 0 || x === w - 1 || y === h2 - 1) borde = true;
+        for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h2 - 1 ? i + w : -1])
+          if (j >= 0 && nueva[j] === valor && etiqueta[j] < 0) (etiqueta[j] = id), pila.push(j);
+      }
+      tamaños.push(n);
+      tocaBorde.push(borde);
+    }
+    return { etiqueta, tamaños, tocaBorde };
+  };
+  const llenas = manchas(1);
+  const mayor = Math.max(0, ...llenas.tamaños);
+  for (let i = 0; i < N; i++) if (nueva[i] && llenas.tamaños[llenas.etiqueta[i]] < mayor * 0.04) nueva[i] = 0;
+  const huecos = manchas(0);
+  for (let i = 0; i < N; i++) if (!nueva[i] && !huecos.tocaBorde[huecos.etiqueta[i]] && huecos.tamaños[huecos.etiqueta[i]] < mayor * 0.02) nueva[i] = 1;
+
+  // Suavizar: difuminar la máscara (dos pasadas) y, al ampliarla, cortar por la mitad: borde curvo, sin picos.
+  let f = Float32Array.from(nueva);
+  const B = Math.max(1, Math.round(R * 0.7));
+  for (let pasada = 0; pasada < 2; pasada++) {
+    const t = integral((i) => f[i]);
+    const g = new Float32Array(N);
+    for (let y = 0; y < h2; y++)
+      for (let x = 0; x < w; x++) {
+        const x0 = Math.max(0, x - B), y0 = Math.max(0, y - B), x1 = Math.min(w - 1, x + B), y1 = Math.min(h2 - 1, y + B);
+        g[y * w + x] = suma(t, x0, y0, x1, y1) / ((x1 - x0 + 1) * (y1 - y0 + 1));
+      }
+    f = g;
+  }
+  const peq = lienzoNuevo(w, h2);
+  const img = peq.getContext("2d").createImageData(w, h2);
+  for (let i = 0; i < N; i++) {
+    img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = 255;
+    img.data[i * 4 + 3] = Math.round(f[i] * 255);
+  }
+  peq.getContext("2d").putImageData(img, 0, 0);
+  const m = lienzoNuevo(W, H);
+  const c = m.getContext("2d");
+  c.imageSmoothingQuality = "high";
+  c.drawImage(peq, 0, 0, W, H);
+  nitida(m);
+  return recuadro(m) ? m : mascara;
+}
+
 /** Suma o resta un trazo a la máscara actual. */
 function combinar(base, trazo, modo) {
   const m = lienzoNuevo(base.width, base.height);
@@ -259,30 +392,47 @@ export function editarFoto(src, circulo = 1) {
     let fw = 0, fh = 0; // tamaño del marco
 
     // ---------------------------------------------------------------- piezas de la ventana
-    const aviso = h("p.rec-aviso");
+    // A la derecha (o debajo en el móvil): cómo quedará, las herramientas de la pestaña y, siempre en el mismo
+    // sitio, «Usar» y «Cancelar». Bajo la foto, lo que mueve la vista: deshacer, mover y zoom.
+    const aviso = h("p.rec-aviso", { role: "status", "aria-live": "polite" });
     const previa = h("div.rec-previa");
-    const pestaña = (m, t) => h("button.rec-pestana", { type: "button", "data-m": m, onclick: () => cambiarModo(m) }, t);
-    const pestañas = h("div.rec-pestanas", pestaña("recortar", "✂️ Recortar"), pestaña("redonda", "⭕ Foto redonda"));
+    const pestaña = (m, t) => h("button.rec-pestana", { type: "button", "data-m": m, role: "tab", onclick: () => cambiarModo(m) }, t);
+    const pestañas = h("div.rec-pestanas", { role: "tablist" }, pestaña("recortar", "✂️ Recortar"), pestaña("redonda", "⭕ Foto redonda"));
     const boton = (clase, texto, titulo, alPulsar) => h(`button.rec-herr${clase}`, { type: "button", title: titulo, "aria-label": titulo, onclick: alPulsar }, texto);
+    // Herramienta: icono, nombre y en pocas palabras qué hace (así no hay que adivinar «añadir» a qué).
+    const tarjeta = (clase, icono, nombre, que, alPulsar) =>
+      h(`button.rec-tarjeta${clase}`, { type: "button", "aria-label": `${nombre}: ${que}`, onclick: alPulsar }, h("span.rec-tarjeta-ico", { "aria-hidden": "true" }, icono), h("b", nombre), h("small", que));
     const bHerr = {
-      lazo: boton(".lazo", "➰ Lazo", "Lazo: rodea lo que quieras (empieza una selección nueva)", () => elegir("lazo")),
-      sumar: boton(".sumar", "➕ Añadir", "Añadir: rodea lo que quieras sumar a la selección", () => elegir("sumar")),
-      restar: boton(".restar", "➖ Quitar", "Quitar: rodea lo que quieras quitar de la selección", () => elegir("restar")),
-      mover: boton(".mover", "✋ Mover", "Mover la foto (también con dos dedos o el botón derecho)", () => elegir("mover")),
+      lazo: tarjeta(".lazo", "✏️", "Rodear", "Dibuja alrededor de lo que quieres", () => elegir("lazo")),
+      sumar: tarjeta(".sumar", "➕", "Añadir", "Rodea lo que le falta", () => elegir("sumar")),
+      restar: tarjeta(".restar", "➖", "Quitar", "Rodea lo que le sobra", () => elegir("restar")),
     };
-    const bBorrar = boton(".borrar", "🗑️ Borrar selección", "Borrar toda la selección", () => (guardar(null), listo("Selección borrada: rodea con el lazo lo que quieras")));
-    const bDetectar = boton(".detectar", "✨ Detectar", "Detectar tu cabeza automáticamente", () => auto());
-    const bDeshacer = boton(".deshacer", "↶", "Deshacer", () => irA(pos - 1));
-    const bRehacer = boton(".rehacer", "↷", "Rehacer", () => irA(pos + 1));
+    const bMover = boton(".mover", "✋", "Mover la foto (también con dos dedos o el botón derecho)", () => elegir(herramienta === "mover" ? anterior : "mover"));
+    let anterior = "lazo";
+    // ✨ Con selección: afina los bordes. Sin ella: busca tu cara y la recorta sola.
+    const bDetectar = h("button.rec-auto", { type: "button", onclick: () => auto() });
+    const bBorrar = h("button.rec-enlace", { type: "button", onclick: () => (guardar(null), elegir("lazo"), listo("Empezamos de nuevo: rodea lo que quieras")) }, "🗑️ Empezar de nuevo");
+    const bDeshacer = boton(".deshacer", "↶", "Deshacer (Ctrl+Z)", () => irA(pos - 1));
+    const bRehacer = boton(".rehacer", "↷", "Rehacer (Ctrl+Y)", () => irA(pos + 1));
     const bMenos = boton(".zoom", "−", "Alejar", () => zoom(1 / 1.25));
     const bMas = boton(".zoom", "+", "Acercar", () => zoom(1.25));
     const bAjustar = boton(".zoom", "⤢", "Ver la foto entera", () => ((vista[modo] = inicial(modo)), pintar()));
+    const paso = (n, texto) => h("div.rec-paso", h("span.rec-paso-n", n), h("span", texto));
     const herramientas = h(
-      "div.rec-herramientas",
-      h("div.rec-grupo.rec-grupo-sel", bHerr.lazo, bHerr.sumar, bHerr.restar, bBorrar),
-      h("div.rec-grupo", bDetectar, bHerr.mover, bDeshacer, bRehacer)
+      "div.rec-panel.rec-panel-recortar",
+      paso("1", "Selecciona"),
+      h("div.rec-tarjetas", bHerr.lazo, bHerr.sumar, bHerr.restar),
+      paso("2", "Retoca el contorno"),
+      bDetectar,
+      bBorrar
     );
-    const zoomBox = h("div.rec-zoom", bMenos, bAjustar, bMas);
+    const panelRedonda = h(
+      "div.rec-panel.rec-panel-redonda",
+      paso("1", "Coloca la foto"),
+      h("ul.rec-lista", h("li", "✋ Arrástrala para moverla"), h("li", "🔍 Acércala o aléjala con − y +, la rueda o dos dedos"), h("li", "⭕ Lo que quede dentro del círculo será tu foto"))
+    );
+    const paneles = h("div.rec-paneles", herramientas, panelRedonda);
+    const zoomBox = h("div.rec-zoom", h("div.rec-zoom-grupo.rec-solo-recortar", bDeshacer, bRehacer), h("div.rec-zoom-grupo.rec-solo-recortar", bMover), h("div.rec-zoom-grupo", bMenos, bAjustar, bMas));
     const usar = h("button.boton.acento.grande.rec-usar", { type: "button", onclick: () => terminar() });
     const cancelar = h("button.boton.suave.rec-cancelar", { type: "button", onclick: () => cerrar(null) }, "Cancelar");
 
@@ -412,13 +562,13 @@ export function editarFoto(src, circulo = 1) {
     function pintarPrevia() {
       if (modo === "redonda") {
         dibujarRedonda(previaRedonda);
-        previa.replaceChildren(h("span.avatar.rec-avatar-redondo", previaRedonda), h("small", "Así quedará"));
+        previa.replaceChildren(h("span.avatar.rec-avatar-redondo", previaRedonda), h("small", "Así se verá"));
         return;
       }
       const foto = mascara && fotoRecortada(src, mascara);
       previa.replaceChildren(
         foto ? h("span.avatar.con-recorte.rec-avatar", h("img", { src: foto, alt: "" })) : h("span.rec-previa-vacia", "?"),
-        h("small", foto ? "Así quedará" : "Aquí verás tu recorte")
+        h("small", foto ? "Así se verá" : "Aquí verás tu recorte")
       );
     }
     /** Lo que se ve dentro del círculo, en un lienzo de 192 px. */
@@ -446,14 +596,19 @@ export function editarFoto(src, circulo = 1) {
       listo(mascara ? "Hecho" : "Sin selección");
     }
     function elegir(hh) {
+      if (hh !== "mover") anterior = hh;
       herramienta = hh;
-      for (const [k, b] of Object.entries(bHerr)) b.classList.toggle("activa", k === hh);
+      for (const [k, b] of Object.entries(bHerr)) {
+        b.classList.toggle("activa", k === hh);
+        b.setAttribute("aria-pressed", String(k === hh));
+      }
+      bMover.classList.toggle("activa", hh === "mover");
       marco.dataset.herramienta = hh;
       aviso.textContent = {
-        lazo: "➰ Rodea con el dedo (o el ratón) lo que quieras: cada lazo empieza una selección nueva",
-        sumar: "➕ Rodea lo que quieras añadir a la selección",
-        restar: "➖ Rodea lo que quieras quitar de la selección",
-        mover: "✋ Arrastra para mover la foto; acerca o aleja con − / +, la rueda o dos dedos",
+        lazo: mascara ? "✏️ Dibuja alrededor de otra cosa para empezar de nuevo, o retoca con ➕ y ➖" : "✏️ Dibuja con el dedo (o el ratón) alrededor de lo que quieres recortar",
+        sumar: "➕ Rodea lo que le falta al recorte: se suma",
+        restar: "➖ Rodea lo que le sobra al recorte: se quita",
+        mover: "✋ Arrastra para mover la foto. Vuelve a tocar ✋ para seguir recortando",
       }[hh];
     }
     function listo(texto) {
@@ -461,6 +616,14 @@ export function editarFoto(src, circulo = 1) {
       bDeshacer.disabled = pos <= 0;
       bRehacer.disabled = pos >= historia.length - 1;
       bBorrar.disabled = !mascara;
+      // Añadir y Quitar solo tienen sentido con algo seleccionado.
+      bHerr.sumar.disabled = bHerr.restar.disabled = !mascara;
+      if (!mascara && (herramienta === "sumar" || herramienta === "restar")) elegir("lazo");
+      bDetectar.replaceChildren(
+        h("span.rec-tarjeta-ico", { "aria-hidden": "true" }, "✨"),
+        h("b", mascara ? "Ajustar bordes" : "Detectar persona"),
+        h("small", mascara ? "Limpia los trocitos de fondo y suaviza el contorno" : "Busca tu cara y la recorta sola")
+      );
       usar.disabled = modo === "recortar" && !mascara;
       pintar();
       pintarPrevia();
@@ -468,9 +631,11 @@ export function editarFoto(src, circulo = 1) {
     function cambiarModo(m) {
       modo = m;
       pestañas.querySelectorAll("button").forEach((b) => b.classList.toggle("activa", b.dataset.m === m));
-      herramientas.style.display = m === "recortar" ? "" : "none";
+      // Los dos paneles ocupan el mismo sitio (solo se ve uno): los botones de abajo no se mueven.
+      herramientas.classList.toggle("oculto-panel", m !== "recortar");
+      panelRedonda.classList.toggle("oculto-panel", m !== "redonda");
       capa.classList.toggle("en-redonda", m === "redonda");
-      usar.textContent = m === "redonda" ? "⭕ Usar foto redonda" : "✂️ Usar recorte";
+      usar.textContent = m === "redonda" ? "✓ Usar foto redonda" : "✓ Usar este recorte";
       medirMarco();
       limitar();
       if (m === "redonda") aviso.textContent = "Mueve la foto y acércala o aléjala hasta dejar dentro del círculo lo que quieras";
@@ -480,11 +645,23 @@ export function editarFoto(src, circulo = 1) {
 
     async function auto() {
       bDetectar.disabled = true;
+      // Con selección: solo se afinan sus bordes (sirve para cualquier cosa: personas, animales…).
+      if (mascara) {
+        aviso.textContent = "Ajustando los bordes…";
+        await new Promise((r) => setTimeout(r, 30)); // que se vea el aviso
+        try {
+          const nueva = afinarBordes(src, mascara);
+          guardar(nueva);
+          listo("✨ Bordes ajustados. Si no te gusta, ↶ lo deshace");
+        } finally {
+          bDetectar.disabled = false;
+        }
+        return;
+      }
       aviso.textContent = detector ? "Buscando tu cara…" : "Preparando el detector (solo la primera vez)…";
       try {
-        // Si ya hay selección, el detector busca solo dentro de ella (así no coge cosas del fondo).
-        guardar(await mascaraAutomatica(src, mascara));
-        listo("¿Te gusta? Puedes ➕ añadir o ➖ quitar trozos");
+        guardar(await mascaraAutomatica(src, null));
+        listo("¿Te gusta? Retócalo con ➕ y ➖, o ajusta los bordes");
       } catch (e) {
         aviso.textContent =
           e?.message === "sin-cara" ? "No encuentro ninguna cara: rodéala con el lazo y vuelve a probar" : "No se pudo cargar el detector (¿sin internet?): usa el lazo";
@@ -585,7 +762,7 @@ export function editarFoto(src, circulo = 1) {
       let nueva = herramienta === "lazo" || !mascara ? (herramienta === "restar" ? null : trazo) : combinar(mascara, trazo, herramienta === "restar" ? "restar" : "sumar");
       if (nueva && !recuadro(nueva)) nueva = null;
       guardar(nueva);
-      listo(nueva ? "Hecho: ➕ añade, ➖ quita, o haz otro lazo" : "Sin selección: rodea con el lazo lo que quieras");
+      listo(nueva ? (herramienta === "lazo" ? "¡Bien! Retócalo con ➕ y ➖, o toca ✨ Ajustar bordes" : "Hecho. Sigue retocando o usa el recorte") : "No queda nada seleccionado: dibuja alrededor de lo que quieras");
     };
     lienzo.addEventListener("pointerup", soltar);
     lienzo.addEventListener("pointercancel", soltar);
@@ -622,7 +799,7 @@ export function editarFoto(src, circulo = 1) {
     const capa = h(
       "div.capa-camara.capa-recorte",
       h("div.rec-cabeza", h("h2", "Tu foto"), pestañas),
-      h("div.rec-cuerpo", h("div.rec-zona", marco, zoomBox), h("div.rec-lado", previa, herramientas, aviso, h("div.rec-botones", usar, cancelar)))
+      h("div.rec-cuerpo", h("div.rec-zona", marco, zoomBox), h("div.rec-lado", previa, paneles, aviso, h("div.rec-botones", usar, cancelar)))
     );
     addEventListener("resize", alCambiar);
     addEventListener("keydown", tecla);

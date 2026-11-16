@@ -2079,3 +2079,72 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
 /* Culebras: las letras de la pista brillan con el color de su palabra */
 .cul-celda.pista { background: color-mix(in srgb, var(--c) 45%, #ffffff); box-shadow: 0 0 0 0.08em var(--c), 0 0 0.6em color-mix(in srgb, var(--c) 60%, transparent); animation: latido 1.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .cul-celda.pista { animation: none; } }
+
+/* =====================================================================
+   Editor de foto (revisión): pasos numerados, herramientas con su explicación, controles de la vista bajo la
+   foto y «Usar» / «Cancelar» siempre en el mismo sitio en las dos pestañas.
+   ===================================================================== */
+.rec-paneles { display: grid; }
+.rec-paneles > .rec-panel { grid-area: 1 / 1; }
+.rec-panel.oculto-panel { visibility: hidden; pointer-events: none; }
+.rec-panel { display: flex; flex-direction: column; gap: 0.55rem; min-width: 0; }
+.rec-paso { display: flex; align-items: center; gap: 0.5rem; font-weight: 900; font-size: 0.82rem; letter-spacing: 0.06em; text-transform: uppercase; color: #dce7ff; margin-top: 0.15rem; }
+.rec-paso-n { display: grid; place-items: center; width: 1.45rem; height: 1.45rem; border-radius: 50%; background: var(--oro); color: #3a2a00; font-size: 0.8rem; letter-spacing: 0; }
+.rec-tarjetas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.45rem; }
+.rec-tarjeta, .rec-auto {
+  appearance: none; font: inherit; color: var(--texto); cursor: var(--cursor-mano, pointer); text-align: left;
+  display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 0.5rem; row-gap: 0.1rem; align-items: center;
+  padding: 0.6rem 0.7rem; border-radius: 0.9rem; background: rgba(26, 58, 140, 0.55); border: 1.5px solid rgba(170, 200, 255, 0.28);
+  transition: background 140ms, border-color 140ms, transform 120ms;
+}
+.rec-tarjeta { grid-template-columns: 1fr; text-align: center; justify-items: center; padding: 0.65rem 0.4rem 0.6rem; }
+.rec-tarjeta-ico { font-size: 1.35rem; line-height: 1; grid-row: 1 / span 2; }
+.rec-tarjeta .rec-tarjeta-ico { grid-row: auto; }
+.rec-tarjeta b, .rec-auto b { font-size: 1rem; font-weight: 900; }
+.rec-tarjeta small, .rec-auto small { font-size: 0.74rem; font-weight: 700; color: var(--texto-suave); line-height: 1.2; }
+.rec-tarjeta:active, .rec-auto:active { transform: translateY(0.08rem); }
+.rec-tarjeta:disabled, .rec-auto:disabled { opacity: 0.38; cursor: var(--cursor-flecha, default); }
+@media (hover: hover) { .rec-tarjeta:not(:disabled):hover, .rec-auto:not(:disabled):hover { border-color: rgba(220, 235, 255, 0.6); background: rgba(36, 72, 160, 0.7); } }
+/* La herramienta elegida: rellena con su color (amarillo rodear, verde añadir, rojo quitar) */
+.rec-tarjeta.activa { border-color: transparent; box-shadow: 0 0.18rem 0 rgba(4, 12, 40, 0.45); }
+.rec-tarjeta.lazo.activa { background: linear-gradient(180deg, #fff2c2, #f0c64a); }
+.rec-tarjeta.sumar.activa { background: linear-gradient(180deg, #d4f6e3, #6cc49a); }
+.rec-tarjeta.restar.activa { background: linear-gradient(180deg, #ffe0dc, #ff8a80); }
+.rec-tarjeta.activa b, .rec-tarjeta.activa small { color: #1d2140; }
+.rec-auto { width: 100%; background: linear-gradient(180deg, rgba(240, 198, 74, 0.22), rgba(240, 198, 74, 0.1)); border-color: rgba(240, 198, 74, 0.55); }
+.rec-enlace { appearance: none; background: none; border: 0; font: inherit; font-weight: 800; font-size: 0.85rem; color: #ffc4bf; cursor: var(--cursor-mano, pointer); align-self: flex-start; padding: 0.2rem 0.1rem; text-decoration: underline; text-underline-offset: 0.2em; }
+.rec-enlace:disabled { opacity: 0.35; text-decoration: none; cursor: var(--cursor-flecha, default); }
+.rec-lista { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.45rem; }
+.rec-lista li { padding: 0.6rem 0.75rem; border-radius: 0.8rem; background: rgba(26, 58, 140, 0.45); font-weight: 700; font-size: 0.92rem; line-height: 1.3; }
+/* Bajo la foto: deshacer/rehacer · mover · zoom, en tres grupos */
+.rec-zoom { gap: 0.9rem; flex-wrap: wrap; justify-content: center; }
+.rec-zoom-grupo { display: flex; gap: 0.3rem; padding: 0.25rem; border-radius: 0.9rem; background: rgba(6, 18, 56, 0.55); border: 1px solid rgba(170, 200, 255, 0.2); }
+.rec-zoom .rec-herr { width: 2.7rem; min-height: 2.6rem; padding: 0; font-size: 1.2rem; }
+.rec-zoom .rec-herr.mover.activa { background: linear-gradient(180deg, #fff2c2, #f0c64a); color: #3a2a00; }
+.capa-recorte.en-redonda .rec-solo-recortar { visibility: hidden; }
+/* El aviso, discreto y siempre del mismo alto (no empuja los botones) */
+.rec-aviso { min-height: 3.3em; display: flex; align-items: center; }
+/* «Usar» destacado; «Cancelar», secundario */
+.capa-recorte .rec-botones { margin-top: 0.2rem; }
+.capa-recorte .rec-cancelar { min-height: 2.8rem; background: transparent; border-color: rgba(170, 200, 255, 0.35); }
+/* Ordenador: la foto ocupa lo que sobra y la columna de la derecha mide siempre lo mismo */
+@media (orientation: landscape) and (min-width: 900px) {
+  /* Arriba del todo (no centrado): así nada se mueve al cambiar de pestaña */
+  .capa-recorte { justify-content: flex-start; scrollbar-gutter: stable both-edges; }
+  .rec-cuerpo { display: grid !important; grid-template-columns: minmax(0, 1fr) 23rem; align-items: start; gap: 2rem; }
+  .rec-zona { justify-self: center; }
+  .rec-lado { width: 23rem; gap: 0.7rem; }
+  .rec-previa { min-height: 0; height: 7.6rem; padding: 1.2rem 1rem 0.5rem; overflow: visible; }
+  .rec-previa .rec-avatar { font-size: 2.2rem; }
+  .rec-avatar-redondo, .rec-previa-vacia { width: 4.8rem; height: 4.8rem; }
+  .rec-aviso { min-height: 2.9em; font-size: 0.86rem; }
+  /* Cancelar a la izquierda, Usar (lo importante) a la derecha y más ancho */
+  .capa-recorte .rec-botones { display: grid; grid-template-columns: 1fr 2fr; }
+  .capa-recorte .rec-botones .rec-usar { order: 2; }
+  .capa-recorte .rec-botones .rec-cancelar { order: 1; min-height: 100%; }
+  .capa-recorte .rec-usar { font-size: 1.1rem; padding-inline: 0.6rem; }
+}
+@media (max-width: 520px) {
+  .rec-tarjeta { padding-inline: 0.25rem; }
+  .rec-tarjeta small { font-size: 0.66rem; }
+}
