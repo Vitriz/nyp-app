@@ -1,6 +1,6 @@
 // MATES FUGACES · operaciones rápidas con resultado entero entre 0 y 999.
 // Todos reciben la misma serie, en el mismo orden. Gana quien acierte más.
-import { nivelDificultad } from "../util.js";
+import { nivelDificultad, reglasSolo, quedan, restan } from "../util.js";
 
 const SIMBOLO = { "+": "+", "-": "−", "*": "×", "/": "÷" };
 
@@ -66,19 +66,19 @@ export default {
     const [base, cada, techo] = [[0, 10, 2], [0, 6, 3], [1, 4, 3]][d + 1];
     const ops = [];
     for (let i = 0; i < 200; i++) ops.push(operacion(azar, Math.min(techo, base + Math.floor(i / cada))));
-    return { ops, jugadores: {} };
+    return { ops, reglas: reglasSolo("mates-fugaces", config), jugadores: {} };
   },
 
   // El estado de cada jugador vive en ronda.jugadores[id].
   estadoJugador(ronda, id) {
     // hist: lo que pasó con cada operación (acertada a la primera, con fallos o pasada).
-    return (ronda.jugadores[id] ??= { i: 0, aciertos: 0, fallos: 0, fallosOp: 0, hist: [] });
+    return (ronda.jugadores[id] ??= { i: 0, aciertos: 0, fallos: 0, fallosOp: 0, hist: [], pases: 0 });
   },
 
   vistaJugador(ronda, id) {
     const j = this.estadoJugador(ronda, id);
     // Se envían también las soluciones para que la respuesta sea instantánea en el móvil.
-    return { ops: ronda.ops, i: j.i, aciertos: j.aciertos };
+    return { ops: ronda.ops, i: j.i, aciertos: j.aciertos, quedanPases: restan(ronda.reglas?.pases, j.pases ?? 0), quedanFallos: restan(ronda.reglas?.fallos, j.fallos) };
   },
 
   vistaTV(ronda) {
@@ -92,6 +92,8 @@ export default {
     if (msg.i !== j.i || j.i >= ronda.ops.length) return false;
     j.hist ??= [];
     if (msg.a === "pasar") {
+      if (!quedan(ronda.reglas?.pases, j.pases ?? 0)) return false;
+      j.pases = (j.pases ?? 0) + 1;
       j.hist.push({ i: j.i, f: j.fallosOp ?? 0, pasada: true });
       j.fallosOp = 0;
       j.i++;
@@ -113,7 +115,13 @@ export default {
   },
 
   terminado(ronda, id) {
-    return (ronda.jugadores[id]?.i ?? 0) >= ronda.ops.length;
+    const j = ronda.jugadores[id];
+    return (j?.i ?? 0) >= ronda.ops.length || !quedan(ronda.reglas?.fallos, j?.fallos ?? 0);
+  },
+
+  marcador(ronda, id) {
+    const j = this.estadoJugador(ronda, id);
+    return { texto: `${j.aciertos} ${j.aciertos === 1 ? "acierto" : "aciertos"}`, vidas: restan(ronda.reglas?.fallos, j.fallos), vidasMax: ronda.reglas?.fallos ?? null };
   },
 
   resultados(ronda, ids) {

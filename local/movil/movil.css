@@ -2027,3 +2027,43 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
 .dos-lados > .lado-info .puzle-datos, .dos-lados > .lado-info .pc-leyenda { justify-content: flex-start; }
 /* Llegar al resultado: el objetivo y tu mejor número, uno debajo del otro si no caben */
 .dos-lados .lr-arriba { flex-wrap: wrap; justify-content: flex-start; align-items: center; }
+
+/* ---------- Barra del juego: en el centro, el marcador de la partida (y el reloj si hay contrarreloj) ---------- */
+.barra-centro { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
+.barra-der { display: flex; align-items: center; gap: 0.5rem; }
+.marcador-juego {
+  display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.35rem 0.95rem; border-radius: 999px; white-space: nowrap;
+  background: rgba(10, 26, 74, 0.6); border: 1px solid rgba(170, 200, 255, 0.28); box-shadow: 0 0.2rem 0 rgba(4, 12, 40, 0.35);
+}
+.marcador-juego[hidden] { display: none; }
+.marcador-texto { font-family: var(--fuente-ficha); font-size: 1.25rem; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; }
+.marcador-vidas { font-size: 0.95rem; letter-spacing: 0.04em; font-weight: 900; color: #ffb3ad; }
+.marcador-vidas.ultima { animation: latido 1.1s ease-in-out infinite; }
+@keyframes latido { 50% { transform: scale(1.15); } }
+@media (prefers-reduced-motion: reduce) { .marcador-vidas.ultima { animation: none; } }
+.barra-juego .terminar-btn { min-height: 0; width: 2.7rem; height: 2.7rem; padding: 0; border-radius: 50%; font-size: 1.25rem; display: grid; place-items: center; }
+
+/* ---------- Sopa: las encontradas se iluminan con su color (sin tachar); sin panel alrededor de la lista ---------- */
+.sopa-chip.hecha, .sopa-chip.sopa-def.hecha {
+  text-decoration: none; color: #fff; background: color-mix(in srgb, var(--c) 78%, #0b1d4f); border-color: var(--c);
+  box-shadow: 0 0 0.7rem color-mix(in srgb, var(--c) 55%, transparent); text-shadow: 0 0.05em 0 rgba(4, 12, 40, 0.45);
+}
+.sopa-chip.sopa-def.hecha span { opacity: 1; }
+.sopa-movil.dos-lados > .lado-info { background: none; border: 0; padding: 0; border-radius: 0; }
+/* Pista: la primera letra de una palabra, con un aro de su color que late */
+.sopa-letras span.sopa-pista { position: relative; isolation: isolate; color: #fff; }
+.sopa-letras span.sopa-pista::before {
+  content: ""; position: absolute; inset: 8%; border-radius: 50%; z-index: -1;
+  background: color-mix(in srgb, var(--c) 55%, transparent); box-shadow: 0 0 0 0.12em var(--c); animation: latido 1.4s ease-in-out infinite;
+}
+.sopa-pista-btn { align-self: center; min-height: 2.6rem; padding-inline: 1.2rem; }
+
+/* ---------- Resultados: sopa con sus palabras y crucigrama resuelto ---------- */
+.sopa-trazos line.sopa-falta { opacity: 0.55; stroke-width: 0.5; stroke-dasharray: 0.35 0.3; }
+.final-sopa .final-sopa-tablero { width: min(100%, 30rem, 62dvh); }
+.final-sopa .sopa-chip.falta { opacity: 0.75; border-style: dashed; }
+.final-sopa .sopa-lista { justify-content: center; }
+.final-cg { container-type: inline-size; }
+.final-cg .cg-rejilla { width: min(100%, 32rem, calc(62dvh * var(--cols) / var(--filas))); font-size: calc(min(100cqw, 32rem) / var(--cols) * 0.55); }
+.cg-celda.sol-bien { background: linear-gradient(180deg, #d6f5e4, #9be0bd); color: #08321f; }
+.cg-celda.sol-falta { background: linear-gradient(180deg, #ffe1de, #f3aaa4); color: #6b1610; }

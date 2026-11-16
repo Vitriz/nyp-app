@@ -85,8 +85,18 @@ export function montar(cuerpo, e, ctx) {
     }
   }
 
+  // Pases que quedan (solo; null = sin límite).
+  let quedanPases = e.datos?.quedanPases ?? null;
+  const pintarPasar = () => {
+    if (quedanPases == null) return;
+    pasar.textContent = `Pasar · ${quedanPases} ➜`;
+    pasar.disabled = quedanPases <= 0;
+  };
+  pintarPasar();
   pasar.addEventListener("click", () => {
-    if (i >= ops.length) return;
+    if (i >= ops.length || quedanPases === 0) return;
+    if (quedanPases != null) quedanPases--;
+    pintarPasar();
     ctx.enviar({ a: "pasar", i });
     i++;
     racha = 0;
@@ -98,6 +108,7 @@ export function montar(cuerpo, e, ctx) {
 
   return {
     actualizar(e) {
+      if (e.datos?.quedanPases != null) (quedanPases = e.datos.quedanPases), pintarPasar();
       // Si el servidor va por delante (p. ej. tras reconectar), nos ponemos al día.
       if (e.datos && e.datos.i > i) {
         i = e.datos.i;

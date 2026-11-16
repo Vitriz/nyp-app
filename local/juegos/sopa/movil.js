@@ -5,26 +5,38 @@ import { reiniciarAnim } from "../comun/util.js";
 import { dosLados, lados } from "../comun/lados.js";
 
 export function montar(cuerpo, e, ctx) {
-  const d = e.datos;
+  let d = e.datos;
   const tablero = crearTablero(d.tablero);
   const marcadas = new Set();
   // En difícil no se ven las palabras: solo sus definiciones (al encontrarla, aparece la palabra).
   const conDefs = Array.isArray(d.definiciones);
   const chips = d.palabras.map((p, k) => (conDefs ? h("span.sopa-chip.sopa-def", h("b", "?"), h("span", d.definiciones[k])) : h("span.sopa-chip", p.toUpperCase())));
-  const contador = h("span.ficha", "0");
+  // Cuántas llevas va arriba (en el marcador de la partida). Pistas: la primera letra de una palabra.
+  const pista = h("button.boton.suave.sopa-pista-btn", { type: "button", onclick: () => d.quedanPistas && ctx.enviar({ a: "pista" }) });
+  const conPistas = d.quedanPistas != null;
 
   cuerpo.append(
     lados(
       h(
         "div.sopa-movil",
-        h("div.mf-cont", "Encontradas", contador, h("span.suave", `de ${d.palabras.length}`)),
         h(`div.sopa-lista${conDefs ? ".con-defs" : ""}`, chips),
-        h("div.sopa-caja.sin-onda", tablero.el)
+        h("div.sopa-caja.sin-onda", tablero.el),
+        conPistas ? pista : null
       ),
-      ".mf-cont",
       ".sopa-lista"
     )
   );
+  const vistasPistas = new Set();
+  function pintarPistas() {
+    if (!conPistas) return;
+    pista.textContent = `💡 Pista · ${d.quedanPistas}`;
+    pista.disabled = !d.quedanPistas || marcadas.size >= d.palabras.length;
+    for (const x of d.pistas ?? []) {
+      if (vistasPistas.has(x.k)) continue;
+      vistasPistas.add(x.k);
+      tablero.senalar(x.r, x.c, COLORES_SOPA[x.k % COLORES_SOPA.length]);
+    }
+  }
 
   function marcar(k, r0, c0, r1, c1) {
     if (marcadas.has(k)) return;
@@ -33,11 +45,11 @@ export function montar(cuerpo, e, ctx) {
     chips[k].classList.add("hecha");
     if (conDefs) chips[k].firstChild.textContent = d.palabras[k].toUpperCase();
     chips[k].style.setProperty("--c", COLORES_SOPA[k % COLORES_SOPA.length]);
-    contador.textContent = marcadas.size;
-    reiniciarAnim(contador, "rebote");
+    reiniciarAnim(chips[k], "rebote");
   }
 
   for (const f of d.encontradas) marcar(f.k, f.r0, f.c0, f.r1, f.c1);
+  pintarPistas();
 
   // ------- arrastre
   let inicio = null, fin = null;
@@ -90,6 +102,8 @@ export function montar(cuerpo, e, ctx) {
       ctx.enviar({ a: "marcar", r0: a.r, c0: a.c, r1: b.r, c1: b.c });
     } else {
       reiniciarAnim(zona, "sacudir");
+      // Con límite de fallos, una línea que no es palabra cuenta (las de una sola letra, no).
+      if (d.quedanFallos != null) ctx.enviar({ a: "fallo" });
     }
   };
   zona.addEventListener("pointerup", soltar);
@@ -97,7 +111,10 @@ export function montar(cuerpo, e, ctx) {
 
   return {
     actualizar(e) {
-      for (const f of e.datos?.encontradas ?? []) marcar(f.k, f.r0, f.c0, f.r1, f.c1);
+      if (!e.datos) return;
+      d = e.datos;
+      for (const f of d.encontradas ?? []) marcar(f.k, f.r0, f.c0, f.r1, f.c1);
+      pintarPistas();
     },
   };
 }

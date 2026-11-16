@@ -82,7 +82,7 @@ export function infoPartida(juego, segundos, nivel) {
   return h(
     "div.info-partida",
     h("div.info-partida-titulo", h("span.info-partida-ico", ICONOS[juego.id] ?? "🎲"), h("h2.info-partida-nombre", juego.nombre)),
-    h("div.info-partida-ajustes", casilla("⏱", "Tiempo", segundos ? textoSegundos(segundos) : "Sin límite"), nivel ? casilla("◆", "Nivel", nivel) : null)
+    h("div.info-partida-ajustes", casilla("⏱", "Contrarreloj", segundos ? textoSegundos(segundos) : "No"), nivel ? casilla("◆", "Nivel", nivel) : null)
   );
 }
 
@@ -100,7 +100,10 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
   const segundosDe = (j) => tiempo?.de(j) ?? j.duracion;
   const listaDe = (j) => (typeof tiempo?.lista === "function" ? tiempo.lista(j) : tiempo?.lista ?? [j.duracion]);
   const nivelDe = (j) => nivel?.de(j) ?? "normal";
-  const ruedaTiempo = tiempo ? ruedaValor("⏱", "Tiempo", (p) => pasoTiempo(p)) : null;
+  // tiempo.etiqueta / tiempo.texto: cómo se llama y cómo se escribe cada valor (p. ej. «Contrarreloj: No»).
+  const etqTiempo = tiempo?.etiqueta ?? "Tiempo";
+  const txtTiempo = (s) => (tiempo?.texto ? tiempo.texto(s) : textoSegundos(s));
+  const ruedaTiempo = tiempo ? ruedaValor("⏱", etqTiempo, (p) => pasoTiempo(p)) : null;
   const ruedaNivel = nivel ? ruedaValor("◆", "Nivel", (p) => pasoNivel(p)) : null;
   // En pantalla ancha (ordenador) sobra sitio: todas las opciones a la vista, con su etiqueta, y un clic para elegir.
   const segTiempo = tiempo ? h("div.sel-seg-opciones", { role: "radiogroup", "aria-label": "Tiempo" }) : null;
@@ -109,7 +112,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     tiempo || nivel
       ? h(
           "div.sel-segmentos",
-          tiempo ? h("div.sel-seg-fila", h("span.sel-seg-etiqueta", "⏱ Tiempo"), segTiempo) : null,
+          tiempo ? h("div.sel-seg-fila", h("span.sel-seg-etiqueta", `⏱ ${etqTiempo}`), segTiempo) : null,
           nivel ? h("div.sel-seg-fila", h("span.sel-seg-etiqueta", "◆ Nivel"), segNivel) : null
         )
       : null;
@@ -317,10 +320,10 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     const nv = nivelDe(j);
     if (ruedaTiempo) {
       const l = listaDe(j);
-      ruedaTiempo.pintar(l.map(textoSegundos), Math.max(0, l.indexOf(seg)), animar);
+      ruedaTiempo.pintar(l.map(txtTiempo), Math.max(0, l.indexOf(seg)), animar);
     }
     if (ruedaNivel) ruedaNivel.pintar(nivel.lista.map((x) => nivel.nombres[x]), Math.max(0, nivel.lista.indexOf(nv)), animar);
-    if (segTiempo) pintarSegmentos(segTiempo, listaDe(j), listaDe(j).map(textoSegundos), seg, (s) => cambiarTiempo(s));
+    if (segTiempo) pintarSegmentos(segTiempo, listaDe(j), listaDe(j).map(txtTiempo), seg, (s) => cambiarTiempo(s));
     if (segNivel)
       pintarSegmentos(segNivel, nivel.lista, nivel.lista.map((x) => nivel.nombres[x]), nv, (x) => {
         if (juegos[sel].bloqueado || x === nivelDe(juegos[sel])) return;
@@ -384,7 +387,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       ...(conRecords ? [recordEl] : []),
       h(
         "div.sel-ajustes",
-        ruedaTiempo ? ruedaTiempo.el : h("span.sel-chip", `⏱ ${textoSegundos(seg)}`),
+        ruedaTiempo ? ruedaTiempo.el : h("span.sel-chip", `⏱ ${txtTiempo(seg)}`),
         ruedaNivel ? ruedaNivel.el : null
       ),
       segmentos,

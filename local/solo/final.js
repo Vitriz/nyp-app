@@ -7,6 +7,7 @@ import { crearTablero as tableroHilo } from "../juegos/hilo/rejilla.js";
 import { crearTablero as tableroCoronas } from "../juegos/coronas/rejilla.js";
 import { crearTablero as tableroParcelas } from "../juegos/parcelas/rejilla.js";
 import { crearTablero as tableroCulebras, COLORES as COLORES_CULEBRAS } from "../juegos/culebras/rejilla.js";
+import { crearTablero as tableroSopa, COLORES_SOPA } from "../juegos/sopa/tablero.js";
 
 /** KenKen: ¿cada casilla tiene el número de la solución? (si lo resolvió, todo vale) */
 const kkBien = (j, ronda) => ronda.solucion.map((v, k) => j.ms != null || j.valores[k] === v);
@@ -46,10 +47,13 @@ const POR_JUEGO = {
     ["✅", "Aciertos", j.aciertos, "bien"],
     ["⭐", "Puntos", j.puntos, "oro"],
     ["💡", "Pistas", j.pistas],
+    ...(j.fallos ? [["❌", "Fallos", j.fallos, "mal"]] : []),
   ],
   sopa: (j, ronda) => [
     ["🔍", "Encontradas", `${j.encontradas.length} / ${ronda.palabras.length}`, "oro"],
     ["⏳", "Faltaron", ronda.palabras.length - j.encontradas.length, j.encontradas.length === ronda.palabras.length ? "bien" : "mal"],
+    ...(j.fallos ? [["❌", "Fallos", j.fallos, "mal"]] : []),
+    ...(j.pistas?.length ? [["💡", "Pistas", j.pistas.length]] : []),
   ],
   revuelto: (j, ronda) => {
     const hechas = j.hechas ?? [];
@@ -72,6 +76,7 @@ const POR_JUEGO = {
     return [
       ["✏️", "Palabras", `${n} / ${ronda.palabras.length}`, "oro"],
       ["⏳", "Faltaron", ronda.palabras.length - n, n === ronda.palabras.length ? "bien" : "mal"],
+      ...(j.fallos ? [["❌", "Fallos", j.fallos, "mal"]] : []),
       ...(n === ronda.palabras.length && j.ultimo ? [["⏱", "Tiempo", reloj(j.ultimo)]] : []),
     ];
   },
@@ -214,6 +219,8 @@ export function casillasFinal(meta, ronda, j) {
 export function extraFinal(meta, ronda, j) {
   if (meta.id === "paraulogico") return finalTutifruti(ronda, j);
   if (meta.id === "laberinto") return finalLaberinto(ronda, j);
+  if (meta.id === "sopa") return finalSopa(ronda, j);
+  if (meta.id === "crucigrama") return finalCrucigrama(ronda, j);
   if (["hilo", "coronas", "parcelas", "culebras"].includes(meta.id)) return finalPuzle(meta, ronda, j);
   if (meta.id !== "kenken" || !ronda?.solucion) return null;
   const rejilla = crearRejilla(ronda);
@@ -254,6 +261,58 @@ function finalLaberinto(ronda, j) {
     h("small", j.ms != null ? "¡Completo! Así quedó" : "La solución"),
     r.el,
     h("div.kk-leyenda", h("span", h("i", { style: { background: "#9be0bd" } }), "Lo tenías bien"), h("span", h("i", { style: { background: "#f6b1a8" } }), "Lo tenías mal (tachado, tu número)"))
+  );
+}
+
+/** Sopa: el tablero con dónde estaba cada palabra (las tuyas, con su color; las que faltaron, en discontinua). */
+function finalSopa(ronda, j) {
+  if (!ronda?.tablero) return null;
+  const t = tableroSopa(ronda.tablero);
+  const tuyas = new Set((j.encontradas ?? []).map((e) => e.k));
+  ronda.palabras.forEach((p, k) => t.marcar(p.r0, p.c0, p.r1, p.c1, tuyas.has(k) ? COLORES_SOPA[k % COLORES_SOPA.length] : "#ffffff", { falta: !tuyas.has(k) }));
+  const chips = ronda.palabras.map((p, k) =>
+    h(`span.sopa-chip${tuyas.has(k) ? ".hecha" : ".falta"}`, { style: { "--c": COLORES_SOPA[k % COLORES_SOPA.length] } }, p.forma.toUpperCase())
+  );
+  const todas = tuyas.size === ronda.palabras.length;
+  return h(
+    "div.final-puzle.final-sopa",
+    h("small.final-seccion", todas ? "¡Todas! Así quedó la sopa" : "Dónde estaba cada palabra"),
+    h("div.final-sopa-tablero", t.el),
+    h("div.final-chips.sopa-lista", chips),
+    todas ? null : h("div.kk-leyenda", h("span", "Con color: las encontraste"), h("span", "Blanca y discontinua: faltó"))
+  );
+}
+
+/** Crucigrama: resuelto entero; tus palabras en verde y las que faltaron, en rojo (con sus letras). */
+function finalCrucigrama(ronda, j) {
+  if (!ronda?.palabras?.length) return null;
+  const estado = new Map(); // casilla → "bien" si alguna palabra tuya pasa por ella
+  const letra = new Map();
+  const numeros = new Map(ronda.palabras.map((p) => [`${p.r},${p.c}`, p.n]));
+  ronda.palabras.forEach((p, k) => {
+    for (let i = 0; i < p.clave.length; i++) {
+      const c = `${p.r + (p.dir === "v" ? i : 0)},${p.c + (p.dir === "h" ? i : 0)}`;
+      letra.set(c, p.clave[i]);
+      if (j.resueltas?.[k]) estado.set(c, "bien");
+      else if (!estado.has(c)) estado.set(c, "falta");
+    }
+  });
+  const el = h("div.cg-rejilla.cg-final", { style: { "--filas": ronda.filas, "--cols": ronda.cols } });
+  for (let r = 0; r < ronda.filas; r++)
+    for (let c = 0; c < ronda.cols; c++) {
+      const k = `${r},${c}`;
+      el.append(
+        letra.has(k)
+          ? h(`div.cg-celda.${estado.get(k) === "bien" ? "sol-bien" : "sol-falta"}`, numeros.has(k) ? h("span.cg-num", String(numeros.get(k))) : null, h("span.cg-letra", letra.get(k).toUpperCase()))
+          : h("div.cg-celda.negra")
+      );
+    }
+  const n = Object.keys(j.resueltas ?? {}).length;
+  return h(
+    "div.final-puzle.final-cg",
+    h("small.final-seccion", n === ronda.palabras.length ? "¡Completo! Así quedó" : "La solución"),
+    el,
+    n === ronda.palabras.length ? null : h("div.kk-leyenda", h("span", h("i", { style: { background: "#9be0bd" } }), "Lo resolviste"), h("span", h("i", { style: { background: "#f6b1a8" } }), "Faltó"))
   );
 }
 

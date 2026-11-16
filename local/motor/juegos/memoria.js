@@ -5,7 +5,7 @@
 //  - cambio:   palabras; se vuelven a enseñar y una ha cambiado por otra parecida: ¿cuál?
 // Todos reciben la misma serie. Gana quien acierte más (si empatan, quien respondió más rápido).
 import { cargarDefiniciones } from "../lexico.js";
-import { nivelDificultad } from "../util.js";
+import { nivelDificultad, reglasSolo, quedan, restan } from "../util.js";
 
 // Fácil: empieza con 4 tarjetas en 2 × 2. Medio: 6 en 3 × 2. Difícil: 6 en un 3 × 3 con huecos y menos tiempo.
 // Cada 4 pruebas sale una tarjeta más (hasta el máximo del nivel), y un poco más de tiempo para mirarlas.
@@ -131,7 +131,7 @@ export default {
         pruebas.push({ ...base, textos, despues, respuesta: k });
       }
     }
-    return { nivel, pruebas, jugadores: {} };
+    return { nivel, pruebas, reglas: reglasSolo("memoria", config), jugadores: {} };
   },
 
   estadoJugador(ronda, id) {
@@ -140,7 +140,7 @@ export default {
 
   vistaJugador(ronda, id) {
     const j = this.estadoJugador(ronda, id);
-    return { rejilla: ronda.nivel.rejilla, ver: ronda.nivel.ver, pruebas: ronda.pruebas, i: j.i, aciertos: j.aciertos };
+    return { rejilla: ronda.nivel.rejilla, ver: ronda.nivel.ver, pruebas: ronda.pruebas, i: j.i, aciertos: j.aciertos, quedanFallos: restan(ronda.reglas?.fallos, j.i - j.aciertos) };
   },
 
   vistaTV(ronda) {
@@ -171,7 +171,13 @@ export default {
   },
 
   terminado(ronda, id) {
-    return (ronda.jugadores[id]?.i ?? 0) >= ronda.pruebas.length;
+    const j = ronda.jugadores[id];
+    return (j?.i ?? 0) >= ronda.pruebas.length || !quedan(ronda.reglas?.fallos, (j?.i ?? 0) - (j?.aciertos ?? 0));
+  },
+
+  marcador(ronda, id) {
+    const j = this.estadoJugador(ronda, id);
+    return { texto: `${j.aciertos} ${j.aciertos === 1 ? "acierto" : "aciertos"}`, vidas: restan(ronda.reglas?.fallos, j.i - j.aciertos), vidasMax: ronda.reglas?.fallos ?? null };
   },
 
   resultados(ronda, ids) {

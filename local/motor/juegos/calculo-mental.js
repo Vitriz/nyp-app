@@ -138,6 +138,11 @@ export default {
     return true;
   },
 
+  marcador(ronda, id) {
+    const r = this.estadoJugador(ronda, id).respuestas;
+    return { texto: `${r.filter((x) => x?.ok).length} / ${ronda.cadenas.length}` };
+  },
+
   terminado(ronda, id) {
     const r = ronda.jugadores[id]?.respuestas ?? [];
     // También cuando ya han pasado todas las operaciones (se acabó, aunque falte responder alguna).

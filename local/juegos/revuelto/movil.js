@@ -105,6 +105,7 @@ export function montar(cuerpo, e, ctx) {
       aviso.textContent = "✘ No es ninguna de las dos";
       reiniciarAnim(linea, "sacudir");
       navigator.vibrate?.([30, 40, 30]);
+      if (d.quedanFallos != null) ctx.enviar({ a: "fallo", i: d.i });
     }
   }
 
@@ -137,7 +138,13 @@ export function montar(cuerpo, e, ctx) {
 
   function pintarMarcas() {
     const a = d.actual;
-    largo.disabled = !a || a.palabras.every((p, k) => p.largo || resueltas[k]);
+    largo.disabled = !a || a.palabras.every((p, k) => p.largo || resueltas[k]) || d.quedanPistas === 0;
+    // Con límite: cuántas pistas y pases quedan.
+    if (d.quedanPistas != null) largo.textContent = `📏 Largo · ${d.quedanPistas}`;
+    if (d.quedanPases != null) {
+      pasar.firstChild && (pasar.firstChild.textContent = `⏭ Pasar · ${d.quedanPases}`);
+      pasar.disabled = !a || d.quedanPases === 0;
+    }
     if (a) tablero.style.setProperty("--cols", Math.ceil(a.letras.length / 2));
     cuenta.textContent = `${d.aciertos} / ${d.totalPalabras ?? (d.total ?? 20) * 2}`;
   }

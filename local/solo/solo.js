@@ -1,5 +1,5 @@
 // Modo solo: los mismos juegos que en PARTY, ejecutados en el propio móvil, con récords personales.
-import { h, cambiarPantalla, banner, bannerFijo, TIEMPOS, msDuracion, crearReloj, textoCuenta, piezaCuenta, detalleJugador, confeti, contarHasta, finalLlegar, palabraPendiente } from "../comun/ui.js";
+import { h, botonMantener, cambiarPantalla, banner, bannerFijo, TIEMPOS, textoSegundos, msDuracion, crearReloj, textoCuenta, piezaCuenta, detalleJugador, confeti, contarHasta, finalLlegar, palabraPendiente } from "../comun/ui.js";
 import { calmarFondo } from "../comun/fondo.js";
 import { almacen } from "../comun/conexion.js";
 import { leerPaquete, diccionarioIncluido, desbloquearDiccionario, actualizarIncluido } from "./paquete.js";
@@ -58,10 +58,19 @@ function claveRecord(id, seg, nivel = "normal") {
   return nivel === "normal" ? `${id}@${seg}` : `${id}@${seg}@${nivel}`;
 }
 
-function recordDe(records, meta, seg, nivel = "normal") {
-  const r = records[claveRecord(meta.id, seg, nivel)];
-  if (r || nivel !== "normal") return r ?? null;
-  return seg === meta.duracionBase ? records[meta.id] ?? null : null;
+/**
+ * El récord de un juego en un nivel, juegues con o sin contrarreloj (el tiempo ya no separa récords):
+ * el mejor de todas sus claves de ese nivel (las antiguas «juego» cuentan como nivel medio).
+ */
+function recordDe(records, meta, _seg, nivel = "normal") {
+  let mejor = null;
+  for (const [k, r] of Object.entries(records)) {
+    if (!r || typeof r.valor !== "number") continue;
+    const [id, seg, nv = "normal"] = k.split("@");
+    if (id !== meta.id || (seg == null ? "normal" : nv) !== nivel) continue;
+    if (!mejor || r.valor > mejor.valor) mejor = r;
+  }
+  return mejor;
 }
 
 /** Nivel elegido para cada juego (se recuerda en el móvil). */
@@ -73,14 +82,20 @@ function leerNiveles() {
   }
 }
 
-/** Tiempo elegido para cada juego (se recuerda en el móvil). */
+/**
+ * Contrarreloj elegido (0 = sin reloj, lo normal; o 30 s, 45 s, 1 min, 2 min). Se recuerda en el móvil.
+ * (Clave nueva: antes se guardaba el tiempo de siempre y ahora se empieza sin reloj.)
+ */
+const CONTRARRELOJ = [0, 30, 45, 60, 120];
+const textoContrarreloj = (s) => (s ? textoSegundos(s) : "No");
 function leerTiempos() {
   try {
-    return JSON.parse(almacen.leer("nyp-tiempos") ?? "{}");
+    return JSON.parse(almacen.leer("nyp-contrarreloj") ?? "{}");
   } catch {
     return {};
   }
 }
+const contrarrelojValido = (s) => (CONTRARRELOJ.includes(s) ? s : 0);
 
 /** Guarda el resultado si es récord para ese tiempo. Devuelve el récord anterior (o null). */
 function apuntar(meta, r) {
@@ -153,7 +168,7 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
             h("button.icono-btn.estadisticas", { type: "button", onclick: () => ventanaEstadisticas(juegos), "aria-label": "Estadísticas", title: "Estadísticas" }, "📊"),
             h("button.icono-btn.records", {
               type: "button",
-              onclick: () => ventanaClasificacion(juegos, perfil, { seg: tiempoValido(leerTiempos()["*"] ?? 60), nv: leerNiveles()["*"] ?? "normal" }),
+              onclick: () => ventanaClasificacion(juegos, perfil, { nv: leerNiveles()["*"] ?? "normal" }),
               "aria-label": "Clasificación",
               title: "Clasificación",
             }, "🏆"),
@@ -174,17 +189,20 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
               almacen.guardar("nyp-niveles", JSON.stringify(niveles));
             },
           },
+          // Sin reloj de serie (más tranquilo); quien quiera reto elige un contrarreloj.
           tiempo: {
-            lista: TIEMPOS,
-            de: () => tiempoValido(tiempos["*"] ?? 60),
+            lista: CONTRARRELOJ,
+            etiqueta: "Contrarreloj",
+            texto: textoContrarreloj,
+            de: () => contrarrelojValido(tiempos["*"] ?? 0),
             fijar: (j, s) => {
               tiempos["*"] = s;
-              almacen.guardar("nyp-tiempos", JSON.stringify(tiempos));
+              almacen.guardar("nyp-contrarreloj", JSON.stringify(tiempos));
             },
           },
           conAyuda: true,
           alJugar: async (j) => {
-            const meta = { ...j, duracion: tiempoValido(tiempos["*"] ?? 60), dificultad: niveles["*"] ?? "normal" };
+            const meta = { ...j, duracion: contrarrelojValido(tiempos["*"] ?? 0), dificultad: niveles["*"] ?? "normal" };
             // Crucigrama sin límite a medias: ¿seguirlo?
             const g = j.id === "crucigrama" && !meta.duracion ? leerGuardado() : null;
             if (g) {
@@ -386,7 +404,34 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
       fase: "jugando", juego: meta, fin, yo, jugadores: [yo],
       datos: impl.vistaJugador(ronda, yo.id), terminado: impl.terminado(ronda, yo.id),
     });
-    const refrescar = () => !acabado && modulo?.actualizar(estado());
+    // Arriba, en vez del reloj (o junto a él, con contrarreloj): cómo va la partida y los fallos que quedan.
+    const marcadorEl = h("div.marcador-juego");
+    const pintarMarcador = () => {
+      let m = null;
+      try {
+        m = impl.marcador?.(ronda, yo.id) ?? null;
+      } catch {}
+      marcadorEl.hidden = !m;
+      if (!m) return;
+      const vidas = m.vidas == null ? null : m.vidas;
+      const max = m.vidasMax ?? vidas;
+      marcadorEl.replaceChildren(
+        h("b.marcador-texto", m.texto),
+        vidas == null
+          ? null
+          : h(
+              `span.marcador-vidas${vidas <= 1 ? ".ultima" : ""}`,
+              { title: `Te ${vidas === 1 ? "queda 1 fallo" : `quedan ${vidas} fallos`}`, "aria-label": `Fallos que quedan: ${vidas}` },
+              // Pocas: un corazón por fallo; muchas: corazón y número.
+              max <= 5 ? `${"❤️".repeat(vidas)}${"🤍".repeat(Math.max(0, max - vidas))}` : `❤️ ${vidas}`
+            )
+      );
+    };
+    const refrescar = () => {
+      if (acabado) return;
+      pintarMarcador();
+      modulo?.actualizar(estado());
+    };
     const ctx = {
       ahora: Date.now,
       onda: () => {},
@@ -428,10 +473,6 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
       try {
         resumen = impl.resumen?.(ronda) ?? null;
       } catch {}
-      let nuevas = [];
-      try {
-        nuevas = comprobarHazanas(meta, r, ronda, yo.id);
-      } catch {}
       let datos = null;
       let ganada = r.valor != null;
       try {
@@ -439,12 +480,20 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
         ganada = ganoPartida(meta, r, ronda, jj);
         datos = [casillasFinal(meta, ronda, jj), extraFinal(meta, ronda, jj)];
       } catch {}
+      let nuevas = [];
+      try {
+        nuevas = comprobarHazanas(meta, r, ronda, yo.id, { ganada, ms: Math.min(Date.now(), fin) - inicio });
+      } catch {}
       try {
         apuntarPartida(meta, ganada); // para las estadísticas
       } catch {}
       resultado(meta, r, resumen, nuevas, datos);
     }
 
+    const terminarBtn = botonMantener("🏁", terminar, { clase: ".suave.terminar-btn", ms: 700 });
+    terminarBtn.title = "Mantén para terminar y ver el resultado";
+    terminarBtn.setAttribute("aria-label", "Mantén para terminar");
+    pintarMarcador();
     calmarFondo(true); // fondo quieto y tenue mientras se juega
     mostrar({
       el: h(
@@ -454,8 +503,13 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
           // El mismo banner, ya cerrado en círculo: así no hay salto al empezar.
           h("span.icono-yo", fijo.hueco("cerrado")),
           // Sin límite de tiempo: en vez del reloj, un botón para acabar cuando quieras (y ver el resultado).
-          meta.duracion ? reloj.el : h("button.boton.suave.sin-limite", { type: "button", onclick: terminar }, "∞ · Terminar 🏁"),
-          h("button.icono-btn.cerrar", { type: "button", onclick: abandonar, "aria-label": "Dejar la partida" }, "✕")),
+          h("div.barra-centro", meta.duracion ? reloj.el : null, marcadorEl),
+          h(
+            "div.barra-der",
+            // Sin reloj: se acaba sola (al completarla o con los fallos), o cuando quieras (manteniendo 🏁).
+            meta.duracion ? null : terminarBtn,
+            h("button.icono-btn.cerrar", { type: "button", onclick: abandonar, "aria-label": "Dejar la partida" }, "✕")
+          )),
         cuerpo
       ),
       desmontar: () => {

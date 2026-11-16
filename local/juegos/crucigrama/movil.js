@@ -70,6 +70,11 @@ export function montar(cuerpo, e, ctx) {
     });
   }
 
+  // Límites de la partida (solo): pistas y fallos que quedan (null = sin límite).
+  let quedanPistas = d.quedanPistas ?? null;
+  let quedanFallos = d.quedanFallos ?? null;
+  const fallosVistos = new Map(); // palabra → lo escrito que ya contó como fallo
+
   function revelar(c, l) {
     letras.set(c, l);
     bloqueadas.add(c);
@@ -78,7 +83,7 @@ export function montar(cuerpo, e, ctx) {
 
   function pedirPista() {
     const c = celdasDe(P[sel])[pos];
-    if (!c || bloqueadas.has(c)) return;
+    if (!c || bloqueadas.has(c) || quedanPistas === 0) return;
     ctx.enviar({ a: "pista", casilla: c });
   }
 
@@ -162,6 +167,11 @@ export function montar(cuerpo, e, ctx) {
       cs.forEach((c) => reiniciarAnim(casillas.get(c), "bien"));
       if (k === sel) setTimeout(() => saltar(1), 250);
     } else if (!callado) {
+      // Con límite de fallos, cada palabra entera mal cuenta una vez (la misma, escrita igual, no vuelve a contar).
+      if (quedanFallos != null && fallosVistos.get(k) !== texto) {
+        fallosVistos.set(k, texto);
+        ctx.enviar({ a: "fallo" });
+      }
       navigator.vibrate?.([30, 40, 30]);
       cs.forEach((c) => reiniciarAnim(casillas.get(c), "mal"));
       setTimeout(() => cs.forEach((c) => casillas.get(c).classList.remove("mal")), 450); // el rojo, solo un momento
@@ -184,12 +194,15 @@ export function montar(cuerpo, e, ctx) {
     }
     pista.replaceChildren(h("b", `${p.n} ${p.dir === "h" ? "→" : "↓"}`), h("span", ` ${p.definicion}`), h("small", ` (${p.largo})`));
     cuenta.textContent = `${resueltas.size}/${P.length}`;
-    botonPista.disabled = bloqueadas.has(celdasDe(p)[pos]) || resueltas.has(sel);
+    botonPista.disabled = bloqueadas.has(celdasDe(p)[pos]) || resueltas.has(sel) || quedanPistas === 0;
+    if (quedanPistas != null) botonPista.textContent = `💡 Letra · ${quedanPistas}`;
   }
 
   elegir(P.findIndex((_, k) => !resueltas.has(k)) >= 0 ? P.findIndex((_, k) => !resueltas.has(k)) : 0);
   return {
     actualizar(e) {
+      quedanPistas = e.datos?.quedanPistas ?? quedanPistas;
+      quedanFallos = e.datos?.quedanFallos ?? quedanFallos;
       // El servidor confirma con las palabras resueltas (por si se perdió algo).
       for (const [k, cl] of Object.entries(e.datos?.resueltas ?? {})) if (!resueltas.has(Number(k))) marcarResuelta(Number(k), cl);
       // Letras nuevas de las pistas: se ponen y se comprueban las palabras que pasan por ahí.

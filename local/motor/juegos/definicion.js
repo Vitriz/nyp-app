@@ -1,7 +1,7 @@
 // DEFINICIÓN · todos reciben la misma lista de definiciones, en el mismo orden.
 // Cada palabra acertada vale 3; cada pista (desvela una letra) resta 1, sin bajar de 1.
 import { clave, elegirDefiniciones } from "../lexico.js";
-import { huella, nivelDificultad } from "../util.js";
+import { huella, nivelDificultad, reglasSolo, quedan, restan } from "../util.js";
 import { AMBITOS, palabrasDeTema } from "./crucigrama.js";
 
 const VALOR = 3;
@@ -36,11 +36,12 @@ export default {
       ...x,
       orden: azar.barajar([...x.clave].map((_, i) => i)), // orden en que se desvelan las letras
     }));
-    return { palabras, ambito, jugadores: {} };
+    // Solo: se acaba con 2 fallos; pases y pistas, según el nivel.
+    return { palabras, ambito, reglas: reglasSolo("definicion", config), jugadores: {} };
   },
 
   estadoJugador(ronda, id) {
-    return (ronda.jugadores[id] ??= { i: 0, aciertos: 0, pistas: 0, puntos: 0, reveladas: 0, anterior: null, hechas: [], racha: 0, mejorRacha: 0 });
+    return (ronda.jugadores[id] ??= { i: 0, aciertos: 0, pistas: 0, puntos: 0, reveladas: 0, anterior: null, hechas: [], racha: 0, mejorRacha: 0, fallos: 0, pases: 0 });
   },
 
   vistaJugador(ronda, id) {
@@ -53,6 +54,11 @@ export default {
       puntos: j.puntos,
       racha: j.racha ?? 0,
       anterior: j.anterior,
+      fallos: j.fallos ?? 0,
+      // Lo que queda (null = sin límite)
+      quedanPistas: restan(ronda.reglas?.pistas, j.pistas),
+      quedanPases: restan(ronda.reglas?.pases, j.pases ?? 0),
+      quedanFallos: restan(ronda.reglas?.fallos, j.fallos ?? 0),
       actual: w && {
         definicion: w.definicion,
         categoria: w.categoria,
@@ -90,12 +96,21 @@ export default {
         siguiente(true);
         j.anterior.racha = j.racha;
         return true;
+      case "fallo":
+        // Una palabra escrita entera y mal (solo cuenta si hay límite de fallos).
+        if (ronda.reglas?.fallos == null) return false;
+        j.fallos = (j.fallos ?? 0) + 1;
+        j.racha = 0;
+        if (!quedan(ronda.reglas.fallos, j.fallos)) siguiente(false); // la última: se ve cuál era
+        return true;
       case "pista":
-        if (j.reveladas >= w.clave.length - 1) return false;
+        if (j.reveladas >= w.clave.length - 1 || !quedan(ronda.reglas?.pistas, j.pistas)) return false;
         j.reveladas++;
         j.pistas++;
         return true;
       case "pasar":
+        if (!quedan(ronda.reglas?.pases, j.pases ?? 0)) return false;
+        j.pases = (j.pases ?? 0) + 1;
         j.racha = 0;
         siguiente(false);
         return true;
@@ -104,7 +119,14 @@ export default {
   },
 
   terminado(ronda, id) {
-    return (ronda.jugadores[id]?.i ?? 0) >= ronda.palabras.length;
+    const j = ronda.jugadores[id];
+    return (j?.i ?? 0) >= ronda.palabras.length || !quedan(ronda.reglas?.fallos, j?.fallos ?? 0);
+  },
+
+  /** Lo que se ve arriba (en vez del reloj): aciertos y los fallos que quedan. */
+  marcador(ronda, id) {
+    const j = this.estadoJugador(ronda, id);
+    return { texto: `${j.aciertos} ${j.aciertos === 1 ? "acierto" : "aciertos"}`, vidas: restan(ronda.reglas?.fallos, j.fallos ?? 0), vidasMax: ronda.reglas?.fallos ?? null };
   },
 
   resultados(ronda, ids) {

@@ -1,9 +1,9 @@
 // Estadísticas (tus partidas de «Jugar solo») y Clasificación (los récords de todos, desde la nube).
-// Las dos se filtran igual: tiempo y nivel (y, en la clasificación, el juego), con «Todos» para ver
-// el total de todas las modalidades.
-import { h, TIEMPOS } from "../comun/ui.js";
+// Las dos se filtran igual: por nivel (y, en la clasificación, por juego), con «Todos» para ver el total.
+// El tiempo ya no separa nada: las partidas con contrarreloj suman con las demás.
+import { h } from "../comun/ui.js";
 import { almacen } from "../comun/conexion.js";
-import { ICONOS, textoRecord, textoSegundos } from "./selector.js";
+import { ICONOS, textoRecord } from "./selector.js";
 import { leerJugadores, jugadoresGuardados } from "../comun/nube.js";
 import { leerFamilia, idMovil } from "../comun/familia.js";
 
@@ -39,8 +39,8 @@ function leerClave(k, juegos) {
   if (seg == null) return { id, seg: juegos.find((j) => j.id === id)?.duracion ?? null, nivel: "normal" };
   return { id, seg: Number(seg), nivel };
 }
-const encaja = (x, seg, nv) => (seg === TODOS || x.seg === seg) && (nv === TODOS || x.nivel === nv);
-const modalidad = (x) => `${textoSegundos(x.seg)} · ${NOMBRES_NIVEL[x.nivel] ?? x.nivel}`;
+const encaja = (x, _seg, nv) => nv === TODOS || x.nivel === nv;
+const modalidad = (x) => NOMBRES_NIVEL[x.nivel] ?? x.nivel;
 
 /** El mejor récord de una persona en un juego para los filtros (con su modalidad, por si es «Todos»). */
 function mejorDe(records, juego, seg, nv, juegos) {
@@ -66,13 +66,11 @@ function filtros(estado, alCambiar, { conJuego = null } = {}) {
         valores.map((v) => h(`button.records-op${v === actual ? ".elegida" : ""}`, { type: "button", onclick: () => (fijar(v), alCambiar()) }, texto(v)))
       )
     );
-  const tiempo = (v) => (v === TODOS ? "Todos" : !v ? "∞" : v < 60 || v % 60 ? `${v}s` : `${v / 60}m`);
   function pintar() {
     caja.replaceChildren(
       ...(conJuego
         ? [fila("Juego", [TODOS, ...conJuego.map((j) => j.id)], estado.juego, (v) => (v === TODOS ? "Todos" : ICONOS[v] ?? "🎲"), (v) => (estado.juego = v), ".juegos")]
         : []),
-      fila("Tiempo", [TODOS, ...TIEMPOS], estado.seg, tiempo, (v) => (estado.seg = v)),
       fila("Nivel", [TODOS, ...NIVELES], estado.nv, (v) => (v === TODOS ? "Todos" : NOMBRES_NIVEL[v]), (v) => (estado.nv = v))
     );
     // El juego elegido, a la vista (la fila se desplaza de lado).
@@ -96,8 +94,8 @@ const pct = (a, b) => (b ? `${Math.round((a / b) * 100)} %` : "—");
 
 // ------------------------------------------------------------------ estadísticas
 /** Tus partidas: en total y en cada juego (jugadas, ganadas, perdidas y el récord) para los filtros. */
-export function ventanaEstadisticas(juegos, { seg = TODOS, nv = TODOS } = {}) {
-  const estado = { seg, nv };
+export function ventanaEstadisticas(juegos, { nv = TODOS } = {}) {
+  const estado = { seg: TODOS, nv };
   const records = leerJSON("nyp-records", {});
   const partidas = leerJSON(ESTADISTICAS, {});
   const lista = h("div.records-lista");
@@ -145,7 +143,7 @@ export function ventanaEstadisticas(juegos, { seg = TODOS, nv = TODOS } = {}) {
             "div.est-record",
             h("small", "🏆 Récord"),
             h("b", m ? textoRecord(m.r) : "—"),
-            m && (estado.seg === TODOS || estado.nv === TODOS) ? h("span", modalidad(m)) : null
+            m && estado.nv === TODOS ? h("span", modalidad(m)) : null
           )
         )
       )
@@ -156,9 +154,9 @@ export function ventanaEstadisticas(juegos, { seg = TODOS, nv = TODOS } = {}) {
 }
 
 // ------------------------------------------------------------------ clasificación
-/** Los récords de toda la familia (de la nube): por juego, tiempo y nivel, o el total de todo. */
-export function ventanaClasificacion(juegos, perfil, { seg = TODOS, nv = TODOS, juego = TODOS } = {}) {
-  const estado = { seg, nv, juego };
+/** Los récords de toda la familia (de la nube): por juego y nivel, o el total de todo. */
+export function ventanaClasificacion(juegos, perfil, { nv = TODOS, juego = TODOS } = {}) {
+  const estado = { seg: TODOS, nv, juego };
   const lista = h("div.records-lista");
   const nota = h("p.familia-nota");
   const f = filtros(estado, pintar, { conJuego: juegos });
@@ -183,7 +181,7 @@ export function ventanaClasificacion(juegos, perfil, { seg = TODOS, nv = TODOS, 
   }
 
   function podio(filas, max) {
-    const todos = estado.seg === TODOS || estado.nv === TODOS;
+    const todos = estado.nv === TODOS;
     return h(
       "ol.familia-podio",
       filas.slice(0, max).map((x, k, arr) => {

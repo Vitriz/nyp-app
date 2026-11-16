@@ -3,7 +3,7 @@
 // Al terminar uno sale otro. Todos reciben los mismos tableros. Gana quien encuentre más grupos.
 // Ninguna palabra del tablero encaja en otro de sus grupos (se mira con TODOS sus significados).
 import { cargarConexiones, cargarDefiniciones, clave } from "../lexico.js";
-import { nivelDificultad } from "../util.js";
+import { nivelDificultad, reglasSolo, quedan, restan } from "../util.js";
 
 const TABLEROS = 6;
 const FALLOS = 4;
@@ -123,7 +123,7 @@ export default {
       const t = tablero(azar, d, datos, comunes);
       if (t) tableros.push(t);
     }
-    return { tableros, inicio, jugadores: {} };
+    return { tableros, inicio, reglas: reglasSolo("conexiones", config), jugadores: {} };
   },
 
   estadoJugador(ronda, id) {
@@ -189,7 +189,14 @@ export default {
   },
 
   terminado(ronda, id) {
-    return (ronda.jugadores[id]?.t ?? 0) >= ronda.tableros.length;
+    const j = ronda.jugadores[id];
+    // Se acaba al terminar los tableros o (en solo, medio y difícil) al sumar demasiados fallos.
+    return (j?.t ?? 0) >= ronda.tableros.length || !quedan(ronda.reglas?.fallos, j?.fallosTotal ?? 0);
+  },
+
+  marcador(ronda, id) {
+    const j = this.estadoJugador(ronda, id);
+    return { texto: `${j.grupos} ${j.grupos === 1 ? "grupo" : "grupos"}`, vidas: restan(ronda.reglas?.fallos, j.fallosTotal ?? 0), vidasMax: ronda.reglas?.fallos ?? null };
   },
 
   resultados(ronda, ids) {

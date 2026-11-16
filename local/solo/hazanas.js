@@ -4,10 +4,29 @@ import { h, confeti, SOMBREROS, ANIMACIONES } from "../comun/ui.js";
 import { almacen } from "../comun/conexion.js";
 
 /**
- * comprobar({ meta, r, j, ronda }) → true si se ha conseguido.
- *   meta: el juego (con duracion y dificultad); r: el resultado; j: el estado del jugador en la ronda; ronda: la partida.
+ * comprobar({ meta, r, j, ronda, ganada, ms }) → true si se ha conseguido.
+ *   meta: el juego (con duracion y dificultad); r: el resultado; j: el estado del jugador en la ronda; ronda: la partida;
+ *   ganada: si se ganó la partida; ms: lo que duró (desde que empezó hasta que acabó).
+ * juego: "contrarreloj" vale para cualquier juego jugado con contrarreloj.
  */
+// Ganar con contrarreloj antes de cierto tiempo (cuenta lo que tardas, sea cual sea el contrarreloj elegido).
+const crono = (nivel, seg) => ({ meta, ganada, ms }) => meta.duracion > 0 && ganada && (!nivel || meta.dificultad === nivel) && ms != null && ms < seg * 1000;
 export const HAZANAS = [
+  {
+    id: "crono-relampago", juego: "contrarreloj", icono: "⚡", nombre: "Relámpago",
+    desc: "Gana una partida con contrarreloj en Difícil antes de los 30 segundos (aunque el contrarreloj sea más largo).",
+    comprobar: crono("dificil", 30),
+  },
+  {
+    id: "crono-veloz", juego: "contrarreloj", icono: "🏃", nombre: "Pies ligeros",
+    desc: "Gana una partida con contrarreloj en Medio antes de los 20 segundos.",
+    comprobar: crono("normal", 20),
+  },
+  {
+    id: "crono-ultimo", juego: "contrarreloj", icono: "⏳", nombre: "Por los pelos",
+    desc: "Gana una partida con contrarreloj cuando le quedaban menos de 3 segundos.",
+    comprobar: ({ meta, ganada, ms }) => meta.duracion > 0 && ganada && ms != null && ms > meta.duracion * 1000 - 3000 && ms <= meta.duracion * 1000 + 500,
+  },
   {
     // Fuera de los juegos: en la pantalla de inicio. Su descripción no se ve hasta conseguirla.
     id: "machaca-titulos", juego: "inicio", icono: "🔨", nombre: "Machaca títulos", premio: { sombrero: "martillo" }, oculta: true,
@@ -60,7 +79,7 @@ export const HAZANAS = [
     comprobar: ({ j }) => (j?.aciertos ?? 0) >= 20 && !j.fallos,
   },
   {
-    id: "laberinto-rapido", juego: "laberinto", icono: "⏱️", nombre: "Contrarreloj", premio: { sombrero: "lazo" },
+    id: "laberinto-rapido", juego: "laberinto", icono: "⏱️", nombre: "A toda prisa", premio: { sombrero: "lazo" },
     desc: "Completa el laberinto en Difícil en menos de 60 segundos.",
     comprobar: ({ meta, j }) => meta.dificultad === "dificil" && j?.ms != null && j.ms < 60000,
   },
@@ -100,15 +119,15 @@ export function leerHazanas() {
 }
 
 /** Al acabar una partida: las hazañas nuevas que se han conseguido (y quedan guardadas). */
-export function comprobarHazanas(meta, r, ronda, id) {
+export function comprobarHazanas(meta, r, ronda, id, { ganada = false, ms = null } = {}) {
   const hechas = leerHazanas();
   const j = ronda?.jugadores?.[id];
   const nuevas = [];
   for (const x of HAZANAS) {
-    if (x.juego !== meta.id || hechas[x.id]) continue;
+    if ((x.juego !== meta.id && !(x.juego === "contrarreloj" && meta.duracion > 0)) || hechas[x.id]) continue;
     let ok = false;
     try {
-      ok = Boolean(x.comprobar({ meta, r, j, ronda }));
+      ok = Boolean(x.comprobar({ meta, r, j, ronda, ganada, ms }));
     } catch {}
     if (ok) {
       hechas[x.id] = new Date().toISOString().slice(0, 10);
@@ -240,8 +259,8 @@ export function tarjetaHazanas(nuevas) {
 /** Ventana con todas las hazañas: conseguidas (con fecha) y por conseguir. */
 export function ventanaHazanas(juegos, iconos) {
   const hechas = leerHazanas();
-  const nombre = { ...Object.fromEntries(juegos.map((j) => [j.id, j.nombre])), inicio: "Pantalla de inicio" };
-  iconos = { ...iconos, inicio: "🏠" };
+  const nombre = { ...Object.fromEntries(juegos.map((j) => [j.id, j.nombre])), inicio: "Pantalla de inicio", contrarreloj: "Contrarreloj (cualquier juego)" };
+  iconos = { ...iconos, inicio: "🏠", contrarreloj: "⏱" };
   const lista = HAZANAS.filter((x) => nombre[x.juego]);
   const total = lista.filter((x) => hechas[x.id]).length;
   const cerrar = () => {

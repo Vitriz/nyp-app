@@ -30,9 +30,9 @@ export function crearTablero(filas) {
   return {
     el,
     tam,
-    marcar(r0, c0, r1, c1, color) {
+    marcar(r0, c0, r1, c1, color, { falta = false } = {}) {
       const l = linea(r0, c0, r1, c1, color);
-      l.classList.add("sopa-marca");
+      l.classList.add(falta ? "sopa-falta" : "sopa-marca");
       svg.insertBefore(l, temporal.parentNode ? temporal : null);
     },
     temporal(r0, c0, r1, c1) {
@@ -41,6 +41,13 @@ export function crearTablero(filas) {
     },
     quitarTemporal() {
       temporal.remove();
+    },
+    /** Pista: la primera letra de una palabra, iluminada (con su color). */
+    senalar(r, c, color = "#e9c75a") {
+      const celda = letras.children[r * tam + c];
+      if (!celda) return;
+      celda.classList.add("sopa-pista");
+      celda.style.setProperty("--c", color);
     },
     celdaEn(x, y) {
       const r = letras.getBoundingClientRect();

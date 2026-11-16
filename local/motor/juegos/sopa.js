@@ -1,5 +1,5 @@
 // SOPA DE LETRAS · el mismo tablero para todos; gana quien encuentre más palabras.
-import { nivelDificultad } from "../util.js";
+import { nivelDificultad, reglasSolo, quedan, restan } from "../util.js";
 import { elegirDefiniciones } from "../lexico.js";
 import { AMBITOS, palabrasDeTema } from "./crucigrama.js";
 
@@ -119,11 +119,11 @@ export default {
     }
     const { tablero, puestas } = colocar(azar, tam, elegidas, d);
     puestas.sort((a, b) => a.clave.localeCompare(b.clave, "es"));
-    return { tam, tablero, palabras: puestas, inicio, ambito, soloDefiniciones: d > 0, jugadores: {} };
+    return { tam, tablero, palabras: puestas, inicio, ambito, soloDefiniciones: d > 0, reglas: reglasSolo("sopa", config), jugadores: {} };
   },
 
   estadoJugador(ronda, id) {
-    return (ronda.jugadores[id] ??= { encontradas: [] });
+    return (ronda.jugadores[id] ??= { encontradas: [], fallos: 0, pistas: [] });
   },
 
   vistaJugador(ronda, id) {
@@ -135,6 +135,10 @@ export default {
       definiciones: ronda.soloDefiniciones ? ronda.palabras.map((p) => p.definicion ?? "") : null,
       ambito: ronda.ambito,
       encontradas: j.encontradas,
+      // Pistas pedidas: la primera letra de esas palabras ({ k, r, c }).
+      pistas: j.pistas ?? [],
+      quedanPistas: restan(ronda.reglas?.pistas, (j.pistas ?? []).length),
+      quedanFallos: restan(ronda.reglas?.fallos, j.fallos ?? 0),
     };
   },
 
@@ -147,8 +151,23 @@ export default {
   },
 
   accion(ronda, id, msg) {
-    if (msg.a !== "marcar") return false;
     const j = this.estadoJugador(ronda, id);
+    if (msg.a === "fallo") {
+      // Una línea que no es ninguna palabra (solo cuenta si hay límite de fallos).
+      if (ronda.reglas?.fallos == null) return false;
+      j.fallos = (j.fallos ?? 0) + 1;
+      return true;
+    }
+    if (msg.a === "pista") {
+      j.pistas ??= [];
+      if (!quedan(ronda.reglas?.pistas, j.pistas.length) || ronda.reglas?.pistas == null) return false;
+      const faltan = ronda.palabras.map((p, k) => k).filter((k) => !j.encontradas.some((e) => e.k === k) && !j.pistas.some((x) => x.k === k));
+      if (!faltan.length) return false;
+      const k = faltan[Math.floor(Math.random() * faltan.length)];
+      j.pistas.push({ k, r: ronda.palabras[k].r0, c: ronda.palabras[k].c0 });
+      return true;
+    }
+    if (msg.a !== "marcar") return false;
     const { r0, c0, r1, c1 } = msg;
     const n = ronda.tam;
     if (![r0, c0, r1, c1].every((x) => Number.isInteger(x) && x >= 0 && x < n)) return false;
@@ -166,7 +185,14 @@ export default {
   },
 
   terminado(ronda, id) {
-    return (ronda.jugadores[id]?.encontradas.length ?? 0) >= ronda.palabras.length;
+    const j = ronda.jugadores[id];
+    return (j?.encontradas.length ?? 0) >= ronda.palabras.length || !quedan(ronda.reglas?.fallos, j?.fallos ?? 0);
+  },
+
+  /** Arriba: las palabras encontradas de las que hay, y los fallos que quedan. */
+  marcador(ronda, id) {
+    const j = this.estadoJugador(ronda, id);
+    return { texto: `${j.encontradas.length} / ${ronda.palabras.length}`, vidas: restan(ronda.reglas?.fallos, j.fallos ?? 0), vidasMax: ronda.reglas?.fallos ?? null };
   },
 
   resultados(ronda, ids) {

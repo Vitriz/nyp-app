@@ -2,7 +2,7 @@
 // Todos reciben la misma serie de revueltos. Cada palabra encontrada cuenta 1.
 // No se dice ni el tipo de palabra ni su largo: solo que entre las dos suman 12 letras.
 import { clave, elegirDefiniciones } from "../lexico.js";
-import { huella, nivelDificultad } from "../util.js";
+import { huella, nivelDificultad, reglasSolo, quedan, restan } from "../util.js";
 
 export default {
   id: "revuelto",
@@ -32,11 +32,11 @@ export default {
       revueltos.push({ palabras: azar.barajar([a, b]), letras: azar.barajar([...(a.clave + b.clave), ...extra]) });
     }
     // En PARTY, pasar resta un punto (para que no compense saltarse revueltos).
-    return { revueltos, inicio, penalizaPasar: !config?.solo, jugadores: {} };
+    return { revueltos, inicio, penalizaPasar: !config?.solo, reglas: reglasSolo("revuelto", config), jugadores: {} };
   },
 
   estadoJugador(ronda, id) {
-    return (ronda.jugadores[id] ??= { i: 0, resueltas: [false, false], aciertos: 0, anterior: null, hechas: [], puntos: 0, pistas: 0, pasados: 0, largos: [false, false] });
+    return (ronda.jugadores[id] ??= { i: 0, resueltas: [false, false], aciertos: 0, anterior: null, hechas: [], puntos: 0, pistas: 0, pasados: 0, largos: [false, false], fallos: 0 });
   },
 
   vistaJugador(ronda, id) {
@@ -50,6 +50,9 @@ export default {
       puntos: j.puntos ?? 0,
       penalizaPasar: Boolean(ronda.penalizaPasar),
       anterior: j.anterior,
+      quedanPistas: restan(ronda.reglas?.pistas, j.pistas ?? 0),
+      quedanPases: restan(ronda.reglas?.pases, j.pasados ?? 0),
+      quedanFallos: restan(ronda.reglas?.fallos, j.fallos ?? 0),
       actual: r && {
         letras: r.letras,
         // Sin tipo de palabra ni largo: solo la definición y la huella para comprobar al momento.
@@ -80,7 +83,14 @@ export default {
       j.resueltas = [false, false];
       j.largos = [false, false];
     };
+    if (msg.a === "fallo") {
+      if (ronda.reglas?.fallos == null) return false;
+      j.fallos = (j.fallos ?? 0) + 1;
+      if (!quedan(ronda.reglas.fallos, j.fallos)) siguiente(); // la última: se ve cuáles eran
+      return true;
+    }
     if (msg.a === "pasar") {
+      if (!quedan(ronda.reglas?.pases, j.pasados ?? 0)) return false;
       if (!j.resueltas.every(Boolean)) {
         j.pasados = (j.pasados ?? 0) + 1;
         if (ronda.penalizaPasar) j.puntos = (j.puntos ?? 0) - 1;
@@ -89,6 +99,7 @@ export default {
       return true;
     }
     if (msg.a === "pista") {
+      if (!quedan(ronda.reglas?.pistas, j.pistas ?? 0)) return false;
       // Dice el largo de la primera palabra sin resolver (y sin pista); esa palabra valdrá 1 en vez de 2.
       const k = r.palabras.findIndex((_, idx) => !j.resueltas[idx] && !j.largos[idx]);
       if (k < 0) return false;
@@ -110,7 +121,13 @@ export default {
   },
 
   terminado(ronda, id) {
-    return (ronda.jugadores[id]?.i ?? 0) >= ronda.revueltos.length;
+    const j = ronda.jugadores[id];
+    return (j?.i ?? 0) >= ronda.revueltos.length || !quedan(ronda.reglas?.fallos, j?.fallos ?? 0);
+  },
+
+  marcador(ronda, id) {
+    const j = this.estadoJugador(ronda, id);
+    return { texto: `${j.aciertos} / ${ronda.revueltos.length * 2}`, vidas: restan(ronda.reglas?.fallos, j.fallos ?? 0), vidasMax: ronda.reglas?.fallos ?? null };
   },
 
   resultados(ronda, ids) {

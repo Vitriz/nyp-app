@@ -2,7 +2,7 @@
 // hecho solo con palabras de ese ámbito. Aquí las definiciones pueden ser largas.
 // Todos reciben el mismo crucigrama. Gana quien resuelva más palabras (si empatan, quien acabó antes).
 import { cargarCrucigrama, clave } from "../lexico.js";
-import { huella, nivelDificultad } from "../util.js";
+import { huella, nivelDificultad, reglasSolo, quedan, restan } from "../util.js";
 
 export const AMBITOS = [
   "Anatomía", "Arquitectura", "Astronomía", "Biología", "Botánica", "Cinegética", "Comercio", "Construcción",
@@ -174,6 +174,7 @@ export default {
       ambito,
       inicio,
       ayudaLetras: d < 0, // en fácil cada letra se comprueba al escribirla
+      reglas: reglasSolo("crucigrama", config),
       filas: m ? m.caja.r1 - m.caja.r0 + 1 : 1,
       cols: m ? m.caja.c1 - m.caja.c0 + 1 : 1,
       palabras: palabras.map(({ n, dir, r, c, clave: cl, forma, definicion }) => ({ n, dir, r, c, clave: cl, forma, definicion })),
@@ -182,7 +183,7 @@ export default {
   },
 
   estadoJugador(ronda, id) {
-    return (ronda.jugadores[id] ??= { resueltas: {}, ultimo: 0, pistas: 0, reveladas: {}, borrador: {} });
+    return (ronda.jugadores[id] ??= { resueltas: {}, ultimo: 0, pistas: 0, reveladas: {}, borrador: {}, fallos: 0 });
   },
 
   vistaJugador(ronda, id) {
@@ -197,6 +198,8 @@ export default {
       reveladas: j.reveladas ?? {}, // casillas desveladas con pista ("r,c" → letra)
       borrador: j.borrador ?? {}, // lo que llevas escrito (para seguir otro día)
       pistas: j.pistas ?? 0,
+      quedanPistas: restan(ronda.reglas?.pistas, j.pistas ?? 0),
+      quedanFallos: restan(ronda.reglas?.fallos, j.fallos ?? 0),
       // Fácil: la letra de cada casilla, para avisar al momento si te equivocas.
       solucion: ronda.ayudaLetras ? solucionCasillas(ronda) : null,
     };
@@ -215,7 +218,14 @@ export default {
 
   accion(ronda, id, msg) {
     const j = this.estadoJugador(ronda, id);
+    if (msg.a === "fallo") {
+      // Una palabra escrita entera y mal (solo cuenta si hay límite de fallos).
+      if (ronda.reglas?.fallos == null) return false;
+      j.fallos = (j.fallos ?? 0) + 1;
+      return true;
+    }
     if (msg.a === "pista") {
+      if (!quedan(ronda.reglas?.pistas, j.pistas ?? 0)) return false;
       // Desvela la letra de una casilla (cuesta 1 punto).
       const sol = solucionCasillas(ronda);
       const k = String(msg.casilla ?? "");
@@ -239,7 +249,12 @@ export default {
 
   terminado(ronda, id) {
     const j = ronda.jugadores[id];
-    return Boolean(j) && Object.keys(j.resueltas).length === ronda.palabras.length;
+    return Boolean(j) && (Object.keys(j.resueltas).length === ronda.palabras.length || !quedan(ronda.reglas?.fallos, j.fallos ?? 0));
+  },
+
+  marcador(ronda, id) {
+    const j = this.estadoJugador(ronda, id);
+    return { texto: `${Object.keys(j.resueltas).length} / ${ronda.palabras.length}`, vidas: restan(ronda.reglas?.fallos, j.fallos ?? 0), vidasMax: ronda.reglas?.fallos ?? null };
   },
 
   resultados(ronda, ids) {

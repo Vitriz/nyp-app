@@ -15,8 +15,15 @@ export function montar(cuerpo, e, ctx) {
   const texto = h("p.df-texto");
   const casillas = h("div.df-casillas");
   const aviso = h("div.df-aviso");
-  const pista = h("button.boton.suave", { type: "button", onclick: pedirPista }, "💡 Pista (−1)");
-  const pasar = h("button.boton.suave", { type: "button", onclick: () => !bloqueado && ctx.enviar({ a: "pasar", i: d.i }) }, "Pasar ➜");
+  const pista = h("button.boton.suave", { type: "button", onclick: pedirPista });
+  const pasar = h("button.boton.suave", { type: "button", onclick: () => !bloqueado && d.quedanPases !== 0 && ctx.enviar({ a: "pasar", i: d.i }) });
+  // Los botones dicen cuántas quedan (si hay límite).
+  const cuenta = (n) => (n == null ? "" : ` · ${n}`);
+  function pintarBotones() {
+    pista.textContent = `💡 Pista${cuenta(d.quedanPistas)}`;
+    pasar.textContent = `Pasar${cuenta(d.quedanPases)} ➜`;
+    pasar.disabled = bloqueado || !d.actual || d.quedanPases === 0;
+  }
   const teclado = tecladoLetras(teclear);
 
   cuerpo.append(
@@ -72,7 +79,8 @@ export function montar(cuerpo, e, ctx) {
     }
     casillas.style.setProperty("--n", Math.max(6, a.largo));
     casillas.replaceChildren(...celdas);
-    pista.disabled = fijas.size >= a.largo - 1 || bloqueado;
+    pista.disabled = fijas.size >= a.largo - 1 || bloqueado || d.quedanPistas === 0;
+    pintarBotones();
   }
 
   function palabraCompleta() {
@@ -103,6 +111,12 @@ export function montar(cuerpo, e, ctx) {
     } else {
       reiniciarAnim(casillas, "sacudir");
       navigator.vibrate?.([30, 40, 30]);
+      // Con límite de fallos, una palabra entera mal cuenta como fallo (y se borra para probar otra vez).
+      if (d.quedanFallos != null) {
+        ctx.enviar({ a: "fallo", i: d.i });
+        escritas = [];
+        setTimeout(pintarCasillas, 350);
+      }
     }
   }
 
@@ -139,6 +153,7 @@ export function montar(cuerpo, e, ctx) {
       } else {
         contador.textContent = d.aciertos;
         if (!bloqueado) pintarCasillas();
+        pintarBotones();
       }
     },
   };

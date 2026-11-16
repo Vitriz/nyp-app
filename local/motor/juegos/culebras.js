@@ -2,7 +2,7 @@
 // izquierda o derecha) y entre todas llenan el tablero, salvo algunos huecos. Solo se sabe cuántas letras
 // tiene cada una. Se encuentran arrastrando el dedo de la primera letra a la última.
 // Gana quien las encuentre todas antes; si nadie, quien encuentre más.
-import { nivelDificultad } from "../util.js";
+import { nivelDificultad, reglasSolo, quedan, restan } from "../util.js";
 import { elegirDefiniciones } from "../lexico.js";
 import { caminoCompleto } from "./caminos.js";
 
@@ -87,7 +87,7 @@ export default {
       tablero = { letras, palabras: lista };
     }
     if (!tablero) throw new Error("no se pudo preparar el tablero");
-    return { n, letras: tablero.letras, palabras: tablero.palabras, inicio, jugadores: {} };
+    return { n, letras: tablero.letras, palabras: tablero.palabras, inicio, reglas: reglasSolo("culebras", config), jugadores: {} };
   },
 
   estadoJugador(ronda, id) {
@@ -103,6 +103,7 @@ export default {
       encontradas: j.encontradas.map((i) => ({ i, celdas: ronda.palabras[i].celdas, clave: ronda.palabras[i].clave })),
       ultimo: j.ultimo,
       resuelto: j.ms != null,
+      quedanFallos: restan(ronda.reglas?.fallos, j.fallos ?? 0),
     };
   },
 
@@ -134,12 +135,22 @@ export default {
       j.ultimo = { n, res: "camino", clave: texto }; // la palabra está, pero va por otras casillas
     } else if (ronda.palabras.some((p) => p.clave === texto)) {
       j.ultimo = { n, res: "repetida", clave: texto };
-    } else j.ultimo = { n, res: "no", clave: texto };
+    } else {
+      j.ultimo = { n, res: "no", clave: texto };
+      // Solo cuenta como fallo lo que no es ninguna palabra (las repetidas o por otro camino, no).
+      if (ronda.reglas?.fallos != null) j.fallos = (j.fallos ?? 0) + 1;
+    }
     return true;
   },
 
   terminado(ronda, id) {
-    return ronda.jugadores[id]?.ms != null;
+    const j = ronda.jugadores[id];
+    return j?.ms != null || !quedan(ronda.reglas?.fallos, j?.fallos ?? 0);
+  },
+
+  marcador(ronda, id) {
+    const j = this.estadoJugador(ronda, id);
+    return { texto: `${j.encontradas.length} / ${ronda.palabras.length}`, vidas: restan(ronda.reglas?.fallos, j.fallos ?? 0), vidasMax: ronda.reglas?.fallos ?? null };
   },
 
   resultados(ronda, ids) {

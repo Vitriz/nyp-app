@@ -165,6 +165,12 @@ export default {
     return Boolean(ronda.jugadores[id]?.encontrada);
   },
 
+  marcador(ronda, id) {
+    const j = ronda.jugadores[id];
+    const n = j ? j.intentos.filter((x) => !x.pista).length : 0;
+    return { texto: `${n} ${n === 1 ? "intento" : "intentos"}` };
+  },
+
   resultados(ronda, ids) {
     return ids.map((id) => {
       const j = ronda.jugadores[id];

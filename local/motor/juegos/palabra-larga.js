@@ -114,6 +114,11 @@ export default {
     return Boolean(ronda.jugadores[id]?.listo);
   },
 
+  marcador(ronda, id) {
+    const j = this.estadoJugador(ronda, id);
+    return { texto: j.mejor ? `🏅 ${j.mejor.largo} letras` : "🏅 —" };
+  },
+
   resultados(ronda, ids) {
     return ids.map((id) => {
       const j = ronda.jugadores[id];

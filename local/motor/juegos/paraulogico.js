@@ -99,8 +99,15 @@ export default {
     return true;
   },
 
-  terminado() {
-    return false;
+  terminado(ronda, id) {
+    // Sin reloj: se acaba al encontrar todas las palabras comunes (o cuando quieras, con 🏁).
+    const j = ronda.jugadores[id];
+    return Boolean(ronda.comunes?.length && j && ronda.comunes.every((c) => j.encontradas.some((e) => e.clave === c)));
+  },
+
+  marcador(ronda, id) {
+    const j = this.estadoJugador(ronda, id);
+    return { texto: `${j.puntos} ${j.puntos === 1 ? "punto" : "puntos"}` };
   },
 
   resultados(ronda, ids) {

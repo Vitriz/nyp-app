@@ -12,6 +12,35 @@ export function nivelDificultad(config) {
   return { facil: -1, normal: 0, dificil: 1 }[config?.dificultad] ?? 0;
 }
 
+/**
+ * Reglas de «Jugar solo» (sin reloj, o con contrarreloj): cuántos fallos acaban la partida, cuántas veces se
+ * puede pasar y cuántas pistas hay, por nivel [fácil, medio, difícil]. null = sin límite (en fácil, en los
+ * tableros, no se pierde por fallos). En Batalla (con varios jugadores) no hay límites: manda el reloj.
+ */
+export const REGLAS_SOLO = {
+  definicion: { fallos: [2, 2, 2], pases: [3, 2, 1], pistas: [3, 2, 1] },
+  revuelto: { fallos: [5, 4, 3], pases: [3, 2, 1], pistas: [3, 2, 1] },
+  sopa: { fallos: [null, 10, 6], pistas: [3, 2, 1] },
+  crucigrama: { fallos: [null, 10, 6], pistas: [5, 3, 1] },
+  culebras: { fallos: [null, 10, 6] },
+  conexiones: { fallos: [null, 8, 4] },
+  memoria: { fallos: [5, 3, 2] },
+  "mates-fugaces": { fallos: [5, 3, 2], pases: [3, 2, 1] },
+};
+
+/** Las reglas de un juego en esta partida: { fallos, pases, pistas } (null = sin límite). Fuera del modo solo, {}. */
+export function reglasSolo(juego, config) {
+  const r = config?.solo ? REGLAS_SOLO[juego] : null;
+  if (!r) return {};
+  const i = nivelDificultad(config) + 1;
+  return Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v[i]]));
+}
+
+/** ¿Queda alguna? (límite null o sin definir = sin límite) */
+export const quedan = (limite, usadas) => limite == null || usadas < limite;
+/** Cuántas quedan (o null si no hay límite). */
+export const restan = (limite, usadas) => (limite == null ? null : Math.max(0, limite - usadas));
+
 export function crearAzar(semilla = Date.now()) {
   let a = semilla >>> 0;
   const r = () => {
