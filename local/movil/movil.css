@@ -1970,3 +1970,20 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
 .invitacion-caja > small { font-size: 0.8rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texto-suave); }
 .invitacion-codigo { font-family: var(--fuente-ficha); font-size: 2.6rem; letter-spacing: 0.08em; color: var(--oro); }
 .invitacion-caja p { margin: 0 0 0.4rem; font-size: 0.88rem; }
+
+/* Panel de ajustes del movimiento de las letras (#ajustes) */
+.panel-ajustes { position: fixed; right: 0.8rem; bottom: 0.8rem; z-index: 90; width: min(22rem, calc(100vw - 1.6rem)); max-height: min(80dvh, 40rem); display: flex; flex-direction: column;
+  border-radius: 1rem; background: #0e214f; border: 1px solid rgba(170, 200, 255, 0.5); box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.55); color: var(--texto); font-size: 0.85rem; }
+.aj-cabeza { appearance: none; border: 0; background: none; color: inherit; font: inherit; font-weight: 900; text-align: left; padding: 0.7rem 0.9rem; cursor: var(--cursor-mano, pointer); }
+.panel-ajustes.plegado .aj-cuerpo { display: none; }
+.aj-cuerpo { overflow-y: auto; padding: 0 0.9rem 0.9rem; display: flex; flex-direction: column; gap: 0.7rem; }
+.aj-grupo { display: flex; flex-direction: column; gap: 0.35rem; }
+.aj-titulo { font-size: 0.68rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--oro); }
+.aj-fila { display: flex; flex-direction: column; gap: 0.1rem; }
+.aj-nombre { display: flex; justify-content: space-between; gap: 0.5rem; font-weight: 700; color: #cfe0ff; }
+.aj-valor { font-family: var(--fuente-ficha); color: #fff; }
+.aj-fila.cambiado .aj-valor { color: var(--oro); }
+.aj-rango { width: 100%; accent-color: #f0c64a; }
+.aj-botones { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.aj-boton { appearance: none; flex: 1; font: inherit; font-weight: 900; padding: 0.45rem 0.5rem; border-radius: 0.6rem; border: 1px solid rgba(170, 200, 255, 0.45); background: #2d58b0; color: #fff; cursor: var(--cursor-mano, pointer); }
+.aj-aviso { color: var(--texto-suave); font-weight: 700; overflow-wrap: anywhere; }
