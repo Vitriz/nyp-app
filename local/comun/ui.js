@@ -85,7 +85,9 @@ export const fotosMemoria = {};
  */
 function apartarRecorteAncho(el, img) {
   const medir = () => {
-    const sobra = Math.max(0, (img.offsetWidth - el.offsetWidth) / 2);
+    // Lo que de verdad ocupa la imagen dentro de su caja (se ajusta sin deformarse).
+    const ancho = Math.min(img.offsetWidth, img.offsetHeight * (img.naturalWidth / img.naturalHeight || 1));
+    const sobra = Math.max(0, (ancho - el.offsetWidth) / 2);
     el.style.setProperty("--sobra", `${sobra.toFixed(1)}px`);
   };
   img.addEventListener("load", () => {
@@ -167,9 +169,24 @@ export function bannerFijo(j) {
     const cerrado = [ban.offsetWidth, ban.offsetHeight];
     capa.classList.toggle("cerrado", estado === "cerrado");
     void ban.offsetWidth;
+    // Un recorte que asoma por encima del círculo: cuánto sube (para dejarle sitio y que no se corte arriba).
+    const img = ban.querySelector(".avatar.con-recorte img");
+    let asoma = 0;
+    if (img?.complete && img.naturalWidth) {
+      const ri = img.getBoundingClientRect(), rb = ban.getBoundingClientRect();
+      const visible = Math.min(ri.height, ri.width * (img.naturalHeight / img.naturalWidth)); // lo que ocupa de verdad
+      asoma = Math.max(0, rb.top - (ri.bottom - visible));
+    }
     if (puesto) capa.classList.remove("sin-transicion");
-    return { abierto, cerrado };
+    return { abierto, cerrado, asoma };
   }
+  // El hueco de cada pantalla: del tamaño del banner y, si el recorte asoma, con sitio por encima.
+  function ajustarHueco(hu) {
+    const [w, hh] = medidas[hu.dataset.estado] ?? medidas.abierto;
+    Object.assign(hu.style, { width: `${w}px`, height: `${hh}px`, marginTop: medidas.asoma ? `${Math.round(medidas.asoma * 0.9)}px` : "" });
+  }
+  // Cuando carga la foto recortada se vuelve a medir (antes no se sabe cuánto asoma).
+  const alCargarFoto = () => ban.querySelector(".avatar.con-recorte img")?.addEventListener("load", () => alCambiarTamano(), { once: true });
   function colocar() {
     const huecos = document.querySelectorAll(".pantalla:not(.sale) .hueco-banner");
     const hueco = huecos[huecos.length - 1];
@@ -190,10 +207,7 @@ export function bannerFijo(j) {
   function remedir() {
     if (!capa.isConnected) return;
     medidas = medir();
-    for (const hu of document.querySelectorAll(".hueco-banner")) {
-      const [w, hh] = medidas[hu.dataset.estado] ?? medidas.abierto;
-      Object.assign(hu.style, { width: `${w}px`, height: `${hh}px` });
-    }
+    for (const hu of document.querySelectorAll(".hueco-banner")) ajustarHueco(hu);
   }
   const alCambiarTamano = () => {
     capa.classList.add("sin-transicion");
@@ -206,13 +220,15 @@ export function bannerFijo(j) {
   // Si la letra del juego carga después de medir, el nombre se cortaba («T…»): se mide otra vez al cargar.
   document.fonts?.ready?.then(() => alCambiarTamano());
   document.fonts?.addEventListener?.("loadingdone", () => alCambiarTamano());
+  alCargarFoto();
   return {
     el: capa,
     /** El sitio que el banner ocupa en la barra de una pantalla. */
     hueco(e = "abierto") {
       medidas ??= medir();
-      const [w, hh] = medidas[e] ?? medidas.abierto;
-      return h("span.hueco-banner", { "data-estado": e, style: { width: `${w}px`, height: `${hh}px` } });
+      const hu = h("span.hueco-banner", { "data-estado": e });
+      ajustarHueco(hu);
+      return hu;
     },
     colocar,
     /** Si cambia el perfil (nombre, colores, foto…), se rehace el banner (solo entonces) y se recolocan los huecos. */
@@ -224,10 +240,8 @@ export function bannerFijo(j) {
       ban.replaceWith(otro);
       ban = otro;
       medidas = medir();
-      for (const hu of document.querySelectorAll(".hueco-banner")) {
-        const [w, hh] = medidas[hu.dataset.estado] ?? medidas.abierto;
-        Object.assign(hu.style, { width: `${w}px`, height: `${hh}px` });
-      }
+      for (const hu of document.querySelectorAll(".hueco-banner")) ajustarHueco(hu);
+      alCargarFoto();
       colocar();
     },
     quitar() {

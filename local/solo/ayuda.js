@@ -3,7 +3,7 @@
 // Si todavía no hay vídeo de un juego, la ventana lo dice y enseña solo los pasos.
 import { h } from "../comun/ui.js";
 
-const AYUDA = {
+export const AYUDA = {
   "palabra-larga": {
     pasos: ["Toca las letras para formar una palabra (cada letra, una vez).", "Pulsa Comprobar: si existe, se apunta.", "Intenta otra más larga: cuenta la más larga que encuentres."],
     puntos: "Gana quien forme la palabra más larga. Valen plurales, femeninos y verbos conjugados.",
@@ -101,15 +101,25 @@ const AYUDA = {
   },
 };
 
-/** Abre la ventana de ayuda del juego. icono: el emoji del juego. */
-export function ventanaAyuda(juego, icono = "🎲") {
-  const a = AYUDA[juego.id] ?? { pasos: [], puntos: "", niveles: "" };
+/**
+ * El vídeo de muestra de un juego (web/ayuda/videos/<id>.mp4, sin sonido y en bucle). Si aún no existe, un
+ * recuadro que lo dice. Devuelve { el, video }.
+ */
+export function videoAyuda(id) {
   const video = h("video.ayuda-video", { muted: true, loop: true, playsInline: true, autoplay: true, preload: "metadata" });
   video.setAttribute("playsinline", "");
+  video.muted = true;
   const caja = h("div.ayuda-video-caja", video);
   // Sin vídeo todavía: se queda un recuadro que lo explica.
   video.addEventListener("error", () => caja.replaceChildren(h("div.ayuda-sin-video", h("span", "🎬"), h("small", "Vídeo de muestra en preparación"))), { once: true });
-  video.src = new URL(`../ayuda/videos/${juego.id}.mp4`, import.meta.url).href;
+  video.src = new URL(`../ayuda/videos/${id}.mp4`, import.meta.url).href;
+  return { el: caja, video };
+}
+
+/** Abre la ventana de ayuda del juego. icono: el emoji del juego. */
+export function ventanaAyuda(juego, icono = "🎲") {
+  const a = AYUDA[juego.id] ?? { pasos: [], puntos: "", niveles: "" };
+  const { el: caja, video } = videoAyuda(juego.id);
 
   const cerrar = () => {
     video.pause();

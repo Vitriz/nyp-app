@@ -156,7 +156,7 @@ async function mascaraAutomatica(src, zona = null) {
   const datos = conf.getAsFloat32Array();
   seg.close?.();
   // Solo la mancha que toca la cara (o, sin cara, la del centro de la zona): fuera lo que esté suelto.
-  const dentro = (i) => datos[i] >= 0.5;
+  const dentro = (i) => datos[i] >= 0.6; // (más seguro: menos trozos de fondo)
   let inicio = -1;
   const cx = Math.round(((b ? b.originX + b.width / 2 : T / 2) / T) * w), cy = Math.round(((b ? b.originY + b.height / 2 : T / 2) / T) * hgt);
   for (let r = 0; r < Math.max(w, hgt) && inicio < 0; r++) {
@@ -211,20 +211,25 @@ async function mascaraAutomatica(src, zona = null) {
     ctx.drawImage(zona, 0, 0);
   }
   if (!recuadro(m)) throw new Error("sin-cara");
-  return m;
+  // El modelo acierta la forma pero no el borde exacto: se afina con los contrastes de la foto y fuera los trozos
+  // sueltos (los que no llegan al 15 % de la mancha principal, p. ej. restos del fondo en una esquina).
+  return afinarBordes(src, m, { islas: 0.15 });
 }
 
 // ------------------------------------------------------------------ ajustar bordes (sin detector)
 
 /**
- * Afina una selección hecha a mano, sin cambiarla mucho: solo mira una franja estrecha alrededor del borde.
- * 1) En esa franja, cada píxel se queda dentro si su color se parece más al de lo que hay justo dentro de la
- *    selección que al de lo que hay justo fuera (así se van los trocitos de fondo y se cogen los que faltaban).
- * 2) Fuera los trozos sueltos pequeños y rellenos los agujeros pequeños.
- * 3) El contorno se suaviza (sin picos ni escalones) y se deja nítido.
- * Funciona con cualquier cosa (personas, animales, objetos) y sin internet.
+ * Afina una selección sin cambiarla de más: solo mira una franja estrecha alrededor del borde.
+ * 1) La franja se parte en manchas de color parecido (así se respetan los contrastes: un borde nítido entre
+ *    dos colores separa dos manchas).
+ * 2) Cada mancha se decide entera (sin puntitos sueltos): fuera si se parece más a lo de fuera, o si es de un
+ *    color que el objeto no tiene cerca y toca el borde (p. ej. el halo blanco de una pegatina); dentro si es
+ *    claramente del objeto.
+ * 3) Fuera los trozos sueltos pequeños; rellenos los agujeros pequeños.
+ * 4) Solo se suavizan los picos finos. Todo lo que no cambia se queda exactamente como lo dibujaste.
+ * opciones.islas: tamaño mínimo (respecto a la mancha mayor) para quedarse con un trozo suelto.
  */
-function afinarBordes(src, mascara) {
+function afinarBordes(src, mascara, { islas = 0.04 } = {}) {
   const W = src.width, H = src.height;
   const S = Math.min(1, 640 / Math.max(W, H));
   const w = Math.max(8, Math.round(W * S)), h2 = Math.max(8, Math.round(H * S));
@@ -239,59 +244,127 @@ function afinarBordes(src, mascara) {
   const N = w * h2;
   const dentro = new Uint8Array(N);
   for (let i = 0; i < N; i++) dentro[i] = ma[i * 4 + 3] >= 128 ? 1 : 0;
+  const color = (i) => [px[i * 4], px[i * 4 + 1], px[i * 4 + 2]];
+  // Distancia de color (pesada como la ve el ojo).
+  const d2 = (a, b) => 0.3 * (a[0] - b[0]) ** 2 + 0.59 * (a[1] - b[1]) ** 2 + 0.11 * (a[2] - b[2]) ** 2;
 
-  // Sumas por zonas (imagen integral) para medias en ventanas en un solo paso.
-  const integral = (valor) => {
-    const t = new Float64Array((w + 1) * (h2 + 1));
-    for (let y = 0; y < h2; y++) {
-      let fila = 0;
-      for (let x = 0; x < w; x++) {
-        fila += valor(y * w + x);
-        t[(y + 1) * (w + 1) + x + 1] = t[y * (w + 1) + x + 1] + fila;
-      }
+  // Muy dentro / muy fuera: toda la ventana (2R+1)² dentro o fuera. Lo demás es la franja que se revisa.
+  const t = new Float64Array((w + 1) * (h2 + 1));
+  for (let y = 0; y < h2; y++) {
+    let fila = 0;
+    for (let x = 0; x < w; x++) {
+      fila += dentro[y * w + x];
+      t[(y + 1) * (w + 1) + x + 1] = t[y * (w + 1) + x + 1] + fila;
     }
-    return t;
-  };
-  const suma = (t, x0, y0, x1, y1) => {
+  }
+  const suma = (x0, y0, x1, y1) => {
     x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(w - 1, x1); y1 = Math.min(h2 - 1, y1);
-    if (x1 < x0 || y1 < y0) return 0;
     return t[(y1 + 1) * (w + 1) + x1 + 1] - t[y0 * (w + 1) + x1 + 1] - t[(y1 + 1) * (w + 1) + x0] + t[y0 * (w + 1) + x0];
   };
-  const R = Math.max(3, Math.round(Math.max(w, h2) * 0.04)); // ancho de la franja que se revisa
-  const Q = R * 3; // de dónde se sacan los colores de dentro y de fuera
-  const iDentro = integral((i) => dentro[i]);
-  // Muy dentro (toda la ventana dentro) y muy fuera (nada dentro): de ahí salen los colores de referencia.
+  const R = Math.max(3, Math.round(Math.max(w, h2) * 0.04));
+  const Q = R * 4;
+  // Por dentro se mira más hondo (2R): un halo pegado al borde no cuenta como «color del objeto».
   const lejosDentro = new Uint8Array(N), lejosFuera = new Uint8Array(N);
+  const ventana = (x, y, r) => (Math.min(w - 1, x + r) - Math.max(0, x - r) + 1) * (Math.min(h2 - 1, y + r) - Math.max(0, y - r) + 1);
   for (let y = 0; y < h2; y++)
     for (let x = 0; x < w; x++) {
-      const s = suma(iDentro, x - R, y - R, x + R, y + R);
-      const cuenta = (Math.min(w - 1, x + R) - Math.max(0, x - R) + 1) * (Math.min(h2 - 1, y + R) - Math.max(0, y - R) + 1);
-      if (s >= cuenta) lejosDentro[y * w + x] = 1;
-      else if (s === 0) lejosFuera[y * w + x] = 1;
+      if (suma(x - 2 * R, y - 2 * R, x + 2 * R, y + 2 * R) >= ventana(x, y, 2 * R)) lejosDentro[y * w + x] = 1;
+      else if (suma(x - R, y - R, x + R, y + R) === 0) lejosFuera[y * w + x] = 1;
     }
-  const canal = (k, cual) => integral((i) => (cual[i] ? px[i * 4 + k] : 0));
-  const dR = canal(0, lejosDentro), dG = canal(1, lejosDentro), dB = canal(2, lejosDentro), dN = integral((i) => lejosDentro[i]);
-  const fR = canal(0, lejosFuera), fG = canal(1, lejosFuera), fB = canal(2, lejosFuera), fN = integral((i) => lejosFuera[i]);
 
+  // 1) Manchas de color dentro de la franja.
+  const MAXP = 4 * R * R;
+  const mancha = new Int32Array(N).fill(-1);
+  const manchas = [];
+  for (let s = 0; s < N; s++) {
+    if (lejosDentro[s] || lejosFuera[s] || mancha[s] >= 0) continue;
+    const id = manchas.length;
+    const m = { pix: [], suma: [0, 0, 0], dentro: 0, tocaFuera: false, tocaDentro: false };
+    const pila = [s];
+    mancha[s] = id;
+    while (pila.length) {
+      const i = pila.pop();
+      const c = color(i);
+      m.pix.push(i);
+      m.suma[0] += c[0]; m.suma[1] += c[1]; m.suma[2] += c[2];
+      m.dentro += dentro[i];
+      const media = m.suma.map((v) => v / m.pix.length);
+      const x = i % w, y = (i - x) / w;
+      for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h2 - 1 ? i + w : -1]) {
+        if (j < 0) continue;
+        if (dentro[i] && !dentro[j]) m.tocaFuera = true;
+        if (!dentro[i] && dentro[j]) m.tocaDentro = true;
+        if (lejosDentro[j] || lejosFuera[j] || mancha[j] >= 0) continue;
+        const cj = color(j);
+        // Mismo color que el vecino y que la mancha: sigue creciendo (un contraste fuerte la corta). Y no muy
+        // grande: cada trozo se juzga con lo que tiene cerca (un halo largo se revisa a trozos).
+        if (d2(c, cj) < 260 && d2(media, cj) < 900 && m.pix.length + pila.length < MAXP) {
+          mancha[j] = id;
+          pila.push(j);
+        }
+      }
+    }
+    m.media = m.suma.map((v) => v / m.pix.length);
+    let sx = 0, sy = 0;
+    for (const i of m.pix) (sx += i % w), (sy += Math.floor(i / w));
+    m.cx = sx / m.pix.length;
+    m.cy = sy / m.pix.length;
+    manchas.push(m);
+  }
+
+  // 2) Cada mancha, entera dentro o fuera, según los colores de dentro y de fuera que tiene cerca.
   const nueva = new Uint8Array(dentro);
-  for (let y = 0; y < h2; y++)
-    for (let x = 0; x < w; x++) {
-      const i = y * w + x;
-      if (lejosDentro[i] || lejosFuera[i]) continue; // fuera de la franja: no se toca
-      const nd = suma(dN, x - Q, y - Q, x + Q, y + Q), nf = suma(fN, x - Q, y - Q, x + Q, y + Q);
-      if (!nd || !nf) continue;
-      const r = px[i * 4], g = px[i * 4 + 1], b = px[i * 4 + 2];
-      const dist = (sr, sg, sb, n) => {
-        const er = r - suma(sr, x - Q, y - Q, x + Q, y + Q) / n, eg = g - suma(sg, x - Q, y - Q, x + Q, y + Q) / n, eb = b - suma(sb, x - Q, y - Q, x + Q, y + Q) / n;
-        return er * er * 0.3 + eg * eg * 0.59 + eb * eb * 0.11;
-      };
-      const aDentro = dist(dR, dG, dB, nd), aFuera = dist(fR, fG, fB, nf);
-      // Un poco a favor de lo que ya decidiste (solo cambia si el color lo tiene claro).
-      nueva[i] = dentro[i] ? (aFuera * 1.25 < aDentro ? 0 : 1) : aDentro * 1.25 < aFuera ? 1 : 0;
+  const paso = Math.max(1, Math.round(Q / 8));
+  const muestras = (cual, cx, cy) => {
+    const lista = [];
+    for (let y = Math.max(0, Math.round(cy - Q)); y <= Math.min(h2 - 1, cy + Q); y += paso)
+      for (let x = Math.max(0, Math.round(cx - Q)); x <= Math.min(w - 1, cx + Q); x += paso) if (cual[y * w + x]) lista.push(color(y * w + x));
+    return lista;
+  };
+  const cercania = (c, lista) => {
+    // La 2.ª más parecida (no la 1.ª: un solo píxel raro no decide).
+    let a = Infinity, b = Infinity;
+    for (const x of lista) {
+      const d = d2(c, x);
+      if (d < a) (b = a), (a = d);
+      else if (d < b) b = d;
     }
+    return b === Infinity ? a : b;
+  };
+  for (const m of manchas) {
+    const fd = muestras(lejosDentro, m.cx, m.cy), ff = muestras(lejosFuera, m.cx, m.cy);
+    m.aDentro = fd.length ? cercania(m.media, fd) : Infinity;
+    m.aFuera = ff.length ? cercania(m.media, ff) : Infinity;
+    m.eraDentro = m.dentro * 2 >= m.pix.length;
+    for (const i of m.pix) nueva[i] = m.eraDentro ? 1 : 0; // cada mancha, entera de un lado
+  }
+  // ¿Toca algo que (ahora) está fuera? Tras quitar una mancha, la de al lado puede quedar tocando el fondo
+  // (p. ej. el halo blanco, una vez quitada la franja gris que lo rodeaba): por eso se repite unas veces.
+  const tocaFueraAhora = (m, id) =>
+    m.pix.some((i) => {
+      const x = i % w, y = (i - x) / w;
+      return [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h2 - 1 ? i + w : -1].some((j) => j >= 0 && mancha[j] !== id && !nueva[j]);
+    });
+  for (let vuelta = 0; vuelta < 4; vuelta++) {
+    let cambios = 0;
+    manchas.forEach((m, id) => {
+      if (m.aDentro === Infinity && m.aFuera === Infinity) return;
+      let queda = nueva[m.pix[0]];
+      if (m.eraDentro && queda) {
+        const toca = tocaFueraAhora(m, id);
+        // Se parece claramente más a lo de fuera, o es un color que el objeto no tiene y toca el fondo (halo).
+        if (m.aFuera * 1.6 < m.aDentro || (toca && m.aDentro > 2600 && (m.aFuera === Infinity || m.aFuera < m.aDentro * 1.5))) queda = 0;
+      } else if (!m.eraDentro && !queda && m.tocaDentro && m.aDentro * 2 < m.aFuera && m.aDentro < 900) queda = 1; // lo que faltaba del objeto
+      if (queda !== nueva[m.pix[0]]) {
+        cambios++;
+        for (const i of m.pix) nueva[i] = queda;
+      }
+    });
+    if (!cambios) break;
+  }
 
-  // Trozos sueltos: se queda con las manchas grandes; los agujeros pequeños se rellenan.
-  const manchas = (valor) => {
+  // 3) Trozos sueltos y agujeros.
+  const componentes = (valor) => {
     const etiqueta = new Int32Array(N).fill(-1);
     const tamaños = [], tocaBorde = [];
     for (let s = 0; s < N; s++) {
@@ -313,37 +386,66 @@ function afinarBordes(src, mascara) {
     }
     return { etiqueta, tamaños, tocaBorde };
   };
-  const llenas = manchas(1);
+  const llenas = componentes(1);
   const mayor = Math.max(0, ...llenas.tamaños);
-  for (let i = 0; i < N; i++) if (nueva[i] && llenas.tamaños[llenas.etiqueta[i]] < mayor * 0.04) nueva[i] = 0;
-  const huecos = manchas(0);
+  for (let i = 0; i < N; i++) if (nueva[i] && llenas.tamaños[llenas.etiqueta[i]] < mayor * islas) nueva[i] = 0;
+  const huecos = componentes(0);
   for (let i = 0; i < N; i++) if (!nueva[i] && !huecos.tocaBorde[huecos.etiqueta[i]] && huecos.tamaños[huecos.etiqueta[i]] < mayor * 0.02) nueva[i] = 1;
 
-  // Suavizar: difuminar la máscara (dos pasadas) y, al ampliarla, cortar por la mitad: borde curvo, sin picos.
-  let f = Float32Array.from(nueva);
-  const B = Math.max(1, Math.round(R * 0.7));
-  for (let pasada = 0; pasada < 2; pasada++) {
-    const t = integral((i) => f[i]);
-    const g = new Float32Array(N);
-    for (let y = 0; y < h2; y++)
-      for (let x = 0; x < w; x++) {
-        const x0 = Math.max(0, x - B), y0 = Math.max(0, y - B), x1 = Math.min(w - 1, x + B), y1 = Math.min(h2 - 1, y + B);
-        g[y * w + x] = suma(t, x0, y0, x1, y1) / ((x1 - x0 + 1) * (y1 - y0 + 1));
-      }
-    f = g;
+  // 4) Picos finos: un difuminado pequeño y cortar por la mitad (solo se van las puntas estrechas).
+  const B = Math.max(1, Math.round(Math.max(w, h2) * 0.006));
+  const tt = new Float64Array((w + 1) * (h2 + 1));
+  for (let y = 0; y < h2; y++) {
+    let fila = 0;
+    for (let x = 0; x < w; x++) {
+      fila += nueva[y * w + x];
+      tt[(y + 1) * (w + 1) + x + 1] = tt[y * (w + 1) + x + 1] + fila;
+    }
   }
-  const peq = lienzoNuevo(w, h2);
-  const img = peq.getContext("2d").createImageData(w, h2);
+  const suave = new Uint8Array(N);
+  for (let y = 0; y < h2; y++)
+    for (let x = 0; x < w; x++) {
+      const x0 = Math.max(0, x - B), y0 = Math.max(0, y - B), x1 = Math.min(w - 1, x + B), y1 = Math.min(h2 - 1, y + B);
+      const s = tt[(y1 + 1) * (w + 1) + x1 + 1] - tt[y0 * (w + 1) + x1 + 1] - tt[(y1 + 1) * (w + 1) + x0] + tt[y0 * (w + 1) + x0];
+      suave[y * w + x] = s * 2 >= (x1 - x0 + 1) * (y1 - y0 + 1) ? 1 : 0;
+    }
+
+  // Lo que cambia respecto a lo tuyo (con un pelín de margen): solo ahí se usa el resultado nuevo.
+  const cambio = lienzoNuevo(w, h2), nuevoPeq = lienzoNuevo(w, h2);
+  const ic = cambio.getContext("2d").createImageData(w, h2), inn = nuevoPeq.getContext("2d").createImageData(w, h2);
+  let algo = false;
   for (let i = 0; i < N; i++) {
-    img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = 255;
-    img.data[i * 4 + 3] = Math.round(f[i] * 255);
+    inn.data[i * 4] = inn.data[i * 4 + 1] = inn.data[i * 4 + 2] = 255;
+    inn.data[i * 4 + 3] = suave[i] ? 255 : 0;
+    if (suave[i] !== dentro[i]) {
+      algo = true;
+      ic.data[i * 4 + 3] = 255;
+    }
   }
-  peq.getContext("2d").putImageData(img, 0, 0);
-  const m = lienzoNuevo(W, H);
-  const c = m.getContext("2d");
-  c.imageSmoothingQuality = "high";
-  c.drawImage(peq, 0, 0, W, H);
-  nitida(m);
+  if (!algo) return mascara;
+  cambio.getContext("2d").putImageData(ic, 0, 0);
+  nuevoPeq.getContext("2d").putImageData(inn, 0, 0);
+  // Al tamaño real: el borde nuevo, ampliado con suavidad (curvo) y nítido; el resto, tu selección tal cual.
+  const grande = lienzoNuevo(W, H), g = grande.getContext("2d");
+  g.imageSmoothingQuality = "high";
+  g.drawImage(nuevoPeq, 0, 0, W, H);
+  nitida(grande);
+  const zona = lienzoNuevo(W, H), z = zona.getContext("2d");
+  z.filter = `blur(${Math.max(1, Math.round(1 / S))}px)`; // un poco más ancha que el cambio
+  z.drawImage(cambio, 0, 0, W, H);
+  z.filter = "none";
+  nitida(zona);
+  // resultado = tuyo fuera de la zona + nuevo dentro de la zona
+  const m = lienzoNuevo(W, H), c = m.getContext("2d");
+  c.drawImage(mascara, 0, 0);
+  c.globalCompositeOperation = "destination-out";
+  c.drawImage(zona, 0, 0);
+  const soloZona = lienzoNuevo(W, H), sz = soloZona.getContext("2d");
+  sz.drawImage(grande, 0, 0);
+  sz.globalCompositeOperation = "destination-in";
+  sz.drawImage(zona, 0, 0);
+  c.globalCompositeOperation = "source-over";
+  c.drawImage(soloZona, 0, 0);
   return recuadro(m) ? m : mascara;
 }
 
@@ -440,7 +542,14 @@ export function editarFoto(src, circulo = 1) {
     function medirMarco() {
       const ancho = innerWidth >= 900 && innerWidth > innerHeight;
       const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-      const maxW = ancho ? Math.min(innerWidth - 28 * rem, 1000) : innerWidth * 0.94;
+      // En el ordenador: lo que de verdad queda a la izquierda de la columna de herramientas (nunca se meten debajo).
+      let libre = innerWidth - 28 * rem;
+      const cuerpo = marco.closest(".rec-cuerpo"), lado = cuerpo?.querySelector(".rec-lado");
+      if (ancho && cuerpo && lado) {
+        const hueco = parseFloat(getComputedStyle(cuerpo).columnGap) || 2 * rem;
+        libre = cuerpo.clientWidth - lado.offsetWidth - hueco - 4;
+      }
+      const maxW = ancho ? Math.max(200, Math.min(libre, 1000)) : innerWidth * 0.94;
       const maxH = ancho ? innerHeight * 0.78 : innerHeight * 0.48;
       if (modo === "redonda") {
         fw = fh = Math.min(maxW, maxH);

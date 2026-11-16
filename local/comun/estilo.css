@@ -362,16 +362,11 @@ html, body {
 /* ---------- avatar con la cara recortada: asoma por encima del círculo ---------- */
 .avatar.con-recorte { position: relative; overflow: visible; z-index: 1; }
 .avatar.con-recorte img {
-  /* Por la altura (el ancho, el de la imagen): los recortes anchos sobresalen del círculo por los lados */
-  position: absolute; left: 50%; translate: -50% 0; bottom: -0.12em; height: calc((100% + 0.24em) * 324 / 240); width: auto; max-width: none;
-  border-radius: 0; object-fit: contain; object-position: bottom; transform-origin: 50% 100%; pointer-events: none;
-  /* Arriba se ve todo; abajo, solo lo que cae dentro del círculo. Lo que sobresale por los lados (recortes
-     anchos) se va difuminando al bajar, en vez de cortarse en seco en las esquinas de abajo. */
-  -webkit-mask-image: linear-gradient(#000 48%, transparent 66%), radial-gradient(circle closest-side, #000 99%, transparent 100%);
-  mask-image: linear-gradient(#000 48%, transparent 66%), radial-gradient(circle closest-side, #000 99%, transparent 100%);
-  -webkit-mask-size: 100% 100%, 100% 74.1%; mask-size: 100% 100%, 100% 74.1%;
-  -webkit-mask-position: top, bottom center; mask-position: top, bottom center;
-  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  /* El recorte entero, sin cortar nada: apoyado abajo en el círculo y centrado. Cabe en una caja de 1,5 veces el
+     ancho del círculo y 1,35 su alto: los altos sobresalen por arriba; los anchos se encogen para no pasar de ahí. */
+  position: absolute; left: 50%; translate: -50% 0; bottom: -0.12em;
+  width: calc((100% + 0.24em) * 1.5); height: calc((100% + 0.24em) * 324 / 240); max-width: none;
+  border-radius: 0; object-fit: contain; object-position: bottom center; transform-origin: 50% 100%; pointer-events: none;
   filter: drop-shadow(0 0.08em 0.1em rgba(4, 12, 40, 0.45));
 }
 /* En el banner, la cabeza se balancea un poquito (y da un saltito al tocar el banner). */

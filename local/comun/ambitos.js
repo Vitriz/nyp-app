@@ -28,6 +28,46 @@ export function elegirNumero(titulo, valores, defecto) {
 }
 
 /**
+ * Los temas como parte de otra pantalla (sin ventana): fichas para marcar uno o varios, «Todos» y «Al azar».
+ * Se recuerda lo elegido. valor(): "todos", "azar" o la lista de temas ([] = ninguno).
+ */
+export function selectorAmbitos(lista, alCambiar = () => {}) {
+  let elegidos;
+  try {
+    const g = JSON.parse(almacen.leer("nyp-ambitos") ?? "null");
+    elegidos = new Set(Array.isArray(g) ? g.filter((a) => lista.includes(a)) : g === "todos" || g == null ? lista : []);
+  } catch {
+    elegidos = new Set(lista);
+  }
+  let azar = almacen.leer("nyp-ambitos-azar") === "1";
+  const todos = h("button.ambito-general", { type: "button", onclick: () => ((azar = false), (elegidos = new Set(elegidos.size === lista.length ? [] : lista)), pintar()) });
+  const alAzar = h("button.ambito-general", { type: "button", onclick: () => ((azar = !azar), pintar()) }, "🎲 Uno al azar");
+  const fichas = lista.map((a) =>
+    h(
+      "button.ambito",
+      { type: "button", "aria-pressed": "false", onclick: () => ((azar = false), elegidos.has(a) ? elegidos.delete(a) : elegidos.add(a), pintar()) },
+      h("span.ambito-marca", "✓"),
+      h("span.ambito-icono", ICONOS_AMBITO[a] ?? "📚"),
+      h("small", a)
+    )
+  );
+  const valor = () => (azar ? "azar" : elegidos.size === lista.length ? "todos" : [...elegidos]);
+  function pintar() {
+    fichas.forEach((b, k) => b.setAttribute("aria-pressed", String(!azar && elegidos.has(lista[k]))));
+    todos.textContent = elegidos.size === lista.length && !azar ? "Quitar todos" : "🌍 Todos";
+    todos.setAttribute("aria-pressed", String(!azar && elegidos.size === lista.length));
+    alAzar.setAttribute("aria-pressed", String(azar));
+    el.classList.toggle("en-azar", azar);
+    almacen.guardar("nyp-ambitos", JSON.stringify(elegidos.size === lista.length ? "todos" : [...elegidos]));
+    almacen.guardar("nyp-ambitos-azar", azar ? "1" : "0");
+    alCambiar(valor());
+  }
+  const el = h("div.selector-ambitos", h("div.ambito-generales", todos, alAzar), h("div.ambitos", fichas));
+  pintar();
+  return { el, valor };
+}
+
+/**
  * Pantalla para elegir los temas de la partida: uno, varios o todos (o uno al azar).
  * Devuelve "todos", "azar", una lista de temas, o null si se cierra.
  */

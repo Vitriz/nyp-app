@@ -94,8 +94,9 @@ export function infoPartida(juego, segundos, nivel) {
  * conAyuda: botón ? con la ventana de ayuda del juego (en el móvil)
  * textoJugar: texto del botón grande
  * alJugar(juego) / alDesbloquear(juego)
+ * alContrarreloj(juego): si se da, sale un botón rojo «⏱ Contrarreloj» encima de «¡Jugar!» (modo solo).
  */
-export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel = null, conAyuda = false, textoJugar = "¡Jugar! ▶", alJugar, alDesbloquear }) {
+export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel = null, conAyuda = false, textoJugar = "¡Jugar! ▶", alJugar, alDesbloquear, alContrarreloj = null }) {
   const conRecords = recordDe != null;
   const segundosDe = (j) => tiempo?.de(j) ?? j.duracion;
   const listaDe = (j) => (typeof tiempo?.lista === "function" ? tiempo.lista(j) : tiempo?.lista ?? [j.duracion]);
@@ -357,6 +358,8 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       { type: "button", onclick: () => elegir() },
       j.bloqueado ? "🔒 Desbloquear" : textoJugar
     );
+    // Contrarreloj: el mismo botón grande, en rojo, encima de «¡Jugar!».
+    const crono = alContrarreloj && !j.bloqueado ? h("button.boton.grande.sel-crono", { type: "button", onclick: () => elegir(true) }, "⏱ Contrarreloj") : null;
     // El icono del juego es también el botón de ayuda (con un ? en la esquina).
     const icono = conAyuda
       ? h(
@@ -385,12 +388,16 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       // En el ordenador cabe la explicación completa.
       j.descripcion && j.breve ? h("p.sel-desc-larga", j.descripcion) : null,
       ...(conRecords ? [recordEl] : []),
-      h(
-        "div.sel-ajustes",
-        ruedaTiempo ? ruedaTiempo.el : h("span.sel-chip", `⏱ ${txtTiempo(seg)}`),
-        ruedaNivel ? ruedaNivel.el : null
-      ),
-      segmentos,
+      // (En el modo solo no hay ajustes aquí: se eligen después, en la pantalla de opciones del juego.)
+      alContrarreloj
+        ? null
+        : h(
+            "div.sel-ajustes",
+            ruedaTiempo ? ruedaTiempo.el : h("span.sel-chip", `⏱ ${txtTiempo(seg)}`),
+            ruedaNivel ? ruedaNivel.el : null
+          ),
+      alContrarreloj ? null : segmentos,
+      crono,
       jugar,
       ].filter(Boolean)
     );
@@ -494,10 +501,11 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
     mover(i - sel);
   }
 
-  function elegir() {
+  function elegir(contrarreloj = false) {
     const j = juegos[sel];
     ultimoId = j.id;
-    (j.bloqueado ? alDesbloquear : alJugar)(j);
+    if (j.bloqueado) return alDesbloquear(j);
+    (contrarreloj && alContrarreloj ? alContrarreloj : alJugar)(j);
   }
 
   // ---- dedo / ratón: la rueda sigue al dedo; al soltar sigue girando un poco (inercia) y encaja.
@@ -639,6 +647,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       return pintarAjustes(true);
     }
     if (conAyuda && (t === "?" || t === "h")) return ventanaAyuda(juegos[sel], ICONOS[juegos[sel].id]);
+    if (alContrarreloj && (t === "c" || t === "C")) return elegir(true);
     if (t === "OK" || t === " ") return elegir();
     return false;
   });
@@ -655,6 +664,7 @@ export function selectorJuegos({ juegos, recordDe = null, tiempo = null, nivel =
       ...(tiempo ? [[["←", "→"], "Tiempo"]] : []),
       ...(nivel ? [[["1", "2", "3"], "Nivel"]] : []),
       ...(conAyuda ? [[["?"], "Ayuda"]] : []),
+      ...(alContrarreloj ? [[["C"], "Contrarreloj"]] : []),
       [["Enter"], "Jugar"],
     ].map(([teclas, texto]) => h("span.sel-atajo", h("span.sel-atajo-teclas", ...teclas.map((t) => h("kbd", t))), h("small", texto)))
   );

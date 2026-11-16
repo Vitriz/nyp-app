@@ -11,6 +11,7 @@ import { comprobarHazanas, tarjetaHazanas, ventanaHazanas, celebrarHazanas } fro
 import { elegirAmbito } from "../comun/ambitos.js";
 import { estudioGrupos } from "../juegos/conexiones/piezas.js";
 import { casillasFinal, extraFinal, ganoPartida } from "./final.js";
+import { pantallaOpciones } from "./opciones.js";
 import { ventanaEstadisticas, ventanaClasificacion, apuntarPartida } from "./estadisticas.js";
 import { palabrasTocables } from "../comun/diccionario.js";
 
@@ -178,56 +179,52 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
         ),
         selectorJuegos({
           juegos: juegos.map((j) => ({ ...j, duracionBase: j.duracion, bloqueado: j.categoria === "palabras" && !j.sinDiccionario && !conDiccionario })),
-          recordDe: (j, seg, nv) => recordDe(records, j, seg, nv),
-          nivel: {
-            lista: NIVELES,
-            nombres: NOMBRES_NIVEL,
-            // Un solo nivel y un solo tiempo para todos los juegos (no cambian al moverte por la lista).
-            de: () => niveles["*"] ?? "normal",
-            fijar: (j, nv) => {
-              niveles["*"] = nv;
-              almacen.guardar("nyp-niveles", JSON.stringify(niveles));
-            },
-          },
-          // Sin reloj de serie (más tranquilo); quien quiera reto elige un contrarreloj.
-          tiempo: {
-            lista: CONTRARRELOJ,
-            etiqueta: "Contrarreloj",
-            texto: textoContrarreloj,
-            de: () => contrarrelojValido(tiempos["*"] ?? 0),
-            fijar: (j, s) => {
-              tiempos["*"] = s;
-              almacen.guardar("nyp-contrarreloj", JSON.stringify(tiempos));
-            },
-          },
+          // El récord del último nivel elegido (el nivel y el contrarreloj se eligen en la pantalla siguiente).
+          recordDe: (j) => recordDe(records, j, 0, niveles["*"] ?? "normal"),
           conAyuda: true,
-          alJugar: async (j) => {
-            const meta = { ...j, duracion: contrarrelojValido(tiempos["*"] ?? 0), dificultad: niveles["*"] ?? "normal" };
-            // Crucigrama sin límite a medias: ¿seguirlo?
-            const g = j.id === "crucigrama" && !meta.duracion ? leerGuardado() : null;
-            if (g) {
-              const r = await preguntarGuardado(g);
-              if (r === false) return;
-              if (r) return preparar({ ...meta, ambito: g.ronda.ambito, dificultad: g.meta.dificultad }, r);
-            }
-            // Cálculo mental sin límite de tiempo: ¿cuántas operaciones?
-            if (j.id === "calculo-mental" && !meta.duracion) {
-              const n = await elegirNumero("🧠 ¿Cuántas operaciones?", [5, 8, 12, 16, 20], 8);
-              if (!n) return;
-              meta.operaciones = n;
-            }
-            // Juegos con tema: primero se elige el tema (todos, al azar o uno).
-            if (j.ambitos?.length) {
-              const ambito = await elegirAmbito(j.ambitos);
-              if (!ambito) return;
-              meta.ambito = ambito;
-            }
-            preparar(meta);
-          },
+          alJugar: (j) => abrirOpciones(j, "normal"),
+          alContrarreloj: (j) => abrirOpciones(j, "crono"),
           alDesbloquear: sinDiccionario,
         })
       ),
     });
+  }
+
+  /**
+   * Antes de jugar: cómo se juega (con su vídeo) y las opciones de la partida. Con contrarreloj, el tiempo y el
+   * nivel; sin él, el nivel y (si el juego tiene) los temas. Se recuerda lo último elegido.
+   */
+  function abrirOpciones(j, modo) {
+    const niveles = leerNiveles();
+    const tiempos = leerTiempos();
+    const p = pantallaOpciones({
+      juego: j,
+      modo,
+      icono: ICONOS[j.id] ?? "🎲",
+      valores: { nivel: niveles["*"] ?? "normal", tiempo: tiempos["*"] || 60, operaciones: Number(almacen.leer("nyp-operaciones")) || 8 },
+      reglas: (nv) => motor?.util?.reglasSolo?.(j.id, { solo: true, dificultad: nv }) ?? {},
+      barra: h("div.barra-sup", fijo.hueco("abierto")),
+      alVolver: lista,
+      alJugar: async (o) => {
+        niveles["*"] = o.dificultad;
+        almacen.guardar("nyp-niveles", JSON.stringify(niveles));
+        if (o.duracion) {
+          tiempos["*"] = o.duracion;
+          almacen.guardar("nyp-contrarreloj", JSON.stringify(tiempos));
+        }
+        if (o.operaciones) almacen.guardar("nyp-operaciones", String(o.operaciones));
+        const meta = { ...j, duracion: o.duracion, dificultad: o.dificultad, ...(o.ambito ? { ambito: o.ambito } : {}), ...(o.operaciones ? { operaciones: o.operaciones } : {}) };
+        // Crucigrama sin reloj a medias: ¿seguirlo?
+        const g = j.id === "crucigrama" && !meta.duracion ? leerGuardado() : null;
+        if (g) {
+          const r = await preguntarGuardado(g);
+          if (r === false) return;
+          if (r) return preparar({ ...meta, ambito: g.ronda.ambito, dificultad: g.meta.dificultad }, r);
+        }
+        preparar(meta);
+      },
+    });
+    mostrar({ el: p.el, desmontar: p.desmontar });
   }
 
   async function sinDiccionario() {
