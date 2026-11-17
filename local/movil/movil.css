@@ -2153,3 +2153,32 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
 .boton.boton-peligro { background: linear-gradient(180deg, #ff9d90, #e5483a); color: #fff; border-color: #ffb3a8; text-shadow: 0 0.06em 0 rgba(90, 10, 4, 0.45); }
 .batalla-retomar-hueco:empty { display: none; }
 .batalla-retomar { width: 100%; }
+
+/* ---------- Batalla · anfitrión: dos botones arriba a la derecha (invitar y tu sala) ---------- */
+.batalla-botones { display: flex; gap: 0.5rem; margin-left: auto; }
+.batalla-boton {
+  appearance: none; font: inherit; color: var(--texto); cursor: var(--cursor-mano, pointer);
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.75rem 0.35rem 0.4rem; border-radius: 0.9rem;
+  background: rgba(26, 58, 140, 0.6); border: 1.5px solid rgba(170, 200, 255, 0.35); box-shadow: 0 0.18rem 0 rgba(4, 12, 40, 0.4);
+}
+.batalla-boton:active { transform: translateY(0.1rem); box-shadow: none; }
+.batalla-boton-ico { display: grid; place-items: center; width: 2.3rem; height: 2.3rem; border-radius: 0.6rem; background: #fff; color: #0b1d4f; font-size: 1.3rem; }
+.batalla-boton-ico svg { width: 1.6rem; height: 1.6rem; }
+.batalla-boton-txt { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1; }
+.batalla-boton-txt small { font-size: 0.68rem; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; color: var(--texto-suave); }
+.batalla-boton-txt b { font-family: var(--fuente-ficha); font-size: 1rem; white-space: nowrap; }
+@media (max-width: 420px) { .batalla-boton-txt { display: none; } .batalla-boton { padding: 0.3rem; } }
+/* El anfitrión ve solo el selector de juegos, a toda la pantalla y sin desplazarse */
+.pantalla.batalla-sala { overflow: hidden; }
+.batalla-sala .batalla-host { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.batalla-sala .batalla-host .sel-caja { flex: 1 1 auto; height: auto; min-height: 0; }
+/* Ventana «Tu sala»: puntuaciones, opciones y cerrar */
+.capa-sala .caja { display: flex; flex-direction: column; gap: 0.7rem; max-height: 90dvh; overflow-y: auto; width: min(94vw, 34rem); }
+.sala-lista { display: flex; flex-direction: column; gap: 0.35rem; }
+.sala-acciones { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.3rem; }
+.sala-acciones .boton { min-height: 3rem; }
+.sala-nota { line-height: 1.3; }
+/* Del mismo ancho que el selector de «Jugar solo» (en el ordenador, ficha a la izquierda y lista a la derecha) */
+.pantalla.batalla-sala { --ancho: min(100vw, 68rem); gap: 0.8rem; }
+.batalla-sala .barra-sup .icono-btn.cerrar { flex: none; }
+.barra-sup:not(.barra-juego) > .batalla-botones ~ .icono-btn:last-child { margin-left: 0; } /* los dos botones, pegados al ✕ a la derecha */

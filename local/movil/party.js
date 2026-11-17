@@ -127,6 +127,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
           if (base) actualizarPaquete(base, alPaquete).catch(() => {});
         }
         pintar(m);
+        salaAbierta?.pintar(m);
         break;
     }
   }
@@ -201,12 +202,32 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
             h("span.batalla-chip-qr", iconoQR())
           )
         : null;
+    // El anfitrión de una Batalla: arriba a la derecha, dos botones: el QR (con el código) y la sala
+    // (puntuaciones, opciones y cerrarla).
+    const botonesHost =
+      batalla && e.esHost && e.batalla?.codigo && !plegar && !cabTitulo
+        ? h(
+            "div.batalla-botones",
+            h(
+              "button.batalla-boton",
+              { type: "button", onclick: () => ventanaQR(estado ?? e), title: "Invitar: QR y código de la sala", "aria-label": "Invitar con el QR" },
+              h("span.batalla-boton-ico", iconoQR()),
+              h("span.batalla-boton-txt", h("small", "Invitar"), h("b", codigoBonito(e.batalla.codigo)))
+            ),
+            h(
+              "button.batalla-boton",
+              { type: "button", onclick: () => ventanaSala(), title: "Puntuaciones y opciones de la sala", "aria-label": "Puntuaciones y opciones de la sala" },
+              h("span.batalla-boton-ico", "🏆"),
+              h("span.batalla-boton-txt", h("small", "👑 Tu sala"), h("b", "Puntos"))
+            )
+          )
+        : null;
     // El hueco del banner fijo: abierto, o cerrado en círculo en la cuenta atrás (se va a jugar).
     const el = h(
       "div.barra-sup",
       banFijo(e.yo).hueco(plegar || cabTitulo ? "cerrado" : "abierto"), // en los resultados, contraído
       cabTitulo,
-      cabTitulo ? null : chipSala,
+      cabTitulo ? null : botonesHost ?? chipSala,
       batalla || cabTitulo ? null : pts,
       reloj?.el,
       h("button.icono-btn.cerrar", { type: "button", onclick: preguntarSalir, "aria-label": "Salir de la partida" }, "✕")
@@ -243,6 +264,67 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
         h("div.batalla-codigo-texto", h("small", "Código de la sala"), h("b", codigoBonito(c)), h("span.suave", "Que lo escaneen, o que entren en «Batalla multijugador → Unirse a sala» y escriban el código."))
       )
     );
+    document.body.append(capa);
+  }
+
+  /**
+   * Ventana de la sala (anfitrión de una Batalla): los puntos de todos, la meta y los equipos, y cerrar la sala.
+   * Se repinta sola mientras está abierta (llegan jugadores, cambian los puntos…).
+   */
+  let salaAbierta = null;
+  function ventanaSala() {
+    const ajustesCaja = h("div.batalla-ajustes.tarjeta");
+    const lista = h("div.lista-mini.sala-lista");
+    const pintar = (e) => {
+      if (!e) return;
+      pintarAjustesSala(ajustesCaja, e);
+      const top = [...e.jugadores].sort((a, b) => b.puntos - a.puntos);
+      lista.replaceChildren(
+        ...top.map((j) => {
+          const q = e.equipos?.find((x) => x.id === j.equipo);
+          const mover = e.equipos ? () => host("moverEquipo", { id: j.id }) : null;
+          return filaJugador(j, { yo: j.id === e.yo.id, ...puestoVisible(top, j), puntos: j.puntos, onclick: mover, equipo: q });
+        })
+      );
+    };
+    const cerrar = () => {
+      salaAbierta = null;
+      capa.remove();
+    };
+    const cerrarSala = () => {
+      const seguro = h(
+        "div.capa-movil",
+        { onclick: (ev) => ev.target === seguro && seguro.remove() },
+        h(
+          "div.caja.tarjeta",
+          h("h2", "¿Cerrar la sala para todos?"),
+          h("p.suave", "La partida se acaba y todos los jugadores salen de la sala. No se puede deshacer."),
+          h("button.boton.grande.boton-peligro", { type: "button", onclick: () => (seguro.remove(), cerrar(), salir({ cerrarSala: true })) }, "🚪 Sí, cerrar la sala"),
+          h("button.boton.suave.grande", { type: "button", onclick: () => seguro.remove() }, "No, seguir")
+        )
+      );
+      document.body.append(seguro);
+    };
+    const capa = h(
+      "div.capa-movil.capa-sala",
+      { onclick: (ev) => ev.target === capa && cerrar() },
+      h(
+        "div.caja.tarjeta",
+        h("div.records-cabeza", h("h2", "👑 Tu sala"), h("button.icono-btn.cerrar", { type: "button", onclick: cerrar, "aria-label": "Cerrar" }, "✕")),
+        h("span.etiqueta", "Puntuaciones"),
+        lista,
+        h("span.etiqueta", "Opciones"),
+        ajustesCaja,
+        h(
+          "div.sala-acciones",
+          h("button.boton.suave", { type: "button", onclick: () => (cerrar(), salir({ cerrarSala: false })) }, "Salir un momento"),
+          h("button.boton.boton-peligro", { type: "button", onclick: cerrarSala }, "🚪 Cerrar la sala")
+        ),
+        h("small.suave.sala-nota", "«Salir un momento» deja la sala abierta: vuelve desde «Batalla multijugador» para seguir mandando.")
+      )
+    );
+    salaAbierta = { pintar };
+    pintar(estado);
     document.body.append(capa);
   }
 
@@ -373,8 +455,10 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
       const panelHost = esHostBatalla ? h("div.batalla-host", alAzar ? panelAzar() : selectorHost(e)) : null;
       // Ajustes de la partida del anfitrión: la meta (− / +, con la recomendada) y los equipos.
       const ajustesSala = esHostBatalla ? h("div.batalla-ajustes.tarjeta") : null;
+      // (El anfitrión ve solo el selector: los puntos, la meta y cerrar la sala, en el botón «Tu sala» de arriba.
+      // ajustesSala sigue al día aunque no se vea: ajusta sola la meta recomendada cuando llega gente.)
       const el = esHostBatalla
-        ? h("section.batalla-sala", barra.el, ajustesSala, panelHost, h("div.batalla-gente", puesto, lista))
+        ? h("section.batalla-sala", barra.el, panelHost)
         : h("section.sala-jugador", barra.el, h("div.espera", mensaje, equipos, puesto, lista));
       return {
         el,
