@@ -6,7 +6,19 @@ import { h } from "../comun/ui.js";
 import { entrarParty } from "./party.js";
 import { pantallaGrupo } from "./grupo.js";
 import { leerPaquete } from "../solo/paquete.js";
-import { codigoLibre, atenderSala, conectarBatalla, conectarLocal, leer } from "../comun/tiemporeal.js";
+import { codigoLibre, atenderSala, conectarBatalla, conectarLocal, leer, limpiarSalas, salaViva } from "../comun/tiemporeal.js";
+import { almacen } from "../comun/conexion.js";
+
+// La sala que creaste se guarda en el móvil (quién juega, puntos, ajustes…): si cierras la app sin cerrar la
+// sala, al volver a «Batalla multijugador» puedes retomarla y seguir mandando.
+const GUARDADA = "nyp-batalla-sala";
+const leerGuardada = () => {
+  try {
+    return JSON.parse(almacen.leer(GUARDADA) ?? "null");
+  } catch {
+    return null;
+  }
+};
 
 
 /** El código de una Batalla en un texto (6 cifras, o un enlace con #b=123456). */
@@ -28,12 +40,32 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
   const avisoMenu = h("div.pl-aviso.mal");
   function menu() {
     avisoMenu.textContent = "";
+    limpiarSalas(); // de paso, fuera las salas en las que ya no queda nadie
+    // ¿Tienes una sala abierta? Arriba del todo, para volver a entrar y seguir mandando.
+    const hueco = h("div.batalla-retomar-hueco");
+    const g = leerGuardada();
+    if (g?.codigo) {
+      salaViva(g.codigo).then((viva) => {
+        if (!viva) return almacen.guardar(GUARDADA, null);
+        const n = g.sala?.jugadores?.length ?? 0;
+        hueco.replaceChildren(
+          h(
+            "button.boton.acento.opcion.batalla-retomar",
+            { type: "button", onclick: () => retomarSala(g) },
+            h("span.icono", "🔁"),
+            h("span.opcion-texto", `Volver a tu sala ${codigoBonito(g.codigo)}`, h("small", `Sigue abierta · ${n} ${n === 1 ? "jugador" : "jugadores"}. Retómala donde la dejaste`)),
+            h("span.opcion-flecha", { "aria-hidden": "true" }, "›")
+          )
+        );
+      });
+    }
     mostrar(
       h(
         "section.batalla-menu",
         cabecera("⚔️ Batalla multijugador", alVolver),
         h("p.suave.batalla-intro", "Juega con tus amigos desde vuestros móviles, sin TV. Uno crea la sala y los demás se unen con el código."),
         avisoMenu,
+        hueco,
         h(
           "div.inicio-opciones",
           h(
@@ -110,24 +142,73 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
   }
 
   // ---------------------------------------------------------------- crear
+  /** Lo que necesita el móvil anfitrión para llevar la sala (la misma sala que PARTY y el diccionario). */
+  async function prepararMotor() {
+    const [lexico, juegos, { Sala }] = await Promise.all([import("../motor/lexico.js"), import("../motor/juegos/index.js"), import("../motor/sala.js")]);
+    await lexico.cargarDatosJuegos?.();
+    // El diccionario hace falta en el móvil del anfitrión (es quien comprueba las palabras).
+    let conDiccionario = lexico.listo();
+    if (!conDiccionario) {
+      try {
+        const texto = await leerPaquete();
+        if (texto) {
+          lexico.preparar(JSON.parse(texto));
+          conDiccionario = true;
+        }
+      } catch {}
+    }
+    return { juegos, Sala, conDiccionario };
+  }
+
+  /** Atiende la sala y entra en ella como anfitrión. Se va guardando para poder retomarla. */
+  function llevarSala({ codigo, claveHost, sala, creada, reanudar = false }) {
+    const transporte = atenderSala(codigo, sala, { nombre: perfil.nombre, reanudar: reanudar ? { creada } : null });
+    // Copia de la sala en el móvil (como mucho una vez por segundo, cuando cambia algo).
+    let pendiente = 0;
+    const guardar = () => {
+      clearTimeout(pendiente);
+      pendiente = setTimeout(() => {
+        try {
+          almacen.guardar(GUARDADA, JSON.stringify({ codigo, claveHost, creada, guardada: Date.now(), sala: sala.exportar() }));
+        } catch {}
+      }, 1000);
+    };
+    const difundir = sala.difundir.bind(sala);
+    sala.difundir = () => (difundir(), guardar());
+    guardar();
+    // Que la pantalla no se apague: si el móvil del anfitrión se duerme, la partida se para.
+    let despierto = null;
+    navigator.wakeLock?.request("screen").then((w) => (despierto = w)).catch(() => {});
+    entrarParty({
+      app,
+      perfil,
+      alSalir: () => menu(),
+      crearConexion: (opciones) => conectarLocal(sala, opciones),
+      claveHost,
+      batalla: true,
+      // cerrarSala: el anfitrión la cierra para todos; si no, solo sale un momento (y la puede retomar).
+      alCerrar: ({ cerrarSala = true } = {}) => {
+        clearTimeout(pendiente);
+        if (cerrarSala) {
+          transporte.cerrar();
+          almacen.guardar(GUARDADA, null);
+        } else {
+          try {
+            almacen.guardar(GUARDADA, JSON.stringify({ codigo, claveHost, creada, guardada: Date.now(), sala: sala.exportar() }));
+          } catch {}
+          transporte.soltar();
+        }
+        despierto?.release?.().catch(() => {});
+      },
+    });
+  }
+
   // La sala se crea directamente: el tiempo y el nivel se eligen en cada juego, como en «Jugar solo».
   async function crearSala(o, aviso) {
     aviso.className = "pl-aviso suave";
     aviso.textContent = "Creando la sala…";
     try {
-      const [lexico, juegos, { Sala }] = await Promise.all([import("../motor/lexico.js"), import("../motor/juegos/index.js"), import("../motor/sala.js")]);
-      await lexico.cargarDatosJuegos?.();
-      // El diccionario hace falta en el móvil del anfitrión (es quien comprueba las palabras).
-      let conDiccionario = lexico.listo();
-      if (!conDiccionario) {
-        try {
-          const texto = await leerPaquete();
-          if (texto) {
-            lexico.preparar(JSON.parse(texto));
-            conDiccionario = true;
-          }
-        } catch {}
-      }
+      const { juegos, Sala, conDiccionario } = await prepararMotor();
       const disponibles = juegos.listaJuegos().filter((j) => j.disponible && (conDiccionario || j.categoria !== "palabras" || j.sinDiccionario));
       const codigo = await codigoLibre();
       const claveHost = [...crypto.getRandomValues(new Uint8Array(12))].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -138,25 +219,25 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
       });
       // Modo, equipos y cómo se eligen los juegos (la meta se ajusta luego en la sala, según cuántos seáis).
       sala.configurarBatalla({ modo: o.modo, equipos: o.modo === "equipos" ? o.equipos : 0, pruebas: o.pruebas, juegos: disponibles.map((j) => j.id), meta: 5 });
-      const transporte = atenderSala(codigo, sala, { nombre: perfil.nombre });
-      // Que la pantalla no se apague: si el móvil del anfitrión se duerme, la partida se para.
-      let despierto = null;
-      navigator.wakeLock?.request("screen").then((w) => (despierto = w)).catch(() => {});
-      entrarParty({
-        app,
-        perfil,
-        alSalir: alVolver,
-        crearConexion: (opciones) => conectarLocal(sala, opciones),
-        claveHost,
-        batalla: true,
-        alCerrar: () => {
-          transporte.cerrar();
-          despierto?.release?.().catch(() => {});
-        },
-      });
+      llevarSala({ codigo, claveHost, sala, creada: Date.now() });
     } catch {
       aviso.className = "pl-aviso mal";
       aviso.textContent = "No se pudo crear la sala. ¿Tienes internet?";
+    }
+  }
+
+  /** Vuelve a la sala que dejaste abierta: la misma sala, los mismos jugadores y puntos, y tú mandas. */
+  async function retomarSala(g) {
+    avisoMenu.className = "pl-aviso suave";
+    avisoMenu.textContent = "Volviendo a tu sala…";
+    try {
+      const { Sala } = await prepararMotor();
+      const sala = new Sala({ claveHost: g.claveHost, enNavegador: true, cifras: g.codigo });
+      if (!sala.importar(g.sala)) throw new Error("copia");
+      llevarSala({ codigo: g.codigo, claveHost: g.claveHost, sala, creada: g.creada, reanudar: true });
+    } catch {
+      avisoMenu.className = "pl-aviso mal";
+      avisoMenu.textContent = "No se pudo volver a la sala. ¿Tienes internet?";
     }
   }
 
@@ -203,4 +284,9 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
   const verSala = (alEntrar) => unirse("", { titulo: "📺 Pantalla grande", alEntrar, volver: alVolver });
 
   return { menu, unirse, entrarSala, verSala };
+}
+
+/** «123 456» */
+function codigoBonito(c) {
+  return `${String(c).slice(0, 3)} ${String(c).slice(3)}`;
 }

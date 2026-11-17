@@ -47,7 +47,7 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
   avisoConexion.onclick = () => salir();
   const ctxJuego = { ahora: con.ahora, onda: () => {}, enviar: (m) => con.enviar({ t: "juego", ...m }) };
 
-  function salir() {
+  function salir(opciones = {}) {
     fijo?.quitar();
     fijo = null;
     calmarFondo(false);
@@ -55,19 +55,31 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
     actual?.desmontar?.();
     avisoConexion.classList.add("oculto");
     avisoConexion.onclick = null;
-    alCerrar?.();
+    alCerrar?.(opciones);
     alSalir();
   }
 
   function preguntarSalir() {
+    // El anfitrión de una Batalla: salir un momento (la sala sigue y la puede retomar) o cerrarla para todos.
+    const anfitrion = batalla && claveHost;
     const capa = h(
       "div.capa-movil",
       { onclick: (e) => e.target === capa && capa.remove() },
       h(
         "div.caja.tarjeta",
-        h("h2", "¿Salir de la partida?"),
-        h("p.suave", "Conservas tus puntos si vuelves a entrar."),
-        h("button.boton.acento.grande", { type: "button", onclick: () => (capa.remove(), salir()) }, "Salir"),
+        h("h2", anfitrion ? "¿Salir de tu sala?" : "¿Salir de la partida?"),
+        h(
+          "p.suave",
+          anfitrion
+            ? "Si sales un momento, la sala sigue abierta: vuelve desde «Batalla multijugador» para seguir mandando. Si la cierras, se acaba para todos."
+            : "Conservas tus puntos si vuelves a entrar."
+        ),
+        ...(anfitrion
+          ? [
+              h("button.boton.acento.grande", { type: "button", onclick: () => (capa.remove(), salir({ cerrarSala: false })) }, "Salir un momento"),
+              h("button.boton.grande.boton-peligro", { type: "button", onclick: () => (capa.remove(), salir({ cerrarSala: true })) }, "🚪 Cerrar la sala para todos"),
+            ]
+          : [h("button.boton.acento.grande", { type: "button", onclick: () => (capa.remove(), salir()) }, "Salir")]),
         h("button.boton.suave.grande", { type: "button", onclick: () => capa.remove() }, "Seguir jugando")
       )
     );
@@ -87,6 +99,12 @@ export function entrarParty({ app, base, perfil, alSalir, alPaquete, crearConexi
       case "fotos":
         // Batalla: las fotos de los jugadores llegan aparte (una vez) y los avatares las citan como «mem:id».
         Object.assign(fotosMemoria, m.fotos ?? {});
+        break;
+      case "salaCerrada":
+        // El anfitrión cerró la sala (o se borró por estar abandonada).
+        mostrar("salaCerrada", () => ({
+          el: h("section", h("div.espera", h("div.puesto-grande", "🚪"), h("h1", "La sala se ha cerrado"), h("p.suave", "El anfitrión ha cerrado la sala. ¡Gracias por jugar!"), h("button.boton.acento.grande", { type: "button", onclick: () => salir() }, "Volver al inicio"))),
+        }));
         break;
       case "expulsado":
         almacen.guardar(tokenClave, null);

@@ -5,6 +5,7 @@ import { h, rango, fotosMemoria, cambiarPantalla, avatar, crearReloj, TIEMPOS, m
 import { selectorJuegos } from "../solo/selector.js";
 import { ICONOS_AMBITO } from "../comun/ambitos.js";
 import { svgQR } from "../comun/qr.js";
+import { pantallaRepaso } from "./repaso.js";
 
 vigilarEncaje(); // ningún número se sale de su casilla
 
@@ -35,6 +36,12 @@ export function iniciarTV({ crearConexion = null, fondo: fondoDado = null, codig
     alMensaje: (m) => {
       if (m.t === "fotos") Object.assign(fotosMemoria, m.fotos ?? {});
       else if (m.t === "estado") pintar(m);
+      else if (m.t === "salaCerrada") {
+        // El anfitrión cerró la sala: se dice y se puede volver.
+        actual?.desmontar?.();
+        actual = null;
+        cambiarPantalla(app, h("section", h("div.espera", h("div.puesto-grande", "🚪"), h("h1", "La sala se ha cerrado"), h("p.suave", "El anfitrión ha cerrado la sala."), visor?.alSalir ? h("button.boton.acento.grande", { type: "button", onclick: () => (con.cerrar?.(), visor.alSalir()) }, "Volver") : null)));
+      }
     },
     alEstadoConexion: (ok) => avisoConexion?.classList.toggle("oculto", ok),
   });
@@ -653,7 +660,37 @@ const PANTALLAS = {
     };
   },
 
+  /**
+   * Resultados: primero el repaso animado de la partida (puntos que vuelan a cada jugador y el ganador) y luego
+   * las estadísticas con todos los datos. «Saltar ⏭» va directo a las estadísticas.
+   */
   resultados(e) {
+    const caja = h("section.res-fases");
+    let stats = null, rep = null;
+    const verStats = () => {
+      if (stats) return;
+      rep?.desmontar();
+      stats = PANTALLAS.estadisticas(e);
+      caja.className = stats.el.className || "res-fases";
+      caja.replaceChildren(...[...stats.el.children]);
+    };
+    cargarModulo(e.juego.id).then((m) => {
+      if (stats) return;
+      rep = pantallaRepaso({ e, modulo: m, cabecera, alTerminar: verStats });
+      caja.className = "repaso";
+      caja.replaceChildren(...[...rep.el.children]);
+    });
+    return {
+      el: caja,
+      actualizar: (x) => stats?.actualizar(x),
+      desmontar: () => {
+        rep?.desmontar();
+        stats?.desmontar();
+      },
+    };
+  },
+
+  estadisticas(e) {
     const aviso = avisoAuto();
     const n = (e.resultados ?? []).length;
     const maxChips = n <= 3 ? 24 : n <= 5 ? 12 : 7; // con mucha gente, menos fichas por jugador
@@ -679,9 +716,17 @@ const PANTALLAS = {
     if (e.esHost) pie.append(h("button.boton.acento", { onclick: () => host("siguiente") }, "Clasificación", h("span.tecla", "Espacio")));
     if ((e.resultados ?? []).length > 7) tabla.classList.add("compacta");
     const cuerpo = h("div.res-cuerpo", tabla);
-    const el = h("section", cabecera(`Resultados · ${e.juego.nombre}`), cuerpo, pie);
+    const el = h("section.res-estadisticas", cabecera(`Resultados · ${e.juego.nombre}`), cuerpo, pie);
     if (e.resumen) {
-      cargarModulo(e.juego.id).then((m) => m?.resumen && cuerpo.append(m.resumen(e.resumen)));
+      // Si el juego tiene sus propias estadísticas (p. ej. Tutifruti: las palabras de cada uno en columnas),
+      // van en vez de las fichas sueltas de cada fila.
+      cargarModulo(e.juego.id).then((m) => {
+        const extra = m?.estadisticas?.(e);
+        if (extra) {
+          tabla.classList.add("sin-detalle");
+          cuerpo.append(extra);
+        } else if (m?.resumen) cuerpo.append(m.resumen(e.resumen));
+      });
     }
     return { el, actualizar: (e) => aviso.fijar(e), desmontar: () => aviso.parar() };
   },

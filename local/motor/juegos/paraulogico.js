@@ -135,6 +135,10 @@ export default {
       largas: largas.slice(0, 6).map(formaVisible),
       // Todas las comunes (para enseñar al acabar las que faltaron).
       comunes: [...ronda.comunes].sort((a, b) => b.length - a.length || a.localeCompare(b, "es")).map((c) => ({ clave: c, forma: formaVisible(c), tuti: mascaraDe(c) === ronda.mascara })),
+      // Las palabras de cada jugador, en el orden en que las encontró (para el repaso animado de la TV).
+      jugadores: Object.fromEntries(
+        Object.entries(ronda.jugadores).map(([id, j]) => [id, [...j.encontradas].reverse().map((e) => ({ c: e.clave, f: e.forma, p: e.pts, t: Boolean(e.tuti) }))])
+      ),
     };
   },
 };

@@ -5,6 +5,8 @@
 //   salas/{c}/a/{cliente}/{n}       mensajes de cada móvil al anfitrión (numerados, para no desordenarse)
 //   salas/{c}/e/{cliente}/estado    lo último que ese móvil debe ver (se sobrescribe)
 //   salas/{c}/e/{cliente}/m/{n}     otros mensajes para ese móvil (bienvenida, fotos…)
+//   salas/{c}/vivo                  última señal de vida (el anfitrión y los jugadores, cada 30 s)
+//   indice/{c}                      lo mismo, en un índice pequeño: así se pueden borrar las salas abandonadas
 // Reglas: herramientas/realtime.rules.json. Se usa la API REST y EventSource (sin librerías).
 
 const BASE = "https://viccionario-nyp-default-rtdb.europe-west1.firebasedatabase.app";
@@ -56,6 +58,41 @@ const azar = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.
 const num = (n) => "n" + String(n).padStart(6, "0");
 const deNum = (k) => Number(String(k).slice(1));
 
+// ------------------------------------------------------------------ salas abandonadas
+const LATIDO_MS = 30000;
+const ABANDONADA_MS = 20 * 60 * 1000; // sin nadie dentro durante 20 minutos: se borra
+
+/** Señal de vida de una sala (la mandan el anfitrión y los jugadores mientras están dentro). */
+function latir(codigo) {
+  const t = Date.now();
+  poner(`salas/${codigo}/vivo`, t).catch(() => {});
+  poner(`indice/${codigo}`, t).catch(() => {}); // (si las reglas aún no lo permiten, no pasa nada)
+}
+
+/** Borra las salas en las que no queda nadie (nadie ha dado señales de vida en 20 minutos). */
+export async function limpiarSalas() {
+  try {
+    const indice = (await leer("indice")) ?? {};
+    const ahora = Date.now();
+    for (const [c, t] of Object.entries(indice)) {
+      if (typeof t === "number" && ahora - t < ABANDONADA_MS) continue;
+      await quitar(`salas/${c}`).catch(() => {});
+      await quitar(`indice/${c}`).catch(() => {});
+    }
+  } catch {}
+}
+
+/** ¿Sigue abierta la sala? (existe y alguien ha dado señales de vida hace poco) */
+export async function salaViva(codigo) {
+  try {
+    const [info, vivo] = await Promise.all([leer(`salas/${codigo}/info`), leer(`salas/${codigo}/vivo`)]);
+    if (!info) return false;
+    return Date.now() - (vivo ?? info.creada ?? 0) < ABANDONADA_MS;
+  } catch {
+    return false;
+  }
+}
+
 // ------------------------------------------------------------------ anfitrión
 /** Un código de sala libre (6 cifras). */
 export async function codigoLibre() {
@@ -70,10 +107,19 @@ export async function codigoLibre() {
  * El móvil anfitrión atiende la sala: cada móvil que escribe en salas/{c}/a se convierte en un «socket»
  * para la sala (la misma interfaz que los WebSockets del ordenador).
  */
-export function atenderSala(codigo, sala, { nombre } = {}) {
+export function atenderSala(codigo, sala, { nombre, reanudar = null } = {}) {
   const raiz = `salas/${codigo}`;
-  poner(`${raiz}/info`, { creada: Date.now(), anfitrion: nombre ?? "" }).catch(() => {});
   const clientes = new Map(); // id -> { ws, esperado, pendientes }
+  // reanudar: { creada } de la sala que se retoma. Se borran los mensajes viejos (si no, se volverían a
+  // tratar) y se avisa a los jugadores (reinicio) para que se vuelvan a conectar con su ficha.
+  const preparar = reanudar
+    ? Promise.all([quitar(`${raiz}/a`), quitar(`${raiz}/e`)])
+        .catch(() => {})
+        .then(() => poner(`${raiz}/info`, { creada: reanudar.creada ?? Date.now(), anfitrion: nombre ?? "", reinicio: Date.now() }))
+        .catch(() => {})
+    : poner(`${raiz}/info`, { creada: Date.now(), anfitrion: nombre ?? "" }).catch(() => {});
+  latir(codigo);
+  const latido = setInterval(() => latir(codigo), LATIDO_MS);
 
   function crearSocket(cid) {
     const manejadores = {};
@@ -123,20 +169,33 @@ export function atenderSala(codigo, sala, { nombre } = {}) {
     }
   }
 
-  const escucha = escuchar(`${raiz}/a`, (ruta, datos) => {
-    const partes = ruta.split("/").filter(Boolean);
-    if (!partes.length) {
-      for (const [cid, msgs] of Object.entries(datos ?? {})) for (const [n, m] of Object.entries(msgs ?? {})) llega(cid, deNum(n), m);
-    } else if (partes.length === 1) {
-      for (const [n, m] of Object.entries(datos ?? {})) llega(partes[0], deNum(n), m);
-    } else if (datos) llega(partes[0], deNum(partes[1]), datos);
+  let escucha = null, soltada = false;
+  preparar.then(() => {
+    if (soltada) return;
+    escucha = escuchar(`${raiz}/a`, (ruta, datos) => {
+      const partes = ruta.split("/").filter(Boolean);
+      if (!partes.length) {
+        for (const [cid, msgs] of Object.entries(datos ?? {})) for (const [n, m] of Object.entries(msgs ?? {})) llega(cid, deNum(n), m);
+      } else if (partes.length === 1) {
+        for (const [n, m] of Object.entries(datos ?? {})) llega(partes[0], deNum(n), m);
+      } else if (datos) llega(partes[0], deNum(partes[1]), datos);
+    });
   });
+  const soltar = () => {
+    soltada = true;
+    clearInterval(latido);
+    escucha?.cerrar();
+  };
 
   return {
+    /** Cierra la sala para todos (se borra; los jugadores ven que se ha cerrado). */
     cerrar() {
-      escucha.cerrar();
+      soltar();
       quitar(raiz).catch(() => {});
+      quitar(`indice/${codigo}`).catch(() => {});
     },
+    /** El anfitrión sale un momento: la sala sigue abierta para volver a entrar. */
+    soltar,
   };
 }
 
@@ -147,9 +206,9 @@ export function atenderSala(codigo, sala, { nombre } = {}) {
  */
 export function conectarBatalla({ codigo, alAbrir, alMensaje, alEstadoConexion }) {
   const raiz = `salas/${codigo}`;
-  const cid = azar(6);
+  let cid = azar(6);
   let n = 0, desfase = 0, muestras = 0, abierto = false, cerrado = false;
-  const vistos = new Set();
+  let vistos = new Set();
   const entregar = (msg) => {
     msg = desenvolver(msg);
     if (!msg || cerrado) return;
@@ -169,27 +228,62 @@ export function conectarBatalla({ codigo, alAbrir, alMensaje, alEstadoConexion }
       entregar(m);
     }
   };
-  const escucha = escuchar(
-    `${raiz}/e/${cid}`,
-    (ruta, datos) => {
-      if (ruta === "/" || ruta === "") {
-        otros(datos?.m);
-        if (datos?.estado) entregar(datos.estado);
-      } else if (ruta === "/estado") entregar(datos);
-      else if (ruta === "/m") otros(datos);
-      else if (ruta.startsWith("/m/")) otros({ [ruta.slice(3)]: datos });
-    },
-    {
-      alAbrir: () => {
-        alEstadoConexion?.(true);
-        if (abierto) return;
-        abierto = true;
-        alAbrir?.();
-        for (let i = 0; i < 3; i++) setTimeout(() => enviar({ t: "ping", eco: Date.now() }), 300 + i * 500);
+  let escucha = null;
+  function escucharMiBuzon() {
+    escucha?.cerrar();
+    escucha = escuchar(
+      `${raiz}/e/${cid}`,
+      (ruta, datos) => {
+        if (ruta === "/" || ruta === "") {
+          otros(datos?.m);
+          if (datos?.estado) entregar(datos.estado);
+        } else if (ruta === "/estado") entregar(datos);
+        else if (ruta === "/m") otros(datos);
+        else if (ruta.startsWith("/m/")) otros({ [ruta.slice(3)]: datos });
       },
-      alError: () => alEstadoConexion?.(false),
+      {
+        alAbrir: () => {
+          alEstadoConexion?.(true);
+          if (abierto) return;
+          abierto = true;
+          alAbrir?.();
+          for (let i = 0; i < 3; i++) setTimeout(() => enviar({ t: "ping", eco: Date.now() }), 300 + i * 500);
+        },
+        alError: () => alEstadoConexion?.(false),
+      }
+    );
+  }
+  escucharMiBuzon();
+  // La sala: si se cierra, se avisa; si el anfitrión la retoma (reinicio), nos volvemos a conectar con
+  // otro buzón y volvemos a saludar (con nuestra ficha, así seguimos siendo los mismos).
+  let reinicioVisto = null;
+  const vigia = escuchar(`${raiz}/info`, (ruta, datos) => {
+    if (cerrado) return;
+    if (ruta === "/" || ruta === "") {
+      if (datos == null) {
+        if (abierto) alMensaje({ t: "salaCerrada" });
+        return;
+      }
+      if (reinicioVisto == null) return void (reinicioVisto = datos.reinicio ?? 0);
+      if ((datos.reinicio ?? 0) > reinicioVisto) {
+        reinicioVisto = datos.reinicio;
+        cid = azar(6);
+        n = 0;
+        vistos = new Set();
+        abierto = false;
+        escucharMiBuzon();
+      }
+    } else if (ruta === "/reinicio" && datos > (reinicioVisto ?? 0)) {
+      reinicioVisto = datos;
+      cid = azar(6);
+      n = 0;
+      vistos = new Set();
+      abierto = false;
+      escucharMiBuzon();
     }
-  );
+  });
+  latir(codigo);
+  const latido = setInterval(() => latir(codigo), LATIDO_MS);
   function enviar(msg) {
     if (cerrado) return false;
     poner(`${raiz}/a/${cid}/${num(n++)}`, envolver(msg)).catch(() => {});
@@ -200,7 +294,9 @@ export function conectarBatalla({ codigo, alAbrir, alMensaje, alEstadoConexion }
     ahora: () => Date.now() + desfase,
     cerrar() {
       cerrado = true;
-      escucha.cerrar();
+      clearInterval(latido);
+      vigia.cerrar();
+      escucha?.cerrar();
       quitar(`${raiz}/e/${cid}`).catch(() => {});
     },
   };

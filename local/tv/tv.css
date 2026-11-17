@@ -504,3 +504,75 @@ body { cursor: default; }
 .visor-qr { width: 26rem; height: 26rem; }
 .visor-paso { font-size: 2rem; margin: 0; color: #eef4ff; }
 .visor-texto .visor-espera { font-size: 1.6rem; }
+
+/* =====================================================================
+   Repaso animado de los resultados (antes de las estadísticas)
+   ===================================================================== */
+.repaso { display: flex; flex-direction: column; gap: 1.6rem; }
+.rep-cuerpo { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(16rem, 24rem) minmax(0, 1fr); gap: 2.4rem; }
+.rep-marcadores { display: flex; flex-direction: column; gap: 0.8rem; min-height: 0; overflow: hidden; }
+.rep-casilla {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.9rem; padding: 0.7rem 1rem;
+  border-left: 0.5rem solid var(--c); font-size: 1.6rem; transition: opacity 400ms, transform 400ms, box-shadow 400ms;
+}
+.rep-casilla .avatar { font-size: 1.3rem; }
+.rep-nombre { font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rep-puntos { font-family: var(--fuente-ficha); font-size: 2.6rem; font-variant-numeric: tabular-nums; color: #fff; min-width: 3ch; text-align: right; }
+.rep-casilla.suma { animation: rep-suma 420ms var(--curva); }
+@keyframes rep-suma { 40% { transform: scale(1.06); box-shadow: 0 0 1.6rem color-mix(in srgb, var(--c) 70%, transparent); } }
+.rep-casilla.ganador { transform: scale(1.04); box-shadow: 0 0 0 0.25rem var(--oro), 0 0 2.4rem rgba(240, 198, 74, 0.55); }
+.rep-casilla.apagada { opacity: 0.45; }
+.rep-escena { min-width: 0; min-height: 0; display: grid; place-items: center; position: relative; }
+.rep-pie { justify-content: flex-end; }
+.rep-saltar { font-size: 1.3rem; }
+/* Puntos que vuelan a las casillas */
+.rep-vuela {
+  position: fixed; left: 0; top: 0; z-index: 80; pointer-events: none; padding: 0.3rem 0.9rem; border-radius: 999px;
+  font-family: var(--fuente-ficha); font-weight: 900; font-size: 2.2rem; color: #3a2a00;
+  background: linear-gradient(180deg, #fff2c2, #f0c64a); box-shadow: 0 0.4rem 1.2rem rgba(4, 12, 40, 0.5);
+}
+.rep-vuela.tuti { background: linear-gradient(90deg, #ff8a80, #ffd36b, #8be0a4, #7cc7ff, #c59bff); color: #2a1450; }
+/* Repaso general: el resultado de cada jugador */
+.rep-tarjeta { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 2.4rem 3rem; border-top: 0.5rem solid var(--c); max-width: 60rem; text-align: center; }
+.rep-tarjeta .avatar { font-size: 3rem; }
+.rep-tarjeta-nombre { font-size: 2.6rem; }
+.rep-tarjeta-texto { margin: 0; font-size: 2rem; font-weight: 800; color: #e4ecff; }
+.rep-tarjeta-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+.rep-tarjeta-chips .pg-chip { font-size: 1.2rem; }
+/* El ganador */
+.rep-ganador { display: flex; flex-direction: column; align-items: center; gap: 1rem; text-align: center; }
+.rep-ganador-avatares { display: flex; gap: 1.4rem; }
+.rep-ganador-avatares .avatar { font-size: 4rem; }
+.rep-ganador-copa { font-size: 6rem; animation: rep-copa 1.2s var(--curva) both; }
+@keyframes rep-copa { from { transform: scale(0.2) rotate(-25deg); opacity: 0; } }
+.rep-ganador h2 { font-family: var(--fuente-ficha); font-size: 4rem; margin: 0; color: var(--oro); text-shadow: 0 0.12em 0 rgba(4, 12, 40, 0.5); }
+/* Tutifruti: barra que se escribe sola encima del panal */
+.rep-pg { display: flex; flex-direction: column; align-items: center; gap: 1.2rem; width: 100%; height: 100%; min-height: 0; }
+.rep-aviso { font-size: 1.6rem; font-weight: 900; color: #ffe2a0; min-height: 2.2rem; }
+.rep-barra {
+  display: flex; align-items: center; justify-content: center; gap: 0.25rem; min-height: 5.2rem; min-width: 28rem; padding: 0.6rem 1.6rem;
+  border-radius: 1.2rem; background: rgba(6, 18, 56, 0.65); border: 2px solid rgba(170, 200, 255, 0.35);
+  font-family: var(--fuente-ficha); font-weight: 900; font-size: 3.4rem; letter-spacing: 0.08em; color: #fff;
+}
+.rep-letra { animation: aparece 180ms var(--curva) both; }
+.rep-pts { margin-left: 1rem; padding: 0.1rem 0.7rem; border-radius: 999px; font-size: 2rem; letter-spacing: 0; background: linear-gradient(180deg, #fff2c2, #f0c64a); color: #3a2a00; }
+.rep-barra.tuti { border-color: transparent; box-shadow: 0 0 0 0.2rem #ffd36b, 0 0 2rem rgba(255, 211, 107, 0.6); }
+.rep-barra.fiesta .rep-palabra { background: linear-gradient(90deg, #ff8a80, #ffd36b, #8be0a4, #7cc7ff, #c59bff); -webkit-background-clip: text; background-clip: text; color: transparent; animation: rep-fiesta 700ms var(--curva); }
+@keyframes rep-fiesta { 40% { transform: scale(1.18) rotate(-2deg); } }
+.rep-panal { flex: 1; min-height: 0; aspect-ratio: 1; display: grid; place-items: center; }
+.rep-panal .panal { height: 100%; width: auto; max-width: 100%; }
+.hex.ilumina { background: linear-gradient(180deg, #fff6c8, #f0c64a); color: #3a2a00; transform: scale(1.1); box-shadow: 0 0 2rem rgba(240, 198, 74, 0.8); transition: transform 120ms, box-shadow 120ms; z-index: 2; }
+.hex.centro.ilumina { background: linear-gradient(180deg, #ffe0dc, #ff8a80); }
+/* Estadísticas de Tutifruti: una columna por jugador, palabras agrupadas por largo */
+.res-cuerpo:has(.pg-stats) { flex-direction: column; }
+.tabla.sin-detalle { flex: none; max-height: 30%; }
+.tabla.sin-detalle .fila-respuestas { display: none; }
+.pg-stats { flex: 1; min-height: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(16rem, 1fr); gap: 1.2rem; overflow-x: auto; }
+.pg-stats-col { display: flex; flex-direction: column; gap: 0.8rem; padding: 1rem; border-top: 0.45rem solid var(--c); min-height: 0; overflow-y: auto; }
+.pg-stats-cab { display: flex; align-items: baseline; gap: 0.6rem; font-size: 1.5rem; }
+.pg-stats-puesto { font-weight: 900; color: var(--oro); }
+.pg-stats-pts { margin-left: auto; font-weight: 900; color: #ffe2a0; }
+.pg-stats-grupo small { display: block; margin-bottom: 0.3rem; font-size: 0.95rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texto-suave); }
+.pg-stats-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.pg-stats-chips .pg-chip { font-size: 1.15rem; }
+@media (prefers-reduced-motion: reduce) { .rep-casilla.suma, .rep-letra, .rep-ganador-copa, .rep-barra.fiesta .rep-palabra { animation: none; } }

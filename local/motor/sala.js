@@ -117,6 +117,57 @@ export class Sala {
     });
   }
 
+  /**
+   * Batalla: copia de la sala (para guardarla en el móvil del anfitrión y retomarla si cierra la app).
+   * No lleva conexiones ni el estado interno del juego en curso.
+   */
+  exportar() {
+    return {
+      v: 1,
+      fase: this.fase,
+      config: this.config,
+      jugadores: [...this.jugadores.values()].map(({ socket, ...j }) => ({ ...j, conectado: false })),
+      fotos: this.enNavegador ? Object.fromEntries(this.fotos) : {},
+      equipos: this.equipos,
+      rondaN: this.rondaN,
+      animo: this.animo,
+      eliminados: [...this.eliminados],
+      eliminadoRonda: this.eliminadoRonda,
+      campeon: this.campeon,
+      desempate: this.desempate,
+      ultimoJuego: this.ultimoJuego,
+      juego: this.juego,
+      resultados: this.resultados,
+      resumen: this.resumen,
+    };
+  }
+
+  /** Retoma una sala guardada con exportar(). A mitad de un juego no se puede seguir: se vuelve a elegir juego. */
+  importar(x) {
+    if (!x || x.v !== 1) return false;
+    Object.assign(this.config, x.config ?? {});
+    this.jugadores = new Map((x.jugadores ?? []).map((j) => [j.id, { ...j, socket: null, conectado: false }]));
+    this.fotos = new Map(Object.entries(x.fotos ?? {}));
+    this.equipos = x.equipos ?? null;
+    this.rondaN = x.rondaN ?? 0;
+    this.animo = x.animo ?? {};
+    this.eliminados = new Set(x.eliminados ?? []);
+    this.eliminadoRonda = x.eliminadoRonda ?? null;
+    this.campeon = x.campeon ?? null;
+    this.desempate = x.desempate ?? null;
+    this.ultimoJuego = x.ultimoJuego ?? null;
+    const aMedias = ["presentacion", "cuenta", "jugando"].includes(x.fase);
+    // (Los resultados de un juego necesitan el juego en marcha: se sigue desde la clasificación.)
+    this.fase = aMedias ? "lobby" : x.fase === "resultados" ? "clasificacion" : x.fase ?? "lobby";
+    this.juego = aMedias ? null : x.juego ?? null;
+    this.resultados = aMedias ? null : x.resultados ?? null;
+    this.resumen = aMedias ? null : x.resumen ?? null;
+    this.ronda = null;
+    this.fin = null;
+    this.difundir();
+    return true;
+  }
+
   latido() {
     for (const ws of [...this.tvs, ...[...this.jugadores.values()].map((j) => j.socket)]) {
       if (!ws) continue;

@@ -2148,3 +2148,8 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
   .rec-tarjeta { padding-inline: 0.25rem; }
   .rec-tarjeta small { font-size: 0.66rem; }
 }
+
+/* Botón de acción peligrosa (p. ej. cerrar la sala para todos) */
+.boton.boton-peligro { background: linear-gradient(180deg, #ff9d90, #e5483a); color: #fff; border-color: #ffb3a8; text-shadow: 0 0.06em 0 rgba(90, 10, 4, 0.45); }
+.batalla-retomar-hueco:empty { display: none; }
+.batalla-retomar { width: 100%; }
