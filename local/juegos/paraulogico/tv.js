@@ -89,21 +89,25 @@ export async function repaso({ escena, resumen, jugadores, sumar, esperar, parad
     barra.replaceChildren();
     barra.className = `rep-barra${p.t ? " tuti" : ""}`;
     const porLetra = Math.max(60, (porPalabra * 0.6) / p.c.length);
-    for (const l of p.c) {
+    // Cada letra, en una ficha del juego (así se ve bien cuántas letras tiene).
+    const fichas = [...p.f].map((l) => h("span.ficha.rep-ficha", l.toUpperCase()));
+    barra.style.setProperty("--n", fichas.length);
+    for (let k = 0; k < p.c.length; k++) {
       if (parado()) return;
-      const x = hex(l);
+      const x = hex(p.c[k]);
       x?.classList.add("ilumina");
-      barra.append(h("span.rep-letra", l.toUpperCase()));
+      barra.append(fichas[k] ?? h("span.ficha.rep-ficha", p.c[k].toUpperCase()));
       await esperar(porLetra);
       x?.classList.remove("ilumina");
     }
-    // La palabra como se escribe de verdad (con tildes) y sus puntos, que vuelan a quien la encontró.
-    barra.replaceChildren(h("span.rep-palabra", p.f.toUpperCase()), h("span.rep-pts", `+${p.p}`));
+    // Hecha: las fichas se ponen doradas y salen sus puntos, que vuelan a quien la encontró.
+    barra.classList.add("hecha");
+    barra.append(h("span.rep-pts", `+${p.p}`));
     if (p.t) {
       celebrar(80);
       barra.classList.add("fiesta");
-      await esperar(700);
-    }
+      await esperar(900);
+    } else await esperar(250);
     await sumar(p.quienes, p.p, barra.querySelector(".rep-pts"), { clase: p.t ? ".tuti" : "" });
     await esperar(porPalabra * 0.15);
   }

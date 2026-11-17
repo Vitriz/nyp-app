@@ -671,13 +671,15 @@ const PANTALLAS = {
       if (stats) return;
       rep?.desmontar();
       stats = PANTALLAS.estadisticas(e);
-      caja.className = stats.el.className || "res-fases";
+      // (sin tocar las demás clases de la pantalla: «pantalla» da los márgenes)
+      caja.classList.remove("repaso");
+      caja.classList.add("res-estadisticas");
       caja.replaceChildren(...[...stats.el.children]);
     };
     cargarModulo(e.juego.id).then((m) => {
       if (stats) return;
       rep = pantallaRepaso({ e, modulo: m, cabecera, alTerminar: verStats });
-      caja.className = "repaso";
+      caja.classList.add("repaso");
       caja.replaceChildren(...[...rep.el.children]);
     });
     return {
