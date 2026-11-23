@@ -234,6 +234,10 @@ html, body {
 @keyframes toque { 40% { transform: scale(0.9); filter: brightness(1.12); } }
 .hex.girar span { animation: girar 420ms var(--curva); }
 @keyframes girar { from { opacity: 0; transform: rotate(-90deg) scale(0.6); } }
+/* Línea del recorrido del dedo: semitransparente, para seguir viendo las letras de debajo */
+.panal-linea { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 3; opacity: 0; transition: opacity 220ms ease-out; }
+.panal-linea.visible { opacity: 1; transition: none; }
+.panal-linea polyline { fill: none; stroke: rgba(255, 244, 200, 0.5); stroke-width: 4.2; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ---------- laberinto de cálculos (TV y móvil) ---------- */
 .lab { display: grid; gap: 0.12em; aspect-ratio: var(--cols) / var(--filas, var(--cols)); width: 100%; height: auto; }

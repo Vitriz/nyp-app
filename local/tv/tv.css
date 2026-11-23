@@ -699,3 +699,22 @@ body { cursor: default; }
 .pg-faltan-grupos { display: flex; flex-wrap: wrap; gap: 1rem 2.4rem; }
 .pg-chip.falta { background: rgba(255, 255, 255, 0.05); border-style: dashed; color: #dbe6ff; }
 .pg-chip.falta.tuti { border-color: var(--oro); color: var(--oro); }
+
+/* =====================================================================
+   Cabecera: marca con los colores del título («NÚMEROS Y PALABRAS» o «NYP»), título centrado
+   ===================================================================== */
+.cabecera { justify-content: center; }
+.cabecera > .marca, .cabecera > .cabecera-lado { flex: 1 1 0; min-width: 0; }
+.cabecera > .titulo-juego { flex: 0 1 auto; min-width: 0; text-align: center; }
+.cabecera-lado { display: flex; justify-content: flex-end; align-items: center; }
+.marca { display: flex; align-items: center; gap: 0; font-size: 1.75rem; overflow: hidden; }
+.marca-larga, .marca-corta, .marca-palabra { display: flex; align-items: center; gap: 0.12em; flex: none; }
+.marca-larga { gap: 0.4em; }
+.marca-corta { display: none; font-size: 1.7em; gap: 0.15em; }
+.marca.corta .marca-larga { display: none; }
+.marca.corta .marca-corta { display: flex; }
+.marca .ficha { min-width: 1.3em; height: 1.4em; padding: 0 0.15em; }
+.marca-n .ficha, .marca .ficha.marca-n { background: linear-gradient(180deg, #ffffff 0%, #c9ecf7 55%, #8ed3e6 100%); color: #0b3a5c; border-color: #0a2a4a; }
+.marca-p .ficha, .marca .ficha.marca-p { background: linear-gradient(180deg, #ffffff 0%, #ffdcca 55%, #f5a983 100%); color: #6a2310; border-color: #4a1606; }
+.marca .ficha.marca-y { background: linear-gradient(180deg, #fff6d6 0%, #f6dc85 55%, var(--oro) 100%); color: #5a3d00; border-color: #5a3d00; }
+.marca-larga > .marca-y { font-size: 0.8em; }

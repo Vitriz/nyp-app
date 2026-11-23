@@ -94,12 +94,35 @@ function pintar(e) {
 }
 
 // ------------------------------------------------------------------ piezas comunes
+/**
+ * La marca de arriba a la izquierda, con los colores de las fichas del título: «NÚMEROS Y PALABRAS» entero si
+ * cabe; si no, «NYP» (N azul de números, Y dorada, P coral de palabras).
+ */
+const ajustarMarca = (m) => {
+  if (!m.isConnected || !m.clientWidth) return;
+  m.classList.remove("corta");
+  m.classList.toggle("corta", m.scrollWidth > m.clientWidth + 1);
+};
+const vigiaMarca = typeof ResizeObserver === "function" ? new ResizeObserver((lista) => lista.forEach((x) => ajustarMarca(x.target))) : null;
+addEventListener("resize", () => document.querySelectorAll(".cabecera .marca").forEach(ajustarMarca));
 function marca() {
-  return h("div.marca", ["N", "Y", "P"].map((l) => h("span.ficha", l)));
+  const fila = (palabra, clase) => h(`span.marca-palabra.${clase}`, [...palabra].map((l) => h("span.ficha", l)));
+  const el = h(
+    "div.marca",
+    { "aria-label": "Números y Palabras" },
+    h("span.marca-larga", fila("NÚMEROS", "marca-n"), h("span.ficha.marca-y", "Y"), fila("PALABRAS", "marca-p")),
+    h("span.marca-corta", h("span.ficha.marca-n", "N"), h("span.ficha.marca-y", "Y"), h("span.ficha.marca-p", "P"))
+  );
+  if (vigiaMarca) vigiaMarca.observe(el);
+  // (y al pintarse, por si el navegador no avisa del tamaño)
+  requestAnimationFrame(() => ajustarMarca(el));
+  setTimeout(() => ajustarMarca(el), 400);
+  return el;
 }
 
 function cabecera(titulo, derecha) {
-  return h("header.cabecera", marca(), h("div.titulo-juego", titulo ?? ""), derecha ?? h("div", { style: { width: "9rem" } }));
+  // Marca y botones en los lados (mismo ancho): el título queda en el centro.
+  return h("header.cabecera", marca(), h("div.titulo-juego", titulo ?? ""), h("div.cabecera-lado", derecha ?? null));
 }
 
 function tituloEnFichas(texto) {

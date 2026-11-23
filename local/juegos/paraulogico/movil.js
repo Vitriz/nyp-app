@@ -37,8 +37,8 @@ export function montar(cuerpo, e, ctx) {
     (l) => {
       if (texto.length < 16) texto += l;
       pintar();
-    },
-    () => probar() // arrastrando el dedo por varias letras: al soltar se comprueba
+    }
+    // (al soltar el dedo no se comprueba: se puede seguir escribiendo tocando y luego pulsar «Comprobar»)
   );
   const borrar = h("button.boton.suave.pg-borrar", { type: "button", onclick: () => { texto = texto.slice(0, -1); pintar(); } }, "⌫ Borrar");
   const mezclar = h("button.boton.suave.pg-mezclar", { type: "button", onclick: () => {
