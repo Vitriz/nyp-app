@@ -12,9 +12,12 @@ import { almacen } from "../comun/conexion.js";
 // La sala que creaste se guarda en el móvil (quién juega, puntos, ajustes…): si cierras la app sin cerrar la
 // sala, al volver a «Batalla multijugador» puedes retomarla y seguir mandando.
 const GUARDADA = "nyp-batalla-sala";
-const leerGuardada = () => {
+const GUARDADA_MOVIL = GUARDADA;
+// La sala que creó la pantalla grande (la TV o el ordenador), aparte: allí no hay jugador, solo quien elige.
+const GUARDADA_TV = "nyp-pantalla-sala";
+const leerGuardada = (clave = GUARDADA) => {
   try {
-    return JSON.parse(almacen.leer(GUARDADA) ?? "null");
+    return JSON.parse(almacen.leer(clave) ?? "null");
   } catch {
     return null;
   }
@@ -33,25 +36,23 @@ export function codigoBatalla(texto) {
 /**
  * Pantallas de la Batalla. mostrar(el) cambia de pantalla; alVolver() vuelve al inicio.
  */
-export function crearBatalla({ app, perfil, mostrar, alVolver }) {
+export function crearBatalla({ app, perfil, mostrar, alVolver, verEnGrande = null }) {
   const cabecera = (titulo, volver) =>
     h("div.barra-sup", h("button.icono-btn.volver", { type: "button", onclick: volver, "aria-label": "Volver" }, "←"), h("span.nombre", titulo));
 
   const avisoMenu = h("div.pl-aviso.mal");
-  function menu() {
-    avisoMenu.textContent = "";
-    limpiarSalas(); // de paso, fuera las salas en las que ya no queda nadie
-    // ¿Tienes una sala abierta? Arriba del todo, para volver a entrar y seguir mandando.
+  /** ¿Tienes una sala abierta? Un botón para volver a entrar y seguir mandando (si sigue viva). */
+  function huecoRetomar(clave) {
     const hueco = h("div.batalla-retomar-hueco");
-    const g = leerGuardada();
+    const g = leerGuardada(clave);
     if (g?.codigo) {
       salaViva(g.codigo).then((viva) => {
-        if (!viva) return almacen.guardar(GUARDADA, null);
+        if (!viva) return almacen.guardar(clave, null);
         const n = g.sala?.jugadores?.length ?? 0;
         hueco.replaceChildren(
           h(
             "button.boton.acento.opcion.batalla-retomar",
-            { type: "button", onclick: () => retomarSala(g) },
+            { type: "button", onclick: () => retomarSala(g, { pantalla: clave === GUARDADA_TV }) },
             h("span.icono", "🔁"),
             h("span.opcion-texto", `Volver a tu sala ${codigoBonito(g.codigo)}`, h("small", `Sigue abierta · ${n} ${n === 1 ? "jugador" : "jugadores"}. Retómala donde la dejaste`)),
             h("span.opcion-flecha", { "aria-hidden": "true" }, "›")
@@ -59,6 +60,14 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
         );
       });
     }
+    return hueco;
+  }
+
+  function menu() {
+    avisoMenu.textContent = "";
+    limpiarSalas(); // de paso, fuera las salas en las que ya no queda nadie
+    // ¿Tienes una sala abierta? Arriba del todo, para volver a entrar y seguir mandando.
+    const hueco = huecoRetomar(GUARDADA);
     mostrar(
       h(
         "section.batalla-menu",
@@ -87,9 +96,46 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
     );
   }
 
+  // ---------------------------------------------------------------- pantalla grande
+  /**
+   * La TV o el ordenador: crea una sala (y elige los juegos, sin jugar) o mira la de otro con su código.
+   * Los jugadores entran con sus móviles como siempre.
+   */
+  function menuPantalla() {
+    avisoMenu.textContent = "";
+    limpiarSalas();
+    const hueco = huecoRetomar(GUARDADA_TV);
+    mostrar(
+      h(
+        "section.batalla-menu",
+        cabecera("📺 Pantalla grande", alVolver),
+        h("p.suave.batalla-intro", "Pon la partida en la TV o el ordenador. Los jugadores juegan con sus móviles."),
+        avisoMenu,
+        hueco,
+        h(
+          "div.inicio-opciones",
+          h(
+            "button.boton.acento.opcion",
+            { type: "button", onclick: () => elegirModo({ pantalla: true }) },
+            h("span.icono", "🏠"),
+            h("span.opcion-texto", "Crear sala", h("small", "Esta pantalla elige los juegos (no juega)")),
+            h("span.opcion-flecha", { "aria-hidden": "true" }, "›")
+          ),
+          h(
+            "button.boton.opcion",
+            { type: "button", onclick: () => verSala((codigo) => verEnGrande?.(codigo)) },
+            h("span.icono", "👀"),
+            h("span.opcion-texto", "Mirar una sala", h("small", "Con el código o el QR de quien la creó")),
+            h("span.opcion-flecha", { "aria-hidden": "true" }, "›")
+          )
+        )
+      )
+    );
+  }
+
   // ---------------------------------------------------------------- modo de juego
   // Antes de crear la sala: cómo se juega (todos contra todos, por equipos o torneo) y quién elige los juegos.
-  function elegirModo() {
+  function elegirModo({ pantalla = false } = {}) {
     const o = { modo: "individual", equipos: 2, pruebas: "elegir" };
     const aviso = h("div.pl-aviso.mal");
     const cajaModos = h("div.inicio-opciones.modo-opciones");
@@ -130,13 +176,13 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
     mostrar(
       h(
         "section.batalla-menu.batalla-modo",
-        cabecera("🏠 Crear sala", menu),
+        cabecera("🏠 Crear sala", pantalla ? menuPantalla : menu),
         h("p.suave.batalla-intro", "¿Cómo queréis jugar? Los puntos para ganar se ajustan en la sala, según cuántos seáis."),
         cajaModos,
         cajaEquipos,
         cajaPruebas,
         aviso,
-        h("button.boton.acento.grande", { type: "button", onclick: () => crearSala(o, aviso) }, "Crear la sala ▶")
+        h("button.boton.acento.grande", { type: "button", onclick: () => crearSala(o, aviso, { pantalla }) }, "Crear la sala ▶")
       )
     );
   }
@@ -161,8 +207,9 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
   }
 
   /** Atiende la sala y entra en ella como anfitrión. Se va guardando para poder retomarla. */
-  function llevarSala({ codigo, claveHost, sala, creada, reanudar = false }) {
-    const transporte = atenderSala(codigo, sala, { nombre: perfil.nombre, reanudar: reanudar ? { creada } : null });
+  function llevarSala({ codigo, claveHost, sala, creada, reanudar = false, pantalla = false }) {
+    const GUARDADA = pantalla ? GUARDADA_TV : GUARDADA_MOVIL;
+    const transporte = atenderSala(codigo, sala, { nombre: pantalla ? "📺 Pantalla grande" : perfil?.nombre, reanudar: reanudar ? { creada } : null });
     // Copia de la sala en el móvil (como mucho una vez por segundo, cuando cambia algo).
     let pendiente = 0;
     const guardar = () => {
@@ -176,8 +223,23 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
     const difundir = sala.difundir.bind(sala);
     sala.difundir = () => (difundir(), guardar());
     guardar();
-    // Que la pantalla no se apague: si el móvil del anfitrión se duerme, la partida se para.
+    // cerrarSala: el anfitrión la cierra para todos; si no, solo sale un momento (y la puede retomar).
     let despierto = null;
+    const alCerrar = ({ cerrarSala = true } = {}) => {
+      clearTimeout(pendiente);
+      despierto?.release?.().catch(() => {});
+      if (cerrarSala) {
+        almacen.guardar(GUARDADA, null);
+        return transporte.cerrar();
+      }
+      try {
+        almacen.guardar(GUARDADA, JSON.stringify({ codigo, claveHost, creada, guardada: Date.now(), sala: sala.exportar() }));
+      } catch {}
+      transporte.soltar();
+    };
+    // La pantalla grande: la vista de la TV, que manda (tiene la clave del anfitrión) pero no juega.
+    if (pantalla) return verEnGrande?.(codigo, { crearConexion: (opciones) => conectarLocal(sala, opciones), clave: claveHost, alCerrar });
+    // Que la pantalla no se apague: si el móvil del anfitrión se duerme, la partida se para.
     navigator.wakeLock?.request("screen").then((w) => (despierto = w)).catch(() => {});
     entrarParty({
       app,
@@ -186,25 +248,12 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
       crearConexion: (opciones) => conectarLocal(sala, opciones),
       claveHost,
       batalla: true,
-      // cerrarSala: el anfitrión la cierra para todos; si no, solo sale un momento (y la puede retomar).
-      alCerrar: ({ cerrarSala = true } = {}) => {
-        clearTimeout(pendiente);
-        if (cerrarSala) {
-          transporte.cerrar();
-          almacen.guardar(GUARDADA, null);
-        } else {
-          try {
-            almacen.guardar(GUARDADA, JSON.stringify({ codigo, claveHost, creada, guardada: Date.now(), sala: sala.exportar() }));
-          } catch {}
-          transporte.soltar();
-        }
-        despierto?.release?.().catch(() => {});
-      },
+      alCerrar,
     });
   }
 
   // La sala se crea directamente: el tiempo y el nivel se eligen en cada juego, como en «Jugar solo».
-  async function crearSala(o, aviso) {
+  async function crearSala(o, aviso, { pantalla = false } = {}) {
     aviso.className = "pl-aviso suave";
     aviso.textContent = "Creando la sala…";
     try {
@@ -219,7 +268,7 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
       });
       // Modo, equipos y cómo se eligen los juegos (la meta se ajusta luego en la sala, según cuántos seáis).
       sala.configurarBatalla({ modo: o.modo, equipos: o.modo === "equipos" ? o.equipos : 0, pruebas: o.pruebas, juegos: disponibles.map((j) => j.id), meta: 5 });
-      llevarSala({ codigo, claveHost, sala, creada: Date.now() });
+      llevarSala({ codigo, claveHost, sala, creada: Date.now(), pantalla });
     } catch {
       aviso.className = "pl-aviso mal";
       aviso.textContent = "No se pudo crear la sala. ¿Tienes internet?";
@@ -227,14 +276,14 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
   }
 
   /** Vuelve a la sala que dejaste abierta: la misma sala, los mismos jugadores y puntos, y tú mandas. */
-  async function retomarSala(g) {
+  async function retomarSala(g, { pantalla = false } = {}) {
     avisoMenu.className = "pl-aviso suave";
     avisoMenu.textContent = "Volviendo a tu sala…";
     try {
       const { Sala } = await prepararMotor();
       const sala = new Sala({ claveHost: g.claveHost, enNavegador: true, cifras: g.codigo });
       if (!sala.importar(g.sala)) throw new Error("copia");
-      llevarSala({ codigo: g.codigo, claveHost: g.claveHost, sala, creada: g.creada, reanudar: true });
+      llevarSala({ codigo: g.codigo, claveHost: g.claveHost, sala, creada: g.creada, reanudar: true, pantalla });
     } catch {
       avisoMenu.className = "pl-aviso mal";
       avisoMenu.textContent = "No se pudo volver a la sala. ¿Tienes internet?";
@@ -281,9 +330,9 @@ export function crearBatalla({ app, perfil, mostrar, alVolver }) {
   }
 
   /** Pantalla grande: se pide el código de la sala y se abre la vista para mirar. */
-  const verSala = (alEntrar) => unirse("", { titulo: "📺 Pantalla grande", alEntrar, volver: alVolver });
+  const verSala = (alEntrar) => unirse("", { titulo: "👀 Mirar una sala", alEntrar, volver: menuPantalla });
 
-  return { menu, unirse, entrarSala, verSala };
+  return { menu, menuPantalla, unirse, entrarSala, verSala };
 }
 
 /** «123 456» */

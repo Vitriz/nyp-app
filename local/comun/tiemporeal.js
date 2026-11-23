@@ -191,8 +191,8 @@ export function atenderSala(codigo, sala, { nombre, reanudar = null } = {}) {
     /** Cierra la sala para todos (se borra; los jugadores ven que se ha cerrado). */
     cerrar() {
       soltar();
-      quitar(raiz).catch(() => {});
-      quitar(`indice/${codigo}`).catch(() => {});
+      // (devuelve una promesa: la pantalla grande espera a que se borre antes de recargar la página)
+      return Promise.all([quitar(raiz).catch(() => {}), quitar(`indice/${codigo}`).catch(() => {})]);
     },
     /** El anfitrión sale un momento: la sala sigue abierta para volver a entrar. */
     soltar,

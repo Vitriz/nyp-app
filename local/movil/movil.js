@@ -139,9 +139,9 @@ async function inicio() {
         // Pantalla grande: la TV o el ordenador se une a una sala para mirar (juegos, resultados y podio).
         h(
           "button.boton.opcion",
-          { type: "button", onclick: () => batalla().verSala(iniciarVisor) },
+          { type: "button", onclick: () => batalla().menuPantalla() },
           h("span.icono", "📺"),
-          h("span.opcion-texto", "Pantalla grande", h("small", "Mira una sala en la TV o el ordenador")),
+          h("span.opcion-texto", "Pantalla grande", h("small", "Crea o mira una sala en la TV o el ordenador")),
           h("span.opcion-flecha", { "aria-hidden": "true" }, "›")
         ),
         avisoSolo
@@ -190,7 +190,7 @@ function conPerfil(siguiente) {
 }
 
 // ------------------------------------------------------------------ batalla, partida y solo
-const batalla = () => (soltarBanner(), crearBatalla({ app, perfil, mostrar, alVolver: inicio }));
+const batalla = () => (soltarBanner(), crearBatalla({ app, perfil, mostrar, alVolver: inicio, verEnGrande: iniciarVisor }));
 
 async function irSolo() {
   pantallaCompleta();
@@ -206,8 +206,12 @@ async function irSolo() {
 }
 
 // ------------------------------------------------------------------ pantalla grande
-/** La TV o el ordenador mira una sala de Batalla: la misma vista que tenía la TV de PARTY, solo para mirar. */
-async function iniciarVisor(codigo) {
+/**
+ * La TV o el ordenador en una sala de Batalla: la misma vista que tenía la TV de PARTY. Solo mira, o, si creó
+ * la sala (clave del anfitrión y conexión con la sala de este navegador), elige los juegos sin jugar.
+ * alCerrar({ cerrarSala }): cerrar la sala para todos o salir un momento (se puede retomar).
+ */
+async function iniciarVisor(codigo, { crearConexion = null, clave = null, alCerrar = null } = {}) {
   soltarBanner();
   pantallaCompleta();
   // Los estilos de la TV en lugar de los del móvil.
@@ -221,10 +225,12 @@ async function iniciarVisor(codigo) {
   window.NYP_VISOR = true;
   const [{ iniciarTV }, { conectarBatalla }] = await Promise.all([import("../tv/tv.js"), import("../comun/tiemporeal.js")]);
   iniciarTV({
-    crearConexion: (o) => conectarBatalla({ codigo, ...o }),
+    crearConexion: crearConexion ?? ((o) => conectarBatalla({ codigo, ...o })),
     fondo,
     codigo,
-    alSalir: () => {
+    clave,
+    alSalir: async (opciones) => {
+      await Promise.race([Promise.resolve(alCerrar?.(opciones)), new Promise((ok) => setTimeout(ok, 4000))]).catch(() => {});
       history.replaceState(null, "", location.pathname);
       location.reload();
     },

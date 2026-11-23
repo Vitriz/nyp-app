@@ -6,10 +6,11 @@ import { selectorJuegos } from "../solo/selector.js";
 import { ICONOS_AMBITO } from "../comun/ambitos.js";
 import { svgQR } from "../comun/qr.js";
 import { pantallaRepaso } from "./repaso.js";
+import { palabrasTocables } from "../comun/diccionario.js";
 
 vigilarEncaje(); // ningún número se sale de su casilla
 
-const clave = new URLSearchParams(location.hash.slice(1)).get("clave") ?? "";
+let clave = new URLSearchParams(location.hash.slice(1)).get("clave") ?? "";
 let fondo = null;
 let app = null;
 let avisoConexion = null;
@@ -19,18 +20,20 @@ let estado = null;
 let actual = null; // { clave, el, actualizar?, desmontar? }
 let con = null;
 let ctxJuego = null;
-// Pantalla grande de una Batalla: solo mira (se une a la sala con su código desde la app NYP).
-let visor = null; // { codigo, alSalir }
+// Pantalla grande de una Batalla: mira la sala (se une con su código desde la app NYP) o, si la creó ella,
+// además la lleva: elige los juegos y da paso, pero no juega (host: true).
+let visor = null; // { codigo, alSalir, host }
 
 /**
  * Arranca la pantalla de la TV. Sin opciones: la TV de PARTY (WebSocket con el ordenador).
  * Con crearConexion: la «pantalla grande» de una Batalla (por internet), solo para mirar.
  */
-export function iniciarTV({ crearConexion = null, fondo: fondoDado = null, codigo = null, alSalir = null } = {}) {
+export function iniciarTV({ crearConexion = null, fondo: fondoDado = null, codigo = null, clave: claveDada = null, alSalir = null } = {}) {
   fondo = fondoDado ?? iniciarFondo({ espaciado: 40 });
   app = document.getElementById("app");
   avisoConexion = document.getElementById("sin-conexion");
-  visor = codigo ? { codigo, alSalir } : null;
+  visor = codigo ? { codigo, alSalir, host: Boolean(claveDada) } : null;
+  if (claveDada) clave = claveDada;
   con = (crearConexion ?? conectar)({
     alAbrir: () => con.enviar({ t: "hola", rol: "tv", clave }),
     alMensaje: (m) => {
@@ -48,7 +51,7 @@ export function iniciarTV({ crearConexion = null, fondo: fondoDado = null, codig
   ctxJuego = { ahora: con.ahora, onda: fondo.onda, enviar: () => {} };
   if (visor) {
     app.replaceChildren();
-    cambiarPantalla(app, h("section", h("div.espera", h("h1", "Conectando con la sala…"), h("p.suave", `Código ${codigo.slice(0, 3)} ${codigo.slice(3)}`))));
+    cambiarPantalla(app, h("section", h("div.espera", h("h1", visor.host ? "Abriendo la sala…" : "Conectando con la sala…"), h("p.suave", `Código ${codigo.slice(0, 3)} ${codigo.slice(3)}`))));
   }
 }
 
@@ -276,10 +279,49 @@ function tarjetaQR() {
 }
 
 const enlaceBatalla = (c) => `${new URL("./", location.href).href.split("#")[0]}#b=${c}`;
-/** Pantalla grande: dejar de mirar la sala. */
+/** Pantalla grande: dejar de mirar la sala (o, si la lleva ella, cerrarla). */
 function botonSalirVisor() {
-  return visor ? h("button.boton.suave.salir", { onclick: () => visor.alSalir?.() }, "✕ Dejar de mirar") : undefined;
+  if (!visor) return undefined;
+  if (visor.host) return h("button.boton.suave.salir.cerrar-sala", { onclick: ventanaCerrarSala }, "🚪 Cerrar la sala");
+  return h("button.boton.suave.salir", { onclick: () => visor.alSalir?.() }, "✕ Dejar de mirar");
 }
+
+/** La pantalla grande que lleva la sala: cerrarla para todos o salir un momento (y retomarla luego). */
+function ventanaCerrarSala() {
+  const cerrar = () => capa.remove();
+  const capa = h(
+    "div.capa",
+    { onclick: (ev) => ev.target === capa && cerrar() },
+    h(
+      "div.capa-caja.capa-cerrar",
+      h("div.capa-cerrar-ico", "🚪"),
+      h("h2", "¿Cerrar la sala?"),
+      h("p.suave", "Al cerrarla, la partida se acaba y todos los jugadores salen de la sala."),
+      h(
+        "div.capa-cerrar-botones",
+        h("button.boton.peligro", { onclick: () => (cerrar(), visor.alSalir?.({ cerrarSala: true })) }, "🚪 Cerrar la sala para todos"),
+        h("button.boton.suave", { onclick: () => (cerrar(), visor.alSalir?.({ cerrarSala: false })) }, "Salir un momento"),
+        h("button.boton.suave", { onclick: cerrar }, "Seguir")
+      ),
+      h("small.suave", "«Salir un momento» deja la sala abierta: retómala desde «Pantalla grande».")
+    )
+  );
+  document.body.append(capa);
+}
+
+/** QR de la Batalla (en pequeño en la sala; al tocarlo, en grande). */
+function qrBatalla(clase = "div.visor-qr") {
+  const qr = h(clase);
+  try {
+    qr.innerHTML = svgQR(enlaceBatalla(visor.codigo));
+  } catch {}
+  return qr;
+}
+const codigoVisor = () => `${visor.codigo.slice(0, 3)} ${visor.codigo.slice(3)}`;
+
+// Meta de la Batalla (pantalla grande que lleva la sala): la recomendada según cuántos sois, como en el móvil.
+const metaRecomendada = (n) => (n <= 2 ? 5 : (n - 1) * 4);
+let metaTocada = false;
 
 /** ⏻ Salir de PARTY, arriba a la derecha (mantener pulsado para no salir sin querer). */
 function botonSalir() {
@@ -288,6 +330,21 @@ function botonSalir() {
 
 /** El QR en una ventana encima (para quien llega tarde). */
 function ventanaQR(e) {
+  if (visor) {
+    const capa = h(
+      "div.capa",
+      { onclick: (ev) => ev.target === capa && capa.remove() },
+      h(
+        "div.capa-caja.capa-qr",
+        h("h2", "Escanea para jugar"),
+        qrBatalla(),
+        h("b.visor-codigo", codigoVisor()),
+        h("p.suave", "o escribe el código en NYP › Batalla multijugador › Unirse"),
+        h("button.boton.acento", { onclick: () => capa.remove() }, "Cerrar")
+      )
+    );
+    return document.body.append(capa);
+  }
   const qr = tarjetaQR();
   qr.actualizar(e);
   const capa = h("div.capa", { onclick: (ev) => ev.target === capa && capa.remove() }, h("div.capa-caja.capa-qr", qr.el, h("button.boton.acento", { onclick: () => capa.remove() }, "Cerrar")));
@@ -419,19 +476,30 @@ const PANTALLAS = {
           })
         );
       } else {
+        // Batalla al azar: el tiempo y el nivel, para todos los juegos (como en el móvil del anfitrión).
+        const ajustesAzar = h("div.azar-ajustes");
+        const segAzar = () => (TIEMPOS.includes(ajustesTV.seg) ? ajustesTV.seg : 60);
+        const pintarAzar = () =>
+          ajustesAzar.replaceChildren(
+            h("div.fila-op", h("span.suave", "Tiempo:"), opciones(TIEMPOS.map((s) => [s, textoSegundos(s)]), segAzar(), (v) => ((ajustesTV.seg = v), guardarAjustesTV(), pintarAzar()))),
+            h("div.fila-op", h("span.suave", "Nivel:"), opciones(NIVELES.map((nv) => [nv, NOMBRES_NIVEL[nv]]), ajustesTV.nv, (v) => ((ajustesTV.nv = v), guardarAjustesTV(), pintarAzar())))
+          );
+        if (visor) pintarAzar();
         zona = h(
           "div.lobby-azar.tarjeta",
           h("div.azar-icono", "🎲"),
           h("h2", "Pruebas al azar"),
           h("div.azar-chips", juegos.map((j) => h("span.chip-juego", `${ICONOS[j.id] ?? ""} ${j.nombre}`))),
-          h("button.boton.acento.crear-sala", { onclick: () => host("aleatorio") }, "▶ Empezar", h("span.tecla", "Enter"))
+          visor ? ajustesAzar : null,
+          h("button.boton.acento.crear-sala", { onclick: () => host("aleatorio", { segundos: segAzar(), dificultad: ajustesTV.nv }) }, visor ? "🎲 ¡Siguiente juego!" : "▶ Empezar", h("span.tecla", "Enter"))
         );
       }
       lado.append(
         zona,
         h(
           "div.panel-host",
-          h("button.boton.suave", { onclick: () => host("ajustes") }, "⚙ Ajustes de la sala"),
+          // (la pantalla grande de una Batalla no tiene la pantalla de ajustes de PARTY: la meta va en las reglas)
+          visor ? null : h("button.boton.suave", { onclick: () => host("ajustes") }, "⚙ Ajustes de la sala"),
           t.modo === "equipos" ? h("button.boton.suave", { onclick: () => host("repartir") }, "🔀 Repartir equipos") : null,
           botonMantener(t.modo === "torneo" ? "Reiniciar torneo" : "Reiniciar puntos", () => host("reiniciarPuntos"), { clase: ".suave" })
         )
@@ -455,6 +523,16 @@ const PANTALLAS = {
 
     // Arriba, los jugadores conectados; debajo, el selector como en «Jugar solo» (ficha a la izquierda y rueda a la derecha).
     if (visor) izq.querySelector(".lobby-unirse")?.remove(); // el código ya sale grande a la derecha
+    // La pantalla grande que lleva la sala: la ruleta ocupa la derecha, así que el QR y el código van arriba, en pequeño.
+    if (visor && e.esHost)
+      izq.append(
+        h(
+          "button.visor-mini.tarjeta",
+          { onclick: () => ventanaQR(estado), title: "Ver el QR en grande" },
+          qrBatalla("div.visor-mini-qr"),
+          h("span.visor-mini-texto", h("small", "Únete con el código"), h("b", codigoVisor()), h("small.suave", "🔍 Toca para verlo en grande"))
+        )
+      );
     const el = h("section", cabecera("¡Bienvenidos!", e.esHost ? botonSalir() : botonSalirVisor()), h("div.lobby.lobby-v4", izq, lado));
     return {
       el,
@@ -463,10 +541,29 @@ const PANTALLAS = {
         const t = e.sala;
         const campeon = t.campeon && e.jugadores.find((j) => j.id === t.campeon);
         // Las reglas de la partida, juntas en una tarjeta (el nivel se elige en cada juego, no aquí).
+        // Pantalla grande que lleva la sala: la meta se ajusta sola según cuántos sois (o con − / +).
+        const conMeta = visor && e.esHost && t.modo !== "torneo";
+        const rec = metaRecomendada(e.jugadores.length);
+        if (conMeta && !metaTocada && e.jugadores.length >= 2 && t.meta !== rec && !t.campeon) host("meta", { valor: rec });
+        const cambiarMeta = (d) => ((metaTocada = true), host("meta", { valor: Math.max(1, (t.meta || rec) + d) }));
         reglas.replaceChildren(
           h("span.etiqueta", "Reglas"),
           ...(campeon ? [h("div.campeon", "🏆 Campeón: ", h("b", campeon.nombre))] : []),
-          ...reglasSala(t).map(([ico, txt]) => h("div.regla", h("span.regla-ico", ico), h("span", txt)))
+          ...reglasSala(t).map(([ico, txt], k) =>
+            conMeta && k === 1
+              ? h(
+                  "div.regla.regla-meta",
+                  h("span.regla-ico", ico),
+                  h("span", "Gana quien llegue a"),
+                  h(
+                    "span.meta-tv",
+                    h("button.boton.suave.mini", { onclick: () => cambiarMeta(-1), "aria-label": "Menos puntos" }, "−"),
+                    h("b", String(t.meta || rec)),
+                    h("button.boton.suave.mini", { onclick: () => cambiarMeta(1), "aria-label": "Más puntos" }, "+")
+                  )
+                )
+              : h("div.regla", h("span.regla-ico", ico), h("span", txt))
+          )
         );
         jugadores.el.classList.toggle("oculto", Boolean(e.equipos));
         equipos.el.classList.toggle("oculto", !e.equipos);
@@ -531,7 +628,7 @@ const PANTALLAS = {
       actualizar(e) {
         aviso.fijar(e);
         const conectados = e.jugadores.filter((j) => j.conectado).length;
-        pieTexto.textContent = `${conectados} ${conectados === 1 ? "jugador listo" : "jugadores listos"} · ${e.red.tunel ?? e.red.local}`;
+        pieTexto.textContent = `${conectados} ${conectados === 1 ? "jugador listo" : "jugadores listos"} · ${visor ? `Código ${codigoVisor()}` : e.red.tunel ?? e.red.local}`;
         if (e.juego.ambitos?.length && e.esHost) {
           const actual = e.sala?.ambito ?? "azar";
           duraciones.replaceChildren(
@@ -665,7 +762,8 @@ const PANTALLAS = {
    * las estadísticas con todos los datos. «Saltar ⏭» va directo a las estadísticas.
    */
   resultados(e) {
-    const caja = h("section.res-fases");
+    // Las palabras se pueden tocar (en el repaso y en las estadísticas): sale su definición, para aprender todos.
+    const caja = palabrasTocables(h("section.res-fases"));
     let stats = null, rep = null;
     const verStats = () => {
       if (stats) return;
@@ -804,7 +902,7 @@ const PANTALLAS = {
       );
     }
     const titulo = e.equipos ? "Clasificación por equipos" : t.modo === "torneo" ? "Torneo" : "Clasificación";
-    const el = h("section", cabecera(titulo), avisoArriba, carrera, pie);
+    const el = h("section", cabecera(titulo, visor?.host ? botonSalirVisor() : undefined), avisoArriba, carrera, pie);
     return { el, actualizar: (e) => aviso.fijar(e), desmontar: () => aviso.parar() };
   },
 };
@@ -823,6 +921,8 @@ async function cargarModulo(id) {
 // ------------------------------------------------------------------ teclado del presentador
 window.addEventListener("keydown", (ev) => {
   if (!estado?.esHost) return;
+  // Con una ventana abierta (definición, QR, cerrar la sala) o una palabra elegida, las teclas no pasan de pantalla.
+  if (document.querySelector(".capa-dicc, .capa") || ev.target?.closest?.(".tocable")) return;
   if (estado.fase === "nueva" && ev.key === "Enter") return actual?.crear?.();
   if (estado.fase === "lobby" && ev.key === "Enter" && estado.sala?.pruebas === "azar") return host("aleatorio");
   if (ev.key === " " || ev.key === "Enter") {
