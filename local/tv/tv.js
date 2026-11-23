@@ -81,11 +81,17 @@ function claveDe(e) {
   return e.fase;
 }
 
+// Ventana abierta encima (jugadores, reglas…) que se repinta con cada estado nuevo.
+let capaViva = null;
+
 function pintar(e) {
   estado = e;
+  capaViva?.actualizar(e);
   const k = claveDe(e);
   if (!actual || actual.clave !== k) {
     actual?.desmontar?.();
+    if (capaViva) document.querySelectorAll(".capa").forEach((c) => c.remove());
+    capaViva = null;
     actual = PANTALLAS[e.fase](e);
     actual.clave = k;
     cambiarPantalla(app, actual.el);
@@ -101,18 +107,19 @@ function pintar(e) {
 const ajustarMarca = (m) => {
   if (!m.isConnected || !m.clientWidth) return;
   m.classList.remove("corta");
-  m.classList.toggle("corta", m.scrollWidth > m.clientWidth + 1);
+  m.classList.toggle("corta", m.scrollWidth > m.clientWidth + 4);
 };
 const vigiaMarca = typeof ResizeObserver === "function" ? new ResizeObserver((lista) => lista.forEach((x) => ajustarMarca(x.target))) : null;
 addEventListener("resize", () => document.querySelectorAll(".cabecera .marca").forEach(ajustarMarca));
 function marca() {
-  const fila = (palabra, clase) => h(`span.marca-palabra.${clase}`, [...palabra].map((l) => h("span.ficha", l)));
-  const el = h(
-    "div.marca",
-    { "aria-label": "Números y Palabras" },
-    h("span.marca-larga", fila("NÚMEROS", "marca-n"), h("span.ficha.marca-y", "Y"), fila("PALABRAS", "marca-p")),
-    h("span.marca-corta", h("span.ficha.marca-n", "N"), h("span.ficha.marca-y", "Y"), h("span.ficha.marca-p", "P"))
-  );
+  // Las fichas ondean como una bandera, igual que el título de la pantalla de inicio (--x: columna respecto al centro).
+  let k = 0;
+  const ficha = (l, clase = "") => h(`span.ficha${clase}`, { style: { "--x": k++ - 8 } }, l);
+  const fila = (palabra, clase) => h(`span.marca-palabra.${clase}`, [...palabra].map((l) => ficha(l)));
+  const larga = h("span.marca-larga", fila("NÚMEROS", "marca-n"), ficha("Y", ".marca-y"), fila("PALABRAS", "marca-p"));
+  k = -1;
+  const corta = h("span.marca-corta", h("span.ficha.marca-n", { style: { "--x": -1 } }, "N"), h("span.ficha.marca-y", { style: { "--x": 0 } }, "Y"), h("span.ficha.marca-p", { style: { "--x": 1 } }, "P"));
+  const el = h("div.marca", { "aria-label": "Números y Palabras" }, larga, corta);
   if (vigiaMarca) vigiaMarca.observe(el);
   // (y al pintarse, por si el navegador no avisa del tamaño)
   requestAnimationFrame(() => ajustarMarca(el));
@@ -392,6 +399,130 @@ function resumenSala(t) {
   ].filter(Boolean);
 }
 
+// ------------------------------------------------------------------ sala de la pantalla grande que manda
+/**
+ * La pantalla grande que lleva la sala: el selector de juegos a toda la pantalla, con las mismas proporciones
+ * que en «Jugar solo»; arriba, en botones, los jugadores, las reglas (meta y equipos), invitar y cerrar la sala.
+ */
+function lobbyPantalla(e) {
+  const t = e.sala;
+  const juegos = e.catalogo.filter((j) => j.disponible && t.juegos.includes(j.id));
+  let zona;
+  if (t.pruebas === "elegir") {
+    zona = selectorJuegos({
+      juegos,
+      tiempo: { lista: TIEMPOS, de: () => (TIEMPOS.includes(ajustesTV.seg) ? ajustesTV.seg : 60), fijar: (j, seg) => ((ajustesTV.seg = seg), guardarAjustesTV()) },
+      nivel: { lista: NIVELES, nombres: NOMBRES_NIVEL, de: () => ajustesTV.nv, fijar: (j, nv) => ((ajustesTV.nv = nv), guardarAjustesTV()) },
+      textoJugar: "▶ Jugar esta prueba",
+      alJugar: (j) => host("elegir", { juego: j.id, segundos: TIEMPOS.includes(ajustesTV.seg) ? ajustesTV.seg : 60, dificultad: ajustesTV.nv }),
+    });
+  } else {
+    const ajustesAzar = h("div.azar-ajustes");
+    const segAzar = () => (TIEMPOS.includes(ajustesTV.seg) ? ajustesTV.seg : 60);
+    const pintarAzar = () =>
+      ajustesAzar.replaceChildren(
+        h("div.fila-op", h("span.suave", "Tiempo:"), opciones(TIEMPOS.map((s) => [s, textoSegundos(s)]), segAzar(), (v) => ((ajustesTV.seg = v), guardarAjustesTV(), pintarAzar()))),
+        h("div.fila-op", h("span.suave", "Nivel:"), opciones(NIVELES.map((nv) => [nv, NOMBRES_NIVEL[nv]]), ajustesTV.nv, (v) => ((ajustesTV.nv = v), guardarAjustesTV(), pintarAzar())))
+      );
+    pintarAzar();
+    zona = h(
+      "div.lobby-azar.tarjeta",
+      h("div.azar-icono", "🎲"),
+      h("h2", "Juegos al azar"),
+      h("div.azar-chips", juegos.map((j) => h("span.chip-juego", `${ICONOS[j.id] ?? ""} ${j.nombre}`))),
+      ajustesAzar,
+      h("button.boton.acento.crear-sala", { onclick: () => host("aleatorio", { segundos: segAzar(), dificultad: ajustesTV.nv }) }, "🎲 ¡Siguiente juego!", h("span.tecla", "Enter"))
+    );
+  }
+  // Botones de arriba: jugadores (con sus caras), reglas, invitar (QR y código) y cerrar la sala.
+  const caras = h("span.pb-caras");
+  const cuantos = h("b");
+  const meta = h("b");
+  const botones = h(
+    "div.pantalla-botones",
+    h("button.boton.suave.pb", { onclick: ventanaJugadores, title: "Jugadores de la sala" }, caras, h("span.pb-txt", h("small", "Jugadores"), cuantos)),
+    h("button.boton.suave.pb", { onclick: ventanaReglas, title: "Reglas y meta" }, h("span.pb-ico", "📜"), h("span.pb-txt", h("small", "Reglas"), meta)),
+    h("button.boton.suave.pb", { onclick: () => ventanaQR(estado), title: "Invitar: QR y código" }, h("span.pb-ico.pb-qr", qrBatalla("span.pb-qr-img")), h("span.pb-txt", h("small", "Invitar"), h("b", codigoVisor()))),
+    botonSalirVisor()
+  );
+  const el = h("section.sala-pantalla", cabecera("", botones), h("div.sala-pantalla-cuerpo", zona));
+  return {
+    el,
+    actualizar(e) {
+      const n = e.jugadores.length;
+      cuantos.textContent = n ? `${n} ${n === 1 ? "jugador" : "jugadores"}` : "Nadie aún";
+      caras.replaceChildren(...(n ? e.jugadores.slice(0, 4).map((j) => avatar(j, j.conectado ? "" : ".desconectado")) : [h("span.pb-ico", "👥")]));
+      const t = e.sala;
+      const rec = metaRecomendada(n);
+      if (t.modo !== "torneo" && !metaTocada && n >= 2 && t.meta !== rec && !t.campeon) host("meta", { valor: rec });
+      meta.textContent = t.modo === "torneo" ? "Torneo" : `Meta: ${t.meta || rec} pts`;
+    },
+  };
+}
+
+/** Ventana con los jugadores (por equipos, si los hay): clic para cambiar de equipo; mantener para quitar. */
+function ventanaJugadores() {
+  const lista = listaJugadores();
+  const equipos = listaEquipos();
+  const cerrar = () => ((capaViva = null), capa.remove());
+  const capa = h(
+    "div.capa",
+    { onclick: (ev) => ev.target === capa && cerrar() },
+    h("div.capa-caja.capa-ancha", h("h2", "👥 Jugadores"), lista.el, equipos.el, h("small.suave", "Mantén pulsado «Quitar» para sacar a alguien de la sala."), h("button.boton.acento", { onclick: cerrar }, "Cerrar"))
+  );
+  capaViva = {
+    actualizar(e) {
+      lista.el.classList.toggle("oculto", Boolean(e.equipos));
+      equipos.el.classList.toggle("oculto", !e.equipos);
+      if (e.equipos) equipos.actualizar(e, true);
+      else lista.actualizar(e.jugadores, true);
+    },
+  };
+  capaViva.actualizar(estado);
+  document.body.append(capa);
+}
+
+/** Ventana con las reglas: el modo, la meta (− / +), los equipos y reiniciar los puntos. */
+function ventanaReglas() {
+  const cuerpo = h("div.reglas.reglas-capa");
+  const acciones = h("div.reglas-acciones");
+  const cerrar = () => ((capaViva = null), capa.remove());
+  const capa = h("div.capa", { onclick: (ev) => ev.target === capa && cerrar() }, h("div.capa-caja.capa-ancha", h("h2", "📜 Reglas"), cuerpo, acciones, h("button.boton.acento", { onclick: cerrar }, "Cerrar")));
+  capaViva = {
+    actualizar(e) {
+      const t = e.sala;
+      const rec = metaRecomendada(e.jugadores.length);
+      const cambiarMeta = (d) => ((metaTocada = true), host("meta", { valor: Math.max(1, (t.meta || rec) + d) }));
+      const campeon = t.campeon && e.jugadores.find((j) => j.id === t.campeon);
+      cuerpo.replaceChildren(
+        ...(campeon ? [h("div.campeon", "🏆 Campeón: ", h("b", campeon.nombre))] : []),
+        ...reglasSala(t).map(([ico, txt], k) =>
+          t.modo !== "torneo" && k === 1
+            ? h(
+                "div.regla.regla-meta",
+                h("span.regla-ico", ico),
+                h("span", "Gana quien llegue a"),
+                h(
+                  "span.meta-tv",
+                  h("button.boton.suave.mini", { onclick: () => cambiarMeta(-1), "aria-label": "Menos puntos" }, "−"),
+                  h("b", String(t.meta || rec)),
+                  h("button.boton.suave.mini", { onclick: () => cambiarMeta(1), "aria-label": "Más puntos" }, "+")
+                )
+              )
+            : h("div.regla", h("span.regla-ico", ico), h("span", txt))
+        ),
+        t.modo !== "torneo" && e.jugadores.length >= 2 ? h("small.suave", metaTocada && t.meta !== rec ? `Recomendado para ${e.jugadores.length}: ${rec} puntos` : "La meta se ajusta sola según cuántos sois.") : ""
+      );
+      acciones.replaceChildren(
+        t.modo === "equipos" ? h("button.boton.suave", { onclick: () => host("repartir") }, "🔀 Repartir equipos") : "",
+        botonMantener(t.modo === "torneo" ? "Reiniciar torneo" : "Reiniciar puntos", () => host("reiniciarPuntos"), { clase: ".suave" })
+      );
+    },
+  };
+  capaViva.actualizar(estado);
+  document.body.append(capa);
+}
+
 // ------------------------------------------------------------------ pantallas
 const PANTALLAS = {
   /** Antes de abrir la sala: modo de juego, dificultad y pruebas. */
@@ -469,6 +600,7 @@ const PANTALLAS = {
   },
 
   lobby(e) {
+    if (visor && e.esHost) return lobbyPantalla(e);
     const jugadores = listaJugadores();
     const equipos = listaEquipos();
     const resumen = h("div.sala-resumen");

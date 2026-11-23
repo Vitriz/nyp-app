@@ -65,6 +65,8 @@ export async function repaso({ escena, resumen, jugadores, sumar, esperar, parad
   const deResumen = (resumen.comunes ?? []).filter((c) => c.tuti).map((c) => ({ c: c.clave, f: c.forma }));
   const tutis = deResumen.length ? deResumen : [...encontrada.values()].filter((x) => x.p.t).map((x) => ({ c: x.p.c, f: x.p.f }));
   tutis.sort((a, b) => Number(encontrada.has(b.c)) - Number(encontrada.has(a.c)) || a.c.length - b.c.length);
+  // La letra de la barra se fija con el tuti más largo: así todos caben y nada se mueve de sitio.
+  escena.firstChild.style.setProperty("--max", Math.max(7, ...tutis.map((t) => [...t.f].length)));
 
   if (!tutis.length) {
     avisar("Este panal no tenía tutis");

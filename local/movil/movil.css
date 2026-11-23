@@ -2182,3 +2182,38 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
 .pantalla.batalla-sala { --ancho: min(100vw, 68rem); gap: 0.8rem; }
 .batalla-sala .barra-sup .icono-btn.cerrar { flex: none; }
 .barra-sup:not(.barra-juego) > .batalla-botones ~ .icono-btn:last-child { margin-left: 0; } /* los dos botones, pegados al ✕ a la derecha */
+
+/* =====================================================================
+   Batalla y pantalla grande en el ordenador o la TV (pantalla ancha): menús en tarjetas una al lado de la
+   otra, «Crear sala» con los modos en fila y «Unirse» en dos columnas, en vez de la columna del móvil.
+   ===================================================================== */
+@media (min-width: 900px) and (min-height: 560px) and (orientation: landscape) {
+  .pantalla.batalla-menu { --ancho: min(100vw, 78rem); justify-content: flex-start; gap: 1.4rem; overflow-y: auto; }
+  .batalla-menu > .barra-sup { flex: none; }
+  .batalla-menu > :nth-child(2) { margin-top: auto; }
+  .batalla-menu > :last-child { margin-bottom: auto; }
+  .batalla-menu > .batalla-intro { font-size: 1.2rem; margin-bottom: 0.6rem; }
+  .batalla-menu > .barra-sup .nombre { font-size: 1.35rem; }
+  .batalla-menu > .inicio-opciones { flex-direction: row; align-items: stretch; gap: 1.4rem; }
+  .batalla-menu > .inicio-opciones > .opcion { flex: 1 1 0; flex-direction: column; justify-content: center; text-align: center; min-height: 15rem; padding: 1.8rem 1.4rem; gap: 0.9rem; }
+  .batalla-menu > .inicio-opciones > .opcion .icono { width: 5.4rem; height: 5.4rem; font-size: 3.2rem; border-radius: 1.4rem; }
+  .batalla-menu > .inicio-opciones > .opcion .opcion-texto { flex: none; font-size: 1.6rem; }
+  .batalla-menu > .inicio-opciones > .opcion small { font-size: 1rem; margin-top: 0.4rem; }
+  .batalla-menu > .inicio-opciones > .opcion .opcion-flecha { position: absolute; top: 1rem; right: 1.2rem; font-size: 1.8rem; }
+  .batalla-menu .batalla-retomar-hueco:not(:empty) { width: min(100%, 40rem); align-self: center; }
+  /* Crear sala: los tres modos en fila; equipos y juegos debajo, uno al lado del otro */
+  .batalla-modo > .modo-opciones > .opcion { min-height: 15rem; }
+  .batalla-modo > .modo-equipos, .batalla-modo > .modo-pruebas { width: min(100%, 40rem); align-self: center; }
+  .batalla-modo > .modo-equipos:empty { display: none; }
+  .batalla-modo .modo-segmentos .sel-seg { min-height: 3.4rem; font-size: 1.15rem; }
+  .batalla-modo .etiqueta { font-size: 1rem; }
+  .batalla-modo > .boton.grande { width: min(100%, 30rem); align-self: center; min-height: 4.2rem; font-size: 1.5rem; }
+  /* Unirse / mirar una sala: la cámara a la izquierda y el código a la derecha */
+  .pantalla.grupo { --ancho: min(100vw, 70rem); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-auto-rows: min-content; column-gap: 2.4rem; row-gap: 0.7rem; align-content: center; }
+  .grupo > * { grid-column: 2; }
+  .grupo > .barra-sup { grid-column: 1 / -1; grid-row: 1; }
+  .grupo > .boton.acento.grande { grid-column: 1 / -1; }
+  .grupo > .boton.suave.grande { grid-column: 1; grid-row: 2; }
+  .grupo > .grupo-camara { grid-column: 1; grid-row: 3 / span 5; width: min(100%, 24rem); }
+  .grupo > .grupo-teclado { margin-top: 0.4rem; }
+}
