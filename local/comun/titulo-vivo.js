@@ -393,8 +393,8 @@ export function tituloVivo(titulo, { alExpulsar = null } = {}) {
   function cerca(ev) {
     if (!titulo.isConnected) return document.removeEventListener("pointerdown", cerca);
     if (ev.target.closest?.(".titulo-nyp .ficha, button, a, input, textarea, select, label, [role=button], .capa-movil")) return;
-    const r = titulo.getBoundingClientRect();
-    if (ev.clientX < r.left - A.alcance || ev.clientX > r.right + A.alcance || ev.clientY < r.top - A.alcance || ev.clientY > r.bottom + A.alcance) return;
+    // (Sin mirar el recuadro del título: las letras pueden estar repartidas por toda la pantalla, y golpe()
+    // ya mide la distancia a cada letra allí donde esté.)
     if (golpe(ev.clientX, ev.clientY)) arrancar(); // un toque que no mueve ninguna letra no cuenta
   }
   document.addEventListener("pointerdown", cerca);
