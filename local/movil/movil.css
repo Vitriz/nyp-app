@@ -2252,3 +2252,69 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
 .sm-tema-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
 .sm-tema-txt small { font-size: 0.72rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--oro); }
 .sm-tema-txt b { font-size: 1.2rem; color: #fff; }
+
+/* =====================================================================
+   Pantalla final (modo solo): contrarreloj y nivel para la próxima partida, a la izquierda; resultados a toda
+   la derecha, que se desplazan por su cuenta hasta el borde de abajo de la pantalla (sin cortarse en una caja).
+   ===================================================================== */
+.final-ajustes { display: flex; flex-direction: column; gap: 0.55rem; padding: 0.75rem 0.8rem; border-radius: 1rem; background: rgba(6, 18, 56, 0.55); border: 1px solid rgba(170, 200, 255, 0.2); }
+.final-ajustes-titulo { font-size: 0.72rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: var(--texto-suave); }
+.final-ajuste { display: grid; grid-template-columns: 7.4rem minmax(0, 1fr); align-items: center; gap: 0.6rem; }
+.final-ajuste-etq { font-size: 0.85rem; font-weight: 900; color: #dfe8ff; white-space: nowrap; }
+.final-seg { display: flex; gap: 0.25rem; padding: 0.22rem; border-radius: 0.8rem; background: rgba(10, 27, 74, 0.7); }
+.final-seg-op {
+  appearance: none; flex: 1; min-width: 0; min-height: 2.4rem; padding: 0.2rem 0.4rem; border: 0; border-radius: 0.6rem; background: transparent;
+  font: inherit; font-weight: 900; font-size: 0.9rem; color: var(--texto); cursor: var(--cursor-mano, pointer); white-space: nowrap; transition: background 140ms, transform 120ms var(--curva);
+}
+.final-seg-op:active { transform: scale(0.95); }
+.final-seg-op.elegido { background: linear-gradient(180deg, #fff6d6, #f0c64a); color: #3a2a00; box-shadow: 0 0.12rem 0 rgba(4, 12, 40, 0.45); }
+@media (max-width: 420px) { .final-ajuste { grid-template-columns: minmax(0, 1fr); gap: 0.3rem; } }
+
+@media (orientation: landscape) and (min-width: 900px) {
+  /* La derecha llega hasta abajo del todo y se desplaza sola (la pantalla no se mueve) */
+  .pantalla.pantalla-final:not(.res-party):not(.sin-der) { padding-bottom: 0; }
+  .pantalla.pantalla-final:not(.res-party):not(.sin-der) > .zona-final { padding-bottom: 0; align-items: stretch; }
+  .pantalla-final:not(.res-party):not(.sin-der) .final-izq { align-self: start; max-height: calc(100% - 1.2rem); margin-bottom: 1.2rem; }
+  .pantalla-final:not(.res-party):not(.sin-der) .zona-final .final-botones-izq { margin-top: 0.2rem; }
+  .pantalla-final:not(.res-party):not(.sin-der) .final-der,
+  .pantalla-final:not(.res-party):not(.sin-der) .final-der:has(.final-palabras) {
+    align-self: stretch; max-height: none; height: 100%; overflow-y: auto; overscroll-behavior: contain; padding: 0 0.6rem 2rem 0;
+    scrollbar-width: thin; scrollbar-color: rgba(170, 200, 255, 0.45) transparent;
+  }
+  .pantalla-final:not(.res-party):not(.sin-der) .final-der::-webkit-scrollbar { display: block; width: 0.5rem; }
+  .pantalla-final:not(.res-party):not(.sin-der) .final-der::-webkit-scrollbar-thumb { background: rgba(170, 200, 255, 0.45); border-radius: 1rem; }
+  /* Tutifruti: la tarjeta crece con sus palabras (se desplaza toda la columna, no una caja dentro) */
+  .final-der > .final-palabras { flex: 1 0 auto; min-height: auto; }
+  .final-der > .final-palabras .final-faltan { flex: none; overflow: visible; }
+}
+
+/* =====================================================================
+   Mates fugaces: cada operación en su ficha grande; la que te hizo perder, en rojo
+   ===================================================================== */
+.final-der:has(.final-ops) > .mis-respuestas { display: none; }
+.final-ops { display: flex; flex-direction: column; gap: 0.8rem; padding: 1rem 1.1rem; border-radius: 1.2rem; background: rgba(10, 26, 74, 0.92); border: 1px solid rgba(170, 200, 255, 0.22); }
+.final-ops-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr)); gap: 0.55rem; }
+.op-ficha {
+  display: flex; align-items: center; gap: 0.55rem; padding: 0.6rem 0.8rem; border-radius: 0.9rem; border: 2px solid #4f6fb8; background: #1d3a85;
+  font-family: var(--fuente-ficha); font-weight: 900; font-size: 1.25rem; color: #fff; font-variant-numeric: tabular-nums; box-shadow: 0 0.15rem 0 rgba(4, 12, 40, 0.5);
+}
+.op-ficha-ico { flex: none; width: 1.7rem; height: 1.7rem; display: grid; place-items: center; border-radius: 50%; font-size: 0.95rem; background: rgba(255, 255, 255, 0.15); }
+.op-ficha-txt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-ficha small { display: block; font-family: inherit; font-size: 0.68rem; font-weight: 800; color: var(--texto-suave); letter-spacing: 0.02em; }
+.op-ficha.bien { background: #1f6b52; border-color: #6cc49a; }
+.op-ficha.bien .op-ficha-ico { background: #6cc49a; color: #0b3a26; }
+.op-ficha.tras-fallo { background: #5a4410; border-color: #f0c64a; }
+.op-ficha.tras-fallo .op-ficha-ico { background: #f0c64a; color: #3a2a00; }
+.op-ficha.tras-fallo small { color: #ffe7a0; }
+.op-ficha.pasada { background: #26365e; border-style: dashed; border-color: #8fa3cf; color: #dbe6ff; }
+.op-ficha.fallada { background: #7a1f1f; border-color: #ff7a6e; box-shadow: 0 0 0 0.2rem rgba(255, 122, 110, 0.35), 0 0.15rem 0 rgba(4, 12, 40, 0.5); }
+.op-ficha.fallada .op-ficha-ico { background: #ff7a6e; color: #fff; }
+.op-ficha.fallada small { color: #ffd0cb; }
+.final-ops-leyenda { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; font-size: 0.8rem; font-weight: 800; color: var(--texto-suave); }
+.final-ops-leyenda i { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 0.25rem; margin-right: 0.35rem; vertical-align: -0.05rem; }
+@media (orientation: landscape) and (min-width: 900px) {
+  .final-ops { padding: 1.3rem 1.5rem; }
+  .final-ops-lista { grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr)); gap: 0.7rem; }
+  .op-ficha { font-size: 1.6rem; padding: 0.75rem 1rem; }
+  .op-ficha small { font-size: 0.78rem; }
+}

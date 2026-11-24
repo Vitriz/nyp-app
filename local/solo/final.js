@@ -218,6 +218,7 @@ export function casillasFinal(meta, ronda, j) {
 /** Algo más que enseñar al final (de momento, la solución del KenKen marcando lo que tenías bien). */
 export function extraFinal(meta, ronda, j) {
   if (meta.id === "paraulogico") return finalTutifruti(ronda, j);
+  if (meta.id === "mates-fugaces") return finalMates(ronda, j);
   if (meta.id === "laberinto") return finalLaberinto(ronda, j);
   if (meta.id === "sopa") return finalSopa(ronda, j);
   if (meta.id === "crucigrama") return finalCrucigrama(ronda, j);
@@ -313,6 +314,41 @@ function finalCrucigrama(ronda, j) {
     h("small.final-seccion", n === ronda.palabras.length ? "¡Completo! Así quedó" : "La solución"),
     el,
     n === ronda.palabras.length ? null : h("div.kk-leyenda", h("span", h("i", { style: { background: "#9be0bd" } }), "Lo resolviste"), h("span", h("i", { style: { background: "#f6b1a8" } }), "Faltó"))
+  );
+}
+
+/**
+ * Mates fugaces: cada operación en su ficha grande, en orden. Verde: a la primera; dorada: acertada tras fallar;
+ * discontinua: pasada; roja: la que estabas haciendo al acabar (la que te hizo perder o la que no terminaste).
+ */
+function finalMates(ronda, j) {
+  if (!ronda?.ops || !j) return null;
+  const fichas = (j.hist ?? []).map((x) => {
+    const op = ronda.ops[x.i];
+    const clase = x.pasada ? "pasada" : x.f ? "tras-fallo" : "bien";
+    const ico = x.pasada ? "⏭" : x.f ? "!" : "✔";
+    const nota = x.pasada ? "Pasada" : x.f ? `Tras ${x.f} ${x.f === 1 ? "fallo" : "fallos"}` : null;
+    return h(`div.op-ficha.${clase}`, h("span.op-ficha-ico", ico), h("span.op-ficha-txt", `${op.texto} = ${op.r}`, nota ? h("small", nota) : null));
+  });
+  // La que quedó a medias: si fallaste en ella, en rojo (y así se ve cuál era la respuesta).
+  const actual = ronda.ops[j.i];
+  if (actual && (fichas.length || j.fallosOp)) {
+    const fallada = (j.fallosOp ?? 0) > 0;
+    fichas.push(
+      h(
+        `div.op-ficha.${fallada ? "fallada" : "pasada"}`,
+        h("span.op-ficha-ico", fallada ? "✘" : "…"),
+        h("span.op-ficha-txt", `${actual.texto} = ${actual.r}`, h("small", fallada ? `La fallaste${j.fallosOp > 1 ? ` ${j.fallosOp} veces` : ""}` : "Sin terminar"))
+      )
+    );
+  }
+  if (!fichas.length) return null;
+  const leyenda = (color, txt) => h("span", h("i", { style: { background: color } }), txt);
+  return h(
+    "div.final-ops",
+    h("small.final-seccion", `Tus operaciones (${fichas.length})`),
+    h("div.final-ops-lista", fichas),
+    h("div.final-ops-leyenda", leyenda("#6cc49a", "A la primera"), leyenda("#f0c64a", "Tras fallar"), leyenda("#8fa3cf", "Pasada"), leyenda("#ff7a6e", "Fallada"))
   );
 }
 

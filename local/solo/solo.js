@@ -14,6 +14,7 @@ import { casillasFinal, extraFinal, ganoPartida } from "./final.js";
 import { pantallaOpciones } from "./opciones.js";
 import { ventanaEstadisticas, ventanaClasificacion, apuntarPartida } from "./estadisticas.js";
 import { palabrasTocables } from "../comun/diccionario.js";
+import { tiempoCrono } from "./crono.js";
 
 const SIN_SOLO = new Set(["pulsador"]); // necesita presentador y más jugadores
 
@@ -553,6 +554,38 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
     // Récords y hazañas nuevos, a la nube (para la clasificación de todos): un récord, enseguida.
     subirLuego(idMovil(), perfil, record ? 300 : 2500);
     const textoR = h("p.final-marca", r.texto);
+    // Para jugar otra del mismo juego: contrarreloj (sí / no, con el tiempo del juego en ese nivel) y nivel.
+    // Se eligen aquí mismo, a la izquierda, y «Otra vez» empieza con ellos.
+    let otraCrono = meta.duracion > 0;
+    let otraNivel = meta.dificultad ?? "normal";
+    const metaOtra = () => ({ ...meta, dificultad: otraNivel, duracion: otraCrono ? tiempoCrono(meta.id, otraNivel) : 0 });
+    const otraVez = () => {
+      const niveles = leerNiveles();
+      niveles["*"] = otraNivel;
+      almacen.guardar("nyp-niveles", JSON.stringify(niveles));
+      preparar(metaOtra());
+    };
+    const botonesOtra = [];
+    const ajustesOtra = h("div.final-ajustes");
+    const pintarAjustes = () => {
+      const seg = (lista, actual, alElegir) =>
+        h(
+          "div.final-seg",
+          { role: "radiogroup" },
+          lista.map(([v, txt]) => h(`button.final-seg-op${v === actual ? ".elegido" : ""}`, { type: "button", role: "radio", "aria-checked": String(v === actual), onclick: () => (alElegir(v), pintarAjustes()) }, txt))
+        );
+      ajustesOtra.replaceChildren(
+        h("small.final-ajustes-titulo", "Para la próxima partida"),
+        h("div.final-ajuste", h("span.final-ajuste-etq", "⏱ Contrarreloj"), seg([[false, "No"], [true, `Sí · ${textoSegundos(tiempoCrono(meta.id, otraNivel))}`]], otraCrono, (v) => (otraCrono = v))),
+        h("div.final-ajuste", h("span.final-ajuste-etq", "◆ Nivel"), seg(NIVELES.map((n) => [n, NOMBRES_NIVEL[n]]), otraNivel, (v) => (otraNivel = v)))
+      );
+      for (const b of botonesOtra) b.textContent = otraCrono ? `⏱ Otra vez · ${textoSegundos(tiempoCrono(meta.id, otraNivel))}` : "Otra vez ▶";
+    };
+    const botonOtra = () => {
+      const b = h("button.boton.acento", { type: "button", disabled: true, onclick: otraVez }, "Otra vez");
+      botonesOtra.push(b);
+      return b;
+    };
     if (hazanas.length) setTimeout(() => celebrarHazanas(hazanas), 500); // ¡con trompetas!
     else if (record) setTimeout(() => confeti(), 250); // récord nuevo: confeti dorado
     if (record) {
@@ -562,7 +595,7 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
         "section.pantalla-final",
         // El juego y cómo se jugó (tiempo · nivel), a la derecha del perfil: fijo arriba aunque bajes.
         // (el banner, contraído: así cabe bien el nombre del juego)
-        h("div.barra-sup.barra-final", fijo.hueco("cerrado"), infoPartida(meta, meta.duracion, NOMBRES_NIVEL[meta.dificultad ?? "normal"])),
+        h("div.barra-sup.barra-final", fijo.hueco("cerrado"), infoPartida(meta, meta.duracion, NOMBRES_NIVEL[meta.dificultad ?? "normal"], { ajustes: false })),
         // En horizontal (ordenador), dos columnas: a la izquierda, como un menú, cómo fue la partida (cabecera,
         // casillas de datos, hazañas y botones); a la derecha, los resultados (solución, respuestas…).
         h(
@@ -583,11 +616,12 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
             // Los datos de la partida, en casillas propias de cada juego.
             datos?.[0] ?? null,
             tarjetaHazanas(hazanas),
+            ajustesOtra,
             // (en horizontal los botones van aquí, debajo de los datos; en vertical, abajo del todo)
             h(
               "div.pl-botones.bloqueo-final.final-botones-izq",
               h("button.boton.suave", { type: "button", disabled: true, onclick: lista }, "Otro juego"),
-              h("button.boton.acento", { type: "button", disabled: true, onclick: () => preparar(meta) }, "Otra vez")
+              botonOtra()
             )
           ),
           h(
@@ -603,9 +637,10 @@ export function entrarSolo({ app, perfil, alSalir, fijo: fijoApp = null, alPerfi
         h(
           "div.pl-botones.bloqueo-final",
           h("button.boton.suave", { type: "button", disabled: true, onclick: lista }, "Otro juego"),
-          h("button.boton.acento", { type: "button", disabled: true, onclick: () => preparar(meta) }, "Otra vez")
+          botonOtra()
         )
       );
+    pintarAjustes();
     // Sin nada a la derecha: una sola columna, como en el móvil.
     const der = pantalla.querySelector(".final-der");
     if (!der.children.length) pantalla.classList.add("sin-der");

@@ -1,13 +1,13 @@
 // Pantalla de opciones de una partida (modo solo), entre la lista de juegos y la partida.
 // A la izquierda (arriba en el móvil): el vídeo de muestra y cómo se juega. A la derecha (abajo): lo que se
-// elige antes de empezar —nivel y temas al jugar; tiempo y nivel con contrarreloj— y el botón para empezar.
-import { h } from "../comun/ui.js";
+// elige antes de empezar —el nivel y, si el juego tiene, los temas— y el botón para empezar. Con contrarreloj, el
+// tiempo lo pone el juego según el nivel (web/solo/crono.js): se enseña y cambia al cambiar de nivel.
+import { h, textoSegundos as texto } from "../comun/ui.js";
 import { selectorAmbitos } from "../comun/ambitos.js";
 import { AYUDA, videoAyuda } from "./ayuda.js";
+import { tiempoCrono } from "./crono.js";
 
 const NOMBRES_NIVEL = { facil: "Fácil", normal: "Medio", dificil: "Difícil" };
-const TIEMPOS_CRONO = [30, 45, 60, 120];
-const texto = (s) => (s < 60 ? `${s} s` : `${s / 60} min`);
 
 /**
  * juego: { id, nombre, ambitos? }; modo: "normal" | "crono"; icono: emoji del juego.
@@ -19,7 +19,7 @@ export function pantallaOpciones({ juego, modo, icono, valores, reglas = () => (
   const crono = modo === "crono";
   const a = AYUDA[juego.id] ?? { pasos: [], puntos: "", niveles: "" };
   let nivel = valores.nivel ?? "normal";
-  let tiempo = TIEMPOS_CRONO.includes(valores.tiempo) ? valores.tiempo : 60;
+  const tiempo = () => tiempoCrono(juego.id, nivel);
   let operaciones = valores.operaciones ?? 8;
   let ambito = null;
 
@@ -57,10 +57,14 @@ export function pantallaOpciones({ juego, modo, icono, valores, reglas = () => (
   const cajaNivel = h("div");
   const pintarNivel = () =>
     cajaNivel.replaceChildren(
-      segmentos(["facil", "normal", "dificil"], nivel, (x) => NOMBRES_NIVEL[x], (x) => ((nivel = x), pintarNivel(), pintarReglas()), ".niveles")
+      segmentos(["facil", "normal", "dificil"], nivel, (x) => NOMBRES_NIVEL[x], (x) => ((nivel = x), pintarNivel(), pintarReglas(), pintarTiempo()), ".niveles")
     );
-  const cajaTiempo = h("div");
-  const pintarTiempo = () => cajaTiempo.replaceChildren(segmentos(TIEMPOS_CRONO, tiempo, texto, (x) => ((tiempo = x), pintarTiempo())));
+  // Contrarreloj: el tiempo de este juego en el nivel elegido (no se elige: la prueba está pensada para él).
+  const cajaTiempo = h("div.op-crono-tiempo");
+  const pintarTiempo = () => {
+    cajaTiempo.replaceChildren(h("b", `⏱ ${texto(tiempo())}`), h("small.op-nota", `Para ${juego.nombre} en nivel ${NOMBRES_NIVEL[nivel]}. Cambia con el nivel.`));
+    if (crono && !jugar.disabled) jugar.textContent = `⏱ ¡Empezar! (${texto(tiempo())})`;
+  };
   const cajaOps = h("div");
   const pintarOps = () => cajaOps.replaceChildren(segmentos([5, 8, 12, 16, 20], operaciones, String, (x) => ((operaciones = x), pintarOps())));
 
@@ -70,7 +74,7 @@ export function pantallaOpciones({ juego, modo, icono, valores, reglas = () => (
         ambito = val;
         const n = Array.isArray(val) ? val.length : 1;
         jugar.disabled = !n;
-        jugar.textContent = !n ? "Elige al menos un tema" : crono ? `⏱ ¡Empezar! (${texto(tiempo)})` : "¡Jugar! ▶";
+        jugar.textContent = !n ? "Elige al menos un tema" : crono ? `⏱ ¡Empezar! (${texto(tiempo())})` : "¡Jugar! ▶";
       })
     : null;
 
@@ -86,7 +90,7 @@ export function pantallaOpciones({ juego, modo, icono, valores, reglas = () => (
 
   function empezar() {
     if (jugar.disabled) return;
-    alJugar({ dificultad: nivel, duracion: crono ? tiempo : 0, ambito: temas ? temas.valor() : undefined, operaciones: juego.id === "calculo-mental" && !crono ? operaciones : undefined });
+    alJugar({ dificultad: nivel, duracion: crono ? tiempo() : 0, ambito: temas ? temas.valor() : undefined, operaciones: juego.id === "calculo-mental" && !crono ? operaciones : undefined });
   }
   // En el ordenador: Enter empieza y Esc vuelve.
   const tecla = (ev) => {
@@ -95,15 +99,11 @@ export function pantallaOpciones({ juego, modo, icono, valores, reglas = () => (
     else if (ev.key === "Escape") (ev.preventDefault(), alVolver());
   };
 
+  if (!temas || temas.valor()) jugar.textContent = crono ? `⏱ ¡Empezar! (${texto(tiempo())})` : "¡Jugar! ▶";
   pintarNivel();
   pintarTiempo();
   pintarOps();
   pintarReglas();
-  if (!temas) jugar.textContent = crono ? "⏱ ¡Empezar!" : "¡Jugar! ▶";
-  else temas.valor() && (jugar.textContent = crono ? `⏱ ¡Empezar! (${texto(tiempo)})` : "¡Jugar! ▶");
-  // El texto del botón con el tiempo elegido también cambia al elegir otro tiempo.
-  if (crono) cajaTiempo.addEventListener("click", () => queueMicrotask(() => !jugar.disabled && (jugar.textContent = `⏱ ¡Empezar! (${texto(tiempo)})`)));
-  if (crono && !temas) jugar.textContent = `⏱ ¡Empezar! (${texto(tiempo)})`;
 
   const el = h(`section.pantalla-opciones${crono ? ".en-crono" : ""}`, barra, h("div.op-cuerpo", info, h("div.op-lado", opciones, pie)));
   addEventListener("keydown", tecla);

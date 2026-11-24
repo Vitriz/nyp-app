@@ -274,8 +274,8 @@ function colorReloj(f) {
 export const TIEMPOS = [30, 45, 60, 120, 0]; // (sin 90 s)
 export const SIN_LIMITE_MS = 12 * 3600 * 1000;
 export const msDuracion = (s) => (s > 0 ? s * 1000 : SIN_LIMITE_MS);
-/** «30 s», «2 min», «∞». */
-export const textoSegundos = (s) => (!s ? "∞" : s < 60 || s % 60 ? `${s} s` : `${s / 60} min`);
+/** «30 s», «2 min», «1:30 min», «∞». */
+export const textoSegundos = (s) => (!s ? "∞" : s < 60 ? `${s} s` : s % 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} min` : `${s / 60} min`);
 
 export function crearReloj(ahoraServidor) {
   const R = 45, L = 2 * Math.PI * R;

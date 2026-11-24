@@ -77,12 +77,12 @@ export const textoRecord = (r) => r?.corto ?? String(r?.texto ?? "").replace(/^C
 export { textoSegundos };
 
 /** Al lado del perfil en los resultados: el icono y el nombre del juego, y sus ajustes en dos chips. */
-export function infoPartida(juego, segundos, nivel) {
+export function infoPartida(juego, segundos, nivel, { ajustes = true } = {}) {
   const casilla = (ico, etq, valor) => h("div.info-ajuste", h("small", ico, " ", etq), h("b", valor));
   return h(
     "div.info-partida",
     h("div.info-partida-titulo", h("span.info-partida-ico", ICONOS[juego.id] ?? "🎲"), h("h2.info-partida-nombre", juego.nombre)),
-    h("div.info-partida-ajustes", casilla("⏱", "Contrarreloj", segundos ? textoSegundos(segundos) : "No"), nivel ? casilla("◆", "Nivel", nivel) : null)
+    ajustes ? h("div.info-partida-ajustes", casilla("⏱", "Contrarreloj", segundos ? textoSegundos(segundos) : "No"), nivel ? casilla("◆", "Nivel", nivel) : null) : null
   );
 }
 
