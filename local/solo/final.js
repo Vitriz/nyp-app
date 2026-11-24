@@ -330,7 +330,17 @@ function finalTutifruti(ronda, j) {
     h("small", `✔ Acertadas (${j.encontradas.length})`),
     h("div.final-chips", j.encontradas.map((e) => chip(e.forma, e.tuti ? ".tuti" : ".bien"))),
     h("small", `Te faltaron (${faltan.length})`),
-    h("div.final-chips.faltan", faltan.map((c) => chip(c, esTuti(c) ? ".tuti.falta" : ".falta")))
+    // Agrupadas por largo (de las más largas a las más cortas): se repasan mucho mejor que en un montón.
+    h(
+      "div.final-faltan",
+      [...new Set(faltan.map((c) => c.length))].map((n) =>
+        h(
+          "div.grupo-largo",
+          h("div.grupo-largo-n", h("b", String(n)), h("small", "letras")),
+          h("div.final-chips.faltan", faltan.filter((c) => c.length === n).map((c) => chip(c, esTuti(c) ? ".tuti.falta" : ".falta")))
+        )
+      )
+    )
   );
 }
 

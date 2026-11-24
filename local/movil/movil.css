@@ -2217,3 +2217,31 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
   .grupo > .grupo-camara { grid-column: 1; grid-row: 3 / span 5; width: min(100%, 24rem); }
   .grupo > .grupo-teclado { margin-top: 0.4rem; }
 }
+
+/* =====================================================================
+   Final de Tutifruti (y de los juegos de palabras): fichas opacas que no se mezclan con los puntos del fondo,
+   palabras que faltaron agrupadas por largo y, en el ordenador, la lista ocupando todo el alto disponible.
+   ===================================================================== */
+.final-solo .final-palabras { background: rgba(10, 26, 74, 0.92); border: 1px solid rgba(170, 200, 255, 0.22); border-radius: 1.2rem; padding: 1rem 1.1rem; gap: 0.6rem; }
+.zona-final .final-chips .pg-chip { background: #2a4ea8; border: 2px solid #5b80d6; color: #fff; box-shadow: 0 0.12rem 0 rgba(4, 12, 40, 0.5); }
+.zona-final .final-chips .pg-chip.bien { background: #1f6b52; border-color: #6cc49a; }
+.zona-final .final-chips .pg-chip.tuti { background: #5a4410; border-color: var(--oro); color: #ffe7a0; }
+.zona-final .final-chips .pg-chip.falta { opacity: 1; background: #17306e; border: 2px dashed #4f6fb8; color: #dbe6ff; box-shadow: none; }
+.zona-final .final-chips .pg-chip.tuti.falta { background: #2b2a52; border-color: var(--oro); color: #ffe08a; }
+.final-faltan { display: flex; flex-direction: column; gap: 0.55rem; }
+.final-faltan .grupo-largo { grid-template-columns: 3.2rem minmax(0, 1fr); align-items: start; }
+.final-faltan .final-chips.faltan { max-height: none; overflow: visible; }
+/* Las acertadas ya salen en la tarjeta: sin repetirlas debajo */
+.final-der:has(.final-palabras) > .mis-respuestas { display: none; }
+@media (orientation: landscape) and (min-width: 900px) {
+  /* La izquierda, a todo el alto, con los botones abajo; la derecha, la tarjeta a todo el alto */
+  .pantalla.pantalla-final:not(.res-party):not(.sin-der) > .zona-final:has(.final-palabras) { align-items: stretch; }
+  .pantalla-final:not(.res-party):not(.sin-der) .zona-final:has(.final-palabras) .final-izq { align-self: stretch; }
+  .pantalla-final:not(.res-party):not(.sin-der) .zona-final:has(.final-palabras) .final-botones-izq { margin-top: auto; }
+  .pantalla-final:not(.res-party):not(.sin-der) .final-der:has(.final-palabras) { overflow: hidden; padding-bottom: 0; }
+  .final-der > .final-palabras { flex: 1; min-height: 0; padding: 1.2rem 1.4rem; }
+  .final-der > .final-palabras .final-faltan { flex: 1; min-height: 0; overflow-y: auto; padding-right: 0.4rem; scrollbar-width: thin; scrollbar-color: rgba(170, 200, 255, 0.4) transparent; }
+  .final-der > .final-palabras .final-chips { gap: 0.45rem; }
+  .final-der > .final-palabras .final-chips .pg-chip { font-size: 1.05rem; padding: 0.35rem 0.75rem; min-height: 0; }
+  .final-der > .final-palabras .final-rango { font-size: 1.1rem; }
+}
