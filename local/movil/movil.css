@@ -2245,3 +2245,10 @@ button.fila-j { appearance: none; cursor: var(--cursor-mano, pointer); }
   .final-der > .final-palabras .final-chips .pg-chip { font-size: 1.05rem; padding: 0.35rem 0.75rem; min-height: 0; }
   .final-der > .final-palabras .final-rango { font-size: 1.1rem; }
 }
+
+/* Semántica: el tema de la palabra secreta, en un cartel bien visible (para no buscar a ciegas) */
+.sm-tema-cartel { display: flex; align-items: center; gap: 0.7rem; padding: 0.55rem 0.9rem; border-radius: 1rem; background: linear-gradient(180deg, rgba(240, 198, 74, 0.24), rgba(240, 198, 74, 0.12)); border: 2px solid rgba(240, 198, 74, 0.6); }
+.sm-tema-ico { flex: none; width: 2.6rem; height: 2.6rem; display: grid; place-items: center; font-size: 1.6rem; border-radius: 0.8rem; background: rgba(255, 255, 255, 0.9); }
+.sm-tema-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.sm-tema-txt small { font-size: 0.72rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--oro); }
+.sm-tema-txt b { font-size: 1.2rem; color: #fff; }

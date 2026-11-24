@@ -40,7 +40,7 @@ export const AYUDA = {
     niveles: "Fácil: grupos de cosas (aves, muebles…) · Difícil: también temas (Música, Medicina…) y cómo se escriben (esconden un animal…).",
   },
   semantica: {
-    pasos: ["Hay una palabra secreta. Escribe cualquier palabra y pulsa Probar.", "Verás su puesto: el #1 es la secreta; cuanto más bajo, más cerca de su significado (🔥 caliente, 🧊 frío).", "Ve acercándote con palabras parecidas. Si te atascas, pide una 💡 pista."],
+    pasos: ["Hay una palabra secreta: arriba ves de qué tema es (un animal, una comida, un lugar…). Escribe cualquier palabra y pulsa Probar.", "Verás su puesto: el #1 es la secreta; cuanto más bajo, más cerca de su significado (🔥 caliente, 🧊 frío).", "Ve acercándote con palabras parecidas. Si te atascas, pide una 💡 pista."],
     puntos: "Gana quien la encuentre con menos intentos y pistas; si nadie, quien se quede más cerca.",
     niveles: "Fácil: 4 pistas · Medio: 3 · Difícil: 1.",
   },

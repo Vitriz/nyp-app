@@ -7,7 +7,7 @@ export function montar(cuerpo, e, ctx) {
   cuerpo.append(
     h(
       "div.sopa-tv.mem-tv",
-      h("div.mem-tv-cartel", h("span.mem-tv-icono", "🔥"), h("b", "¿Cuál es la palabra secreta?"), h("p.suave", "Cuanto más bajo el puesto, más cerca: el #1 es la secreta.")),
+      h("div.mem-tv-cartel", h("span.mem-tv-icono", "🔥"), h("b", "¿Cuál es la palabra secreta?"), e.datos?.tema ? h("div.sm-tema-tv", "Tema: ", h("b", e.datos.tema)) : null, h("p.suave", "Cuanto más bajo el puesto, más cerca: el #1 es la secreta.")),
       lado
     )
   );
@@ -27,6 +27,7 @@ export function resumen(r) {
     { style: { animationDelay: "900ms" } },
     h("span.etiqueta", "La palabra secreta era"),
     h("div.sm-secreta-tv", r.secreta.toUpperCase()),
+    r.tema ? h("p.suave", `Tema: ${r.tema}`) : null,
     h("span.etiqueta", "Las más cercanas"),
     h("div.pl-soluciones", r.cercanas.map((c) => h("span.pl-sol", c.toUpperCase())))
   );

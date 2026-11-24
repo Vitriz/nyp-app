@@ -794,3 +794,5 @@ body { cursor: default; }
 .rep-pg .rep-quien-j { font-size: 2.3rem; padding: 0.5rem 1.4rem 0.5rem 0.6rem; }
 .rep-pg .rep-quien-j .avatar { font-size: 1.5rem; }
 .rep-pg .rep-nadie { font-size: 2.4rem; }
+.sm-tema-tv { margin: 0.4rem 0; padding: 0.4rem 1.2rem; border-radius: 999px; background: rgba(240, 198, 74, 0.2); border: 2px solid rgba(240, 198, 74, 0.6); color: var(--oro); font-size: 1.8rem; font-weight: 800; }
+.sm-tema-tv b { color: #fff; }

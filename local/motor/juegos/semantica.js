@@ -12,7 +12,7 @@ const PISTAS = [[500, 150, 40, 10], [500, 100, 20], [300]];
 // Palabra de salida (gratis, ya en la lista al empezar): en este puesto, más o menos, según el nivel.
 const SALIDA = [[25, 60], [80, 160], [200, 400]];
 
-/** Tema (ámbito del diccionario) de una palabra, si lo tiene: «Marina», «Música»… (o null). */
+/** Tema de reserva (ámbito del diccionario: «Marina», «Música»…) para datos antiguos sin temas propios (o null). */
 let temas = null;
 function temaDe(c) {
   try {
@@ -26,6 +26,14 @@ function temaDe(c) {
   } catch {
     return null;
   }
+}
+
+/**
+ * Tema de la palabra secreta, para no buscar a ciegas: «🐾 Animal», «🍽️ Comida o bebida»… (sale de su
+ * definición: herramientas/temas_semantica.py). Con datos antiguos, el ámbito del diccionario si lo tiene.
+ */
+function temaRonda(ronda, c) {
+  return (ronda.tema ??= c.datos.temas?.[ronda.objetivo] ?? temaDe(c.datos.palabras[ronda.objetivo]) ?? "");
 }
 
 let cache = null; // { datos, indice: Map(clave -> i), vec: [Map], normas }
@@ -77,7 +85,7 @@ export default {
   duracion: 0, // sin límite
   sinDiccionario: true, // trae sus propios datos
   breve: "Adivina la palabra secreta por lo cerca que vas.",
-  descripcion: "Hay una palabra secreta. Escribe cualquier palabra y verás lo cerca que está de su significado: el #1 es la secreta. Ve acercándote. Puedes pedir pistas.",
+  descripcion: "Hay una palabra secreta y sabes de qué tema es (un animal, una comida, un lugar…). Escribe cualquier palabra y verás lo cerca que está de su significado: el #1 es la secreta. Ve acercándote. Puedes pedir pistas.",
 
   crear({ azar, config }) {
     const c = preparar();
@@ -120,14 +128,14 @@ export default {
       pistasMax: ronda.pistas.length,
       encontrada: j.encontrada,
       secreta: j.encontrada ? c.datos.formas[ronda.objetivo] : null,
-      // Pista de tema: el ámbito de la secreta (o, si no tiene, el de la palabra de salida).
-      tema: (ronda.tema ??= temaDe(c.datos.palabras[ronda.objetivo]) ?? temaDe(c.datos.palabras[j.intentos.find((x) => x.salida)?.i]) ?? ""),
+      tema: temaRonda(ronda, c),
     };
   },
 
   vistaTV(ronda) {
     if (ronda.sinDatos) return { jugadores: {} };
     return {
+      tema: temaRonda(ronda, preparar()),
       jugadores: Object.fromEntries(
         Object.entries(ronda.jugadores).map(([id, j]) => [id, { mejor: j.intentos.some((x) => !x.salida) ? Math.min(...j.intentos.filter((x) => !x.salida).map((x) => x.puesto)) : null, n: j.intentos.length, encontrada: Boolean(j.encontrada) }])
       ),
@@ -190,6 +198,6 @@ export default {
     if (ronda.sinDatos) return null;
     const c = preparar();
     const t = this.tabla(ronda);
-    return { secreta: c.datos.formas[ronda.objetivo], cercanas: t.orden.slice(1, 11).map((i) => c.datos.formas[i]) };
+    return { secreta: c.datos.formas[ronda.objetivo], tema: temaRonda(ronda, c), cercanas: t.orden.slice(1, 11).map((i) => c.datos.formas[i]) };
   },
 };

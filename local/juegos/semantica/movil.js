@@ -30,6 +30,8 @@ export function montar(cuerpo, e, ctx) {
   const probar = h("button.boton.acento.sm-probar", { type: "button", onclick: enviar }, "Probar");
   const pista = h("button.boton.suave.sm-pista", { type: "button", onclick: () => ctx.enviar({ a: "pista" }) });
   const cabeza = h("div.sm-cabeza");
+  // El tema de la secreta, bien visible arriba: así se sabe por dónde buscar.
+  const tema = h("div.sm-tema-cartel");
   const resultado = h("div.sm-resultado");
   const lista = h("div.sm-lista");
   const teclado = tecladoLetras((t) => {
@@ -43,7 +45,7 @@ export function montar(cuerpo, e, ctx) {
     if (!cuerpo.isConnected) return window.removeEventListener("keydown", alEnter);
     if (ev.key === "Enter") enviar();
   }
-  cuerpo.append(dosLados(h("div.sm", cabeza, h("div.sm-escribir", visor, probar), resultado, lista, h("div.sm-pie", pista), teclado), [cabeza, resultado, lista]));
+  cuerpo.append(dosLados(h("div.sm", tema, cabeza, h("div.sm-escribir", visor, probar), resultado, lista, h("div.sm-pie", pista), teclado), [tema, cabeza, resultado, lista]));
 
   function enviar() {
     if (!texto || d.encontrada) return;
@@ -70,10 +72,11 @@ export function montar(cuerpo, e, ctx) {
 
   function pintar() {
     const n = d.intentos.filter((x) => !x.pista).length;
-    cabeza.replaceChildren(
-      h("span", `${n} ${n === 1 ? "intento" : "intentos"}`),
-      d.tema ? h("span.sm-tema", "🧭 Tema: ", h("b", d.tema)) : h("span.suave", `#1 = la secreta · hay ${d.total.toLocaleString("es-ES")}`)
-    );
+    cabeza.replaceChildren(h("span", `${n} ${n === 1 ? "intento" : "intentos"}`), h("span.suave", `#1 = la secreta · hay ${d.total.toLocaleString("es-ES")}`));
+    const [ico, ...resto] = String(d.tema ?? "").split(" ");
+    const conIcono = resto.length && /\p{Extended_Pictographic}/u.test(ico);
+    tema.classList.toggle("oculto", !d.tema);
+    if (d.tema) tema.replaceChildren(h("span.sm-tema-ico", conIcono ? ico : "🧭"), h("span.sm-tema-txt", h("small", "Tema de la palabra secreta"), h("b", conIcono ? resto.join(" ") : d.tema)));
     const quedan = d.pistasMax - d.pistasUsadas;
     pista.textContent = quedan ? `💡 Pista (${quedan})` : "Sin pistas";
     pista.disabled = !quedan || Boolean(d.encontrada);
